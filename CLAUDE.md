@@ -465,6 +465,16 @@ home-data-layer,home-display-layer,home-portfolio-shutter,post-hero,about-change
 - ⚠️ **手机底部那条浮岛（`MobileDock` + `src/styles/components/mobile-dock.css`）不在这次统一范围内，保持原样**（透明按钮 + 中间凸出的黑色圆钮 + 胶囊圆角）—— 站长 2026-09-30 明确要求改回来，别再顺手「统一规格」。它的总高 `4.25rem`（按钮 3.25rem + 上下留白 0.5rem）被 `dock-drawer`、动态页那 3 个按钮的 `bottom` 偏移按写死的值引用，**改它高度要同步改那两处**。
 - ⚠️ **图标空白 = sprite 丢符号**（本次踩到）：页面里的 `<Icon>` 默认走 astro-icon 的 sprite（`<use href="#ai:…">`），这份 sprite 有已知的丢符号问题（`src/components/common/Icon.astro` 就是为绕开它而写的包装组件）。症状是图标**整块空白**而不报错，`document.querySelector("symbol#ai:…")` 能确认缺没缺。判断/修复：给那个 `<Icon>` 加 `is:inline`（路径直接内联），或改用 `@/components/common/Icon.astro`。
 
+### 5.17 笔记同步范围约定（2026-10-08，Syncthing）
+
+- **手机↔电脑的笔记同步只覆盖三个目录**：`src/content`、`src/notes`、`src/临时收集`（实测合计 42.5MB / 1157 个笔记 + 546 张图）。
+  做法是「只把这三个目录作为 Syncthing 文件夹共享」，所以 `components/ layouts/ pages/ styles/ config/ utils/ i18n/ types/ plugins/`、`src/assets/`、
+  `content.config.ts`、`orphaned files output.md`、`.obsidian/`、`.trash/` 等**永远不进同步**——不需要写排除规则。
+- ⚠️ **以后新增要同步的目录**（例如再开一个新的笔记根目录），必须同时在**服务器 / 电脑 / 手机三边**都加一个 Syncthing 文件夹，否则手机端会缺文件。
+- ⚠️ **同一台设备上只能有一个同步方案**：启用 Syncthing 前必须禁用 `nutstore-sync`，`obsidian-git` 也保持禁用；两个同步插件并存会互相覆盖。
+- 完整步骤（服务器 compose、三台配对、文件夹映射表、验证清单、常见坑）见 `docs/note-sync-setup.md`。
+- 发布链路不受影响：仍是站长手动 `git commit + push`，同步方案不碰站点代码。
+
 ### 5.16 大块数据不再内联：按需拉静态 JSON（2026-10-05）
 
 - **音乐播放列表**：bangumi 的 music 条目（约 30KB）原先内联进每页 HTML，而且是**三份**（悬浮坞的 `MusicPlayer`、侧栏 `Music` 小组件、`MusicManager`）。现在只在 `/music-playlist.json` 输出一次（构建逻辑统一在 `src/utils/music-playlist.ts` 的 `getMusicPlaylist()`，顺手去掉了客户端用不到的 `published` 字段），由 `MusicManager` 在 `init()` 时 fetch 一次（`playlistUrl` 经 `define:vars` 传入）。`MusicPlayer` 不再接收 `externalPlaylist` / `metingApiBase`（那套「外部歌单注入」路径已删：管理器自己就会加载），init 后由 `fm:init` 事件同步 UI；播放行为不变。
