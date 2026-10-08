@@ -57,7 +57,7 @@ obsidian-sync-plugin
 src/临时收集
 src/.claudian
 src/.trash
-src/notes
+src/content/notes
 src/.copilot
 src/.opencode
 

@@ -11,7 +11,7 @@
 | 目录 | 内容 | 体量 |
 |---|---|---|
 | `src/content` | 博客内容（15 个集合，posts/life/moments/bangumi/bills/changelog/daohang/friends/album/schedules…） | 42.4MB（笔记类 1115 个 / 7.7MB，图片 546 个 / 34.7MB） |
-| `src/notes` | 私人笔记（不发布，已在 `.gitignore`） | 33 个 md，体量可忽略 |
+| `src/content/notes` | 私人笔记（2026-10-08 从 `src/notes` 并入；不发布，已在 `.gitignore`） | 41 个文件 / 80KB |
 | `src/临时收集` | 微信文章收件箱（wechat-inbox-sync 的 inboxDir） | 9 个文件 |
 
 **合计 42.5MB**，其中笔记类文件共 1157 个。体积不大，首次全量连图片一起同步即可。

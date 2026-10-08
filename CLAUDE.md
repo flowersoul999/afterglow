@@ -72,7 +72,7 @@ src/
 ├── i18n/                # 国际化（5 种语言，330 个翻译键）
 │   └── languages/       # en.ts, zh_CN.ts, zh_TW.ts, ja.ts, ru.ts
 ├── layouts/             # Layout.astro (591行), MainGridLayout.astro (305行)
-├── notes/               # Obsidian 笔记（不发布）
+├── content/notes/       # Obsidian 笔记（不发布；2026-10-08 从 src/notes 并入，Obsidian 库根 = src/content）
 ├── pages/               # 路由（38 个文件；admin 后台已删除，勿重建）
 │   ├── api/             # JSON API (2)：calendar.json.ts, home-stats.json.ts
 │   ├── album/ bangumi/ books/ categories/ life/ moments/ posts/ // moments/[slug] 已删除
@@ -467,7 +467,7 @@ home-data-layer,home-display-layer,home-portfolio-shutter,post-hero,about-change
 
 ### 5.17 笔记同步范围约定（2026-10-08，Syncthing）
 
-- **手机↔电脑的笔记同步只覆盖三个目录**：`src/content`、`src/notes`、`src/临时收集`（实测合计 42.5MB / 1157 个笔记 + 546 张图）。
+- **手机↔电脑的笔记同步只覆盖三个目录**：`src/content`（`notes` 已于 2026-10-08 并入其中）、`src/临时收集`（实测合计 42.5MB / 1157 个笔记 + 546 张图）。
   做法是「只把这三个目录作为 Syncthing 文件夹共享」，所以 `components/ layouts/ pages/ styles/ config/ utils/ i18n/ types/ plugins/`、`src/assets/`、
   `content.config.ts`、`orphaned files output.md`、`.obsidian/`、`.trash/` 等**永远不进同步**——不需要写排除规则。
 - ⚠️ **以后新增要同步的目录**（例如再开一个新的笔记根目录），必须同时在**服务器 / 电脑 / 手机三边**都加一个 Syncthing 文件夹，否则手机端会缺文件。
