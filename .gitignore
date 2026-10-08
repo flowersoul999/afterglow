@@ -54,7 +54,7 @@ src/.agents
 .pnpm-store
 note-organizer-workspace
 obsidian-sync-plugin
-src/临时收集
+src/content/临时收集
 src/.claudian
 src/content/.trash
 src/content/notes
