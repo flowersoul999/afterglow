@@ -108,7 +108,7 @@ public void save(Emp emp) {
 }
 ```
 
-![事务控制的保存方法](assets/70-事务管理与Spring事务/21-事务控制的保存方法.jpg)
+![事务控制的保存方法](https://img.tsh520.cn/file/blog/article/21-事务控制的保存方法.jpg)
 *图：PPT 第 17～21 页那段 `save` 方法——第一句 `insert` 已经把员工写进库里了，紧接着的 `int i = 1/0;` 会抛算数异常，后面保存工作经历的两行根本执行不到*
 
 PPT 在那张图下面写着结论，正是[69 篇](/posts/编程学习/javaweb学习笔记/69-新增员工/)结尾那个问题：

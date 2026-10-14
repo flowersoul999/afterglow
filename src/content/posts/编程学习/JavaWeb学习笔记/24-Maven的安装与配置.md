@@ -124,7 +124,7 @@ mvn -v
 
 能打印出下面这样的信息，就说明装好了（这是 PPT 第 24 页的截图，在 `C:\Users\deng>` 下敲完命令后连着出现了好几行输出）：
 
-![mvn版本验证结果](assets/24-Maven的安装与配置/24-mvn版本验证结果.jpg)
+![mvn版本验证结果](https://img.tsh520.cn/file/blog/article/24-mvn版本验证结果.jpg)
 *图：PPT 第 24 页的验证截图——敲 `mvn -v` 之后输出的五条信息，红框圈出的是 `Apache Maven 3.9.4 (...)` 这一行（版本号）*
 
 输出内容逐行读（课程环境的输出）：
@@ -223,7 +223,7 @@ A:\develop\maven\apache-maven-3.9.14\mvn_repo        ← localRepository 生效�
 
 配置写完之后，**IDEA** 里能一眼看到三个值对不对（IDEA 的集成下一篇细讲，这里只当"核对工具"用）：`Settings → Build, Execution, Deployment → Build Tools → Maven`：
 
-![IDEA中核对Maven三个路径](assets/24-Maven的安装与配置/28-IDEA中核对Maven三个路径.jpg)
+![IDEA中核对Maven三个路径](https://img.tsh520.cn/file/blog/article/28-IDEA中核对Maven三个路径.jpg)
 *图：PPT 第 28 页的 IDEA 全局配置界面——`Maven home path` 指到解压目录 `D:\develop\apache-maven-3.9.4`、`User settings file` 指向 `conf\settings.xml`、`Local repository` 显示 `D:\develop\apache-maven-3.9.4\mvn_repo`（三个路径正好对应这一篇的步骤 1/2/3）*
 
 自检清单（都打勾就算装好了）：

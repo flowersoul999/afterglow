@@ -38,7 +38,7 @@ PPT 第 35 页给的定义：
 
 拿 PPT 里那段真实响应报文对照着看：
 
-![HTTP响应报文实例](assets/34-HTTP响应数据格式与状态码/35-HTTP响应报文实例.jpg)
+![HTTP响应报文实例](https://img.tsh520.cn/file/blog/article/35-HTTP响应报文实例.jpg)
 *图：PPT 第 35 页配的响应报文——第一行 `HTTP/1.1 200 OK` 是**响应行**（协议 `HTTP/1.1`、状态码 `200`、描述 `OK`）；往下 `Content-Type`、`Transfer-Encoding`、`Date`、`Keep-Alive`、`Connection` 这几行键值对是**响应头**；再空一行之后，最后那段 `[{"id": 1, "brandName": "阿里巴巴", …}]` 是**响应体**（一份 JSON 数据）。注意响应头和响应体之间那个**空行**——它和请求报文里分隔请求头/请求体的空行是同一个作用*
 
 三点补充：

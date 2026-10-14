@@ -39,7 +39,7 @@ PPT 第 56 页给了定义，都很短，但要能翻译成自己的话：
 - **内聚**：上一篇拆三层就是在提内聚——读文件的事全在 dao、解析的事全在 service、接口的事全在 controller，**一个类内部的代码都在服务同一个职责**；
 - **耦合**：三层之间的"依赖关联程度"还很高——controller **知道** `UserServiceImpl` 这个具体类名，service **知道** `UserDaoImpl` 这个具体类名。
 
-![业务层实现类的耦合写法](assets/38-分层解耦与IOC-DI入门/56-业务层实现类的耦合写法.jpg)
+![业务层实现类的耦合写法](https://img.tsh520.cn/file/blog/article/56-业务层实现类的耦合写法.jpg)
 *图：PPT 第 56 页讲"耦合"时摆出来的业务层代码——`UserServiceImpl2` 里写着 `private final UserDao userDao = new UserDaoImpl();`：业务层**自己创建**数据访问层的具体实现类（它的兄弟 `UserServiceImpl` 里是同样的写法），这就是"层与层耦合"的现场*
 
 ## 现在的耦合，具体疼在哪（PPT 第 57 页）

@@ -214,7 +214,7 @@ Object o = constructor.newInstance(实参列表);
 
 1. 根据属性名获取 Field 对象：Field f = cls.getDeclaredField("属性名");
     
-![](assets/Java%20反射/file-20260311202900007.png)
+![](https://img.tsh520.cn/file/blog/article/file-20260311202900007.png)
 
 
 2. 暴破（针对非 public 属性）：f.setAccessible(true);

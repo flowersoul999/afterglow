@@ -80,7 +80,7 @@ PPT 第 31 页先把定义和目的说清楚：
 
 PPT 这一页还画了张示意图：一个个字段旁边标着它要加的约束（"**唯一标识**""**唯一**""**非空**""**默认:男**"），下面就是在这些规则下存出来的一张标准用户表：
 
-![user表的数据](assets/42-DDL表结构-创建与约束/30-user表的数据.jpg)
+![user表的数据](https://img.tsh520.cn/file/blog/article/30-user表的数据.jpg)
 *图：PPT 第 30-31 页——按建表语句存出来的 `user` 表：`username` 不允许重复（`qingyifuwang`、`baimeiyingwang`、`jinmaoshiwang`、`zishanlongwang` 一个不重）、`name` 不允许为空、`gender` 没填的时候自动就是"男"——表里的数据就是这些约束在长期把关的结果*
 
 ### 五类约束逐条看

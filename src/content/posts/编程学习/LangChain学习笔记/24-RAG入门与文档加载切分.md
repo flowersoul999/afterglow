@@ -27,23 +27,23 @@ order: 24
 
 **RAG（Retrieval-Augmented Generation，检索增强生成）** 是一种结合**信息检索**与**文本生成**的技术，目的是提升大语言模型回答专业问题时的**准确性和可靠性**。
 
-![](assets/24-RAG入门与文档加载切分/ch10-p002-rag检索流程六步.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch10-p002-rag检索流程六步.jpg)
 *图：RAG 的检索流程（官方）——①用户提问 ②检索知识库 ③返回相关内容 ④用户问题+参考资料一起送给模型 ⑤模型回答 ⑥结果返回用户*
 
 > 打个比方：如果说 LangChain 相当于给 LLM 这个"大脑"安装"四肢和躯干"，那么 **RAG 就是为 LLM 提供了接入"人类知识图书馆"的能力**。
 
-![](assets/24-RAG入门与文档加载切分/ch10-p002-rag完整全链路图.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch10-p002-rag完整全链路图.jpg)
 *图：RAG 的完整链路——非结构化数据加载 → 文本切分 → 嵌入模型转成向量 → 向量数据库存储索引 → 相似度搜索 → 拼进提示词模板 → LLM 生成回答*
 
 目前已有非常多的产品几乎完全建立在 RAG 之上：**客服系统**、基于大模型的数据分析，以及成千上万的数据驱动聊天应用。
 
-![](assets/24-RAG入门与文档加载切分/ch10-p003-智能客服助手截图.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch10-p003-智能客服助手截图.jpg)
 *图：RAG 项目举例——智能客服助手（医疗版"硅谷小智"），能回答医院院区位置、门诊时间，甚至直接完成挂号预约；被问到"你会 java 吗"时它明确说自己只解决就医问题*
 
-![](assets/24-RAG入门与文档加载切分/ch10-p003-完整rag系统架构图.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch10-p003-完整rag系统架构图.jpg)
 *图：RAG 项目举例——一套完整的企业级 RAG 系统架构，覆盖数据准备（语料处理、切片、多路召回）、检索、本地部署与评估四个阶段*
 
-![](assets/24-RAG入门与文档加载切分/ch10-p003-linkai平台rag架构.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch10-p003-linkai平台rag架构.jpg)
 *图：RAG 项目举例——LinkAI 平台的 RAG 架构：文档导入 → 知识库检索（意图识别、查询改写）→ 答案生成（检索结果重排后进模型上下文）→ 结果评估*
 
 | RAG 的优点 | RAG 的缺点 |
@@ -58,7 +58,7 @@ order: 24
 Source（数据源） → Load（加载） → Transform（转换，含切分） → Embed（嵌入） → Store（存储） → Retrieve（检索） → 生成回答
 ```
 
-![](assets/24-RAG入门与文档加载切分/ch10-p002-langchain官方简化流程.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch10-p002-langchain官方简化流程.jpg)
 *图：LangChain 官方给出的 RAG 简化流程——Sources → Document Loaders → Documents → Split into chunks / Query embedding → Vector Store → Retriever → LLM uses retrieved info → Answer*
 
 | 环节 | 说明 |
@@ -71,7 +71,7 @@ Source（数据源） → Load（加载） → Transform（转换，含切分）
 | **5. Store（存储）** | 把嵌入存进**向量数据库**或缓存，避免重复计算 |
 | **6. Retrieve（检索）** | **检索器**响应非结构化查询、返回符合条件的文档；通过配置不同检索器平衡精度、召回率与效率 |
 
-![](assets/24-RAG入门与文档加载切分/ch10-p004-rag六环节总览图.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch10-p004-rag六环节总览图.jpg)
 *图：RAG 工作流程总览——Source → Load → Transform → Embed → Store → Retrieve，每个环节的数据形态（原始数据、Document、Text Chunk、向量）都不同*
 
 > [!IMPORTANT]
@@ -92,7 +92,7 @@ pip check                                # 检查依赖冲突，正常输出 No 
 
 **Document 对象**是加载的产物，它有两部分：**`page_content`（文档内容）+ `metadata`（元数据）**。
 
-![](assets/24-RAG入门与文档加载切分/ch10-p005-数据源与加载格式.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch10-p005-数据源与加载格式.jpg)
 *图：Source → Load：典型数据格式有 CSV、HTML、JSON、Markdown、PDF、File Directory，典型数据源有 ArXiv、BiliBili、Discord、Figma、GitHub、Reddit、TensorFlow Datasets——加载器就是把这些统一变成 Document*
 
 ```python

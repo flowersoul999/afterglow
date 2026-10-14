@@ -34,14 +34,14 @@ PPT 第 39 页（第 41 页的问答又重复了一遍）给了三条规则，�
 
 ### 规则一：同包同名
 
-![XML与接口同包同名](assets/55-MyBatis-XML映射配置/39-XML与接口同包同名.jpg)
+![XML与接口同包同名](https://img.tsh520.cn/file/blog/article/39-XML与接口同包同名.jpg)
 *图：课程工程的目录结构——接口在 `src/main/java/com/itheima/mapper/UserMapper.java`，XML 在 `src/main/resources/com/itheima/mapper/UserMapper.xml`（在 resources 下把包路径一级一级建出来），两者"包名 + 文件名"完全对应，这就是"同包同名"*
 
 这里有个初学时容易卡住的细节：**接口在 `java` 目录、XML 在 `resources` 目录，为什么算"同包"？** 因为 Java 代码编译后 class 文件在 `classpath:/com/itheima/mapper/` 下，而 `resources` 里的东西是**原样复制**到 `classpath` 根的——所以在 `resources` 下建出 `com/itheima/mapper/` 这串目录、把 `UserMapper.xml` 放进去，编译之后它在 classpath 里的位置正好和 `com.itheima.mapper.UserMapper` 这个接口"同包同名"。这样 MyBatis 拿着接口名就能**默认找到**同名 XML，**不用写任何配置**。
 
 接口这边长这样（去掉 SQL，只剩方法签名）：
 
-![Mapper接口代码](assets/55-MyBatis-XML映射配置/39-Mapper接口代码.jpg)
+![Mapper接口代码](https://img.tsh520.cn/file/blog/article/39-Mapper接口代码.jpg)
 *图：Mapper 接口的写法——类上是 `@Mapper`，方法只剩一句 `public List<User> findAll();`，SQL 不在接口上了*
 
 课程工程里 `findAll` 的注解就是被注释掉、SQL 交给 XML 的（源码原样）：
@@ -89,10 +89,10 @@ XML 那份文件的内容（课程 `UserMapper.xml` 全文）：
 
 PPT 第 39 页还给了一份**错误的对照**，用来把三条规则钉死：
 
-![XML映射文件正确写法](assets/55-MyBatis-XML映射配置/39-XML映射文件正确写法.jpg)
+![XML映射文件正确写法](https://img.tsh520.cn/file/blog/article/39-XML映射文件正确写法.jpg)
 *图：正确写法——`namespace` 是接口全限定名 `com.itheima.mapper.UserMapper`，语句 `id` 是接口方法名 `findAll`*
 
-![XML映射文件错误示例](assets/55-MyBatis-XML映射配置/39-XML映射文件错误示例.jpg)
+![XML映射文件错误示例](https://img.tsh520.cn/file/blog/article/39-XML映射文件错误示例.jpg)
 *图：错误写法——`namespace="itheima"`（不是接口全限定名）、`id="abc"`（不是方法名），这样 MyBatis 根本找不到"这个方法该执行哪条 SQL"，项目启动时就会报错*
 
 ### 本机实测：SQL 走 XML 之后
@@ -139,7 +139,7 @@ PPT 还给了官方说明的地址（MyBatis 中文文档「入门」页）：<h
 
 默认规则要求"同包同名"，但项目里也常见**把 XML 统一放在 `resources/mapper/` 目录**下的做法（本机的课程工程就是）：
 
-![XML放到mapper目录](assets/55-MyBatis-XML映射配置/42-XML放到mapper目录.jpg)
+![XML放到mapper目录](https://img.tsh520.cn/file/blog/article/42-XML放到mapper目录.jpg)
 *图：课程工程 `springboot-mybatis-quickstart` 的目录——XML 放在 `src/main/resources/mapper/UserMapper.xml`，**并没有**按"同包同名"放在 `resources/com/itheima/mapper/` 下*
 
 这样一来 MyBatis 默认就找不到了，得在配置文件里告诉它去哪儿找：
@@ -194,7 +194,7 @@ XML 和接口分在两个文件里，来回跳转很烦，PPT 第 42 页推荐�
 
 > **MybatisX** 是一款基于 IDEA 的快速开发 Mybatis 的插件，为效率而生。
 
-![IDEA安装MybatisX插件](assets/55-MyBatis-XML映射配置/42-IDEA安装MybatisX插件.jpg)
+![IDEA安装MybatisX插件](https://img.tsh520.cn/file/blog/article/42-IDEA安装MybatisX插件.jpg)
 *图：IDEA 的 Settings → Plugins 里搜索 `mybatisx`，点击 Install 安装（装完重启 IDEA 生效）*
 
 装上它以后最大的好处是：**Mapper 接口和 XML 之间可以互相跳转**——点接口方法能跳到 XML 里对应的语句，点 XML 里的语句也能跳回接口方法（插件功能列表里的 "mapper and xml can jump back and forth"）。配合下面这些提示功能，写 XML 时不容易把方法名/参数写错：

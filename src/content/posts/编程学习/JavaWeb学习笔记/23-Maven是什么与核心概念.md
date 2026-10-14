@@ -40,7 +40,7 @@ PPT 上的定义分两句，第一句最好记：
 
 Maven 到底有多主流？PPT 用一张统计图说明问题——**Java 项目构建工具的使用率里 Maven 占了 64%**，是绝对主流：
 
-![Maven使用率统计](assets/23-Maven是什么与核心概念/13-Maven使用率统计.jpg)
+![Maven使用率统计](https://img.tsh520.cn/file/blog/article/13-Maven使用率统计.jpg)
 *图：构建工具使用率统计（PPT 第 13 页）——Maven 64%、Gradle 25%、Ant 6%、SBT 2%、None 2%、Other 1%，所以这门课教的是 Maven*
 
 ## Maven 的三大作用
@@ -72,7 +72,7 @@ PPT 反复用同一页（第 5、7、10、12 页各有一次）把 Maven 的作�
 
 写完之后点一下刷新，Maven 就会把 jar 包下载到**本地仓库**并挂到项目上（这一篇后面讲仓库，具体下载机制在"依赖管理"那一篇）。PPT 第 6 页配的图正是"**项目里那些第三方的 jar 包**"：
 
-![依赖管理的jar包](assets/23-Maven是什么与核心概念/06-依赖管理的jar包.jpg)
+![依赖管理的jar包](https://img.tsh520.cn/file/blog/article/06-依赖管理的jar包.jpg)
 *图：PPT 第 6 页讲"依赖管理"时配的项目结构——项目里除了 src 之外还有专门放 jar 包的 lib 目录（老做法是手动往里拷 jar）；Maven 要接管的就是这些"别人写好的资源"*
 
 ### 作用二：项目构建
@@ -98,10 +98,10 @@ PPT 特意加了两个修饰词，这才是 Maven 的价值所在：
 
 PPT 第 11 页把三种 IDE 摆在一起做对比：**Eclipse、MyEclipse、IntelliJ IDEA** 各有一套目录习惯，同样一个 Java 项目，换个工具打开目录长得完全不一样：
 
-![Eclipse项目结构](assets/23-Maven是什么与核心概念/11-Eclipse项目结构.jpg)
+![Eclipse项目结构](https://img.tsh520.cn/file/blog/article/11-Eclipse项目结构.jpg)
 *图：Eclipse 里的项目（PPT 第 11 页）——左边是 IDE 视图（`src` 下挂着包和类），右边是磁盘上的真实目录，多出 `bin`、`.settings`、`.classpath`、`.project` 这些 Eclipse 自己的东西*
 
-![IDEA项目结构](assets/23-Maven是什么与核心概念/11-IDEA项目结构.jpg)
+![IDEA项目结构](https://img.tsh520.cn/file/blog/article/11-IDEA项目结构.jpg)
 *图：IntelliJ IDEA 里的同一个项目（PPT 第 11 页）——磁盘上就只有 `src` 和一个 `demo02.iml`，和 Eclipse 那套完全对不上*
 
 Maven 的做法是**定一套标准结构，谁都按这个来**（这也是课程代码工程 `maven-project01` 的样子）：
@@ -126,7 +126,7 @@ Maven 的做法是**定一套标准结构，谁都按这个来**（这也是课�
 
 PPT 第 19 页把前面这些概念画成了一张图（**pom.xml → 项目对象模型 / 依赖管理模型 → 构建生命周期与阶段 → 插件 → 仓库**），这是这一章最该记住的一张：
 
-![Maven核心概念图](assets/23-Maven是什么与核心概念/19-Maven核心概念图.jpg)
+![Maven核心概念图](https://img.tsh520.cn/file/blog/article/19-Maven核心概念图.jpg)
 *图：Maven 的核心概念图（PPT 第 19 页；原页是 PPT 里用图形拼的矢量图，这里按原样导成图片）——左边 `pom.xml` 是入口，蓝色框里装着 POM、依赖管理模型、构建生命周期/阶段和五个"插件"，右上是仓库，最下面一排是这些插件作用到的东西（源文件与 jar 包）*
 
 按从左到右的顺序，五个概念各说一句话：
@@ -141,7 +141,7 @@ PPT 第 19 页把前面这些概念画成了一张图（**pom.xml → 项目对�
 
 "阶段"和"插件"的关系，在真实的 IDEA Maven 面板里一眼就能看出来——左边是**阶段**（Lifecycle），右边那串是**插件**（Plugins），点阶段其实就是在调插件：
 
-![生命周期阶段与插件面板](assets/23-Maven是什么与核心概念/47-生命周期阶段与插件面板.jpg)
+![生命周期阶段与插件面板](https://img.tsh520.cn/file/blog/article/47-生命周期阶段与插件面板.jpg)
 *图：IDEA 右侧 Maven 面板（PPT 第 47 页）——Lifecycle 里列的是 `clean`、`validate`、`compile`、`test`、`package`、`verify`、`install`、`site`、`deploy` 这些阶段；Plugins 里列的是 `clean`、`compiler`、`deploy`、`install`、`jar`、`resources`、`site`、`surefire` 这些插件，括号里是插件的坐标和版本*
 
 > [!NOTE]
@@ -151,7 +151,7 @@ PPT 第 19 页把前面这些概念画成了一张图（**pom.xml → 项目对�
 
 PPT 第 20 页在概念图旁边专门画了仓库这一块：
 
-![Maven三类仓库图](assets/23-Maven是什么与核心概念/20-Maven三类仓库图.jpg)
+![Maven三类仓库图](https://img.tsh520.cn/file/blog/article/20-Maven三类仓库图.jpg)
 *图：Maven 的仓库体系（PPT 第 20 页）——左边是 pom.xml 和它驱动的构建过程（生命周期/阶段 + 插件），右边是三类仓库：本地仓库、中央仓库、远程仓库（私服），它们之间由箭头连起来表示依赖从哪儿取*
 
 **仓库：用于存储资源，管理各种 jar 包。** 一共三类：

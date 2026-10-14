@@ -32,7 +32,7 @@ PPT 第 2 页把"java 程序操作数据库"能用到的技术一次列全了，
 
 PPT 第 3 页把范围收窄成三个：**JDBC、MyBatis、MyBatisPlus**——这门课从最低层的 JDBC 讲起，把基本功打牢，再上 MyBatis。
 
-![持久层框架使用占比](assets/49-JDBC入门/02-持久层框架使用占比.jpg)
+![持久层框架使用占比](https://img.tsh520.cn/file/blog/article/02-持久层框架使用占比.jpg)
 *图：PPT 第 2 页配的占比图——MyBatis 占 46%、MyBatis-Plus 占 24.2%、Spring Data JPA 占 11.7%、Hibernate 占 7.3%，"未使用"只有 4.8%。这门课挑的正是占比最高的两个（JDBC 是它们共同的地基——MyBatis 底层同样是走 JDBC 这套 API 访问数据库），所以图里没有把它单列出来*
 
 PPT 第 2 页给的 **JDBC 定义**（原文）：
@@ -109,7 +109,7 @@ PPT 第 7 页给的需求一句话：
 </dependency>
 ```
 
-![MySQL驱动依赖片段](assets/49-JDBC入门/06-MySQL驱动依赖片段.jpg)
+![MySQL驱动依赖片段](https://img.tsh520.cn/file/blog/article/06-MySQL驱动依赖片段.jpg)
 *图：PPT 里给出的这段依赖（就是上面这三行）——`com.mysql` 是组织名、`mysql-connector-j` 是 MySQL 官方驱动的名字、`8.0.33` 是版本。写进 pom 之后，Maven 会把它从中央仓库下载下来，JDBC 程序连的"那个实现"才在 classpath 上*
 
 三个坐标的含义：
@@ -207,7 +207,7 @@ public class JdbcTest {
 }
 ```
 
-![JDBC五步代码](assets/49-JDBC入门/08-JDBC五步代码.jpg)
+![JDBC五步代码](https://img.tsh520.cn/file/blog/article/08-JDBC五步代码.jpg)
 *图：PPT 第 8 页配的这段代码截图。行号右边的 `className:`、`sql:` 是 IDEA 的参数名提示，不是代码的一部分；截图里那行 `System.out.println` 就是用来把"影响了几行"打印到控制台的那一行（课程代码里写的是"SQL执行完毕影响的记录数为: "）*
 
 五步一句一步，先抄下来：

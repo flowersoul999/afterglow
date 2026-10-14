@@ -66,7 +66,7 @@ spring-boot-starter-parent（SpringBoot 官方的父工程，管 SpringBoot 全�
 
 课件里的工程结构截图就是这个样子的（父工程和各子模块并列在一个 IDEA 工程里）：
 
-![tlias 多模块工程结构](assets/92-Maven继承与聚合/15-tlias多模块工程结构.jpg)
+![tlias 多模块工程结构](https://img.tsh520.cn/file/blog/article/15-tlias多模块工程结构.jpg)
 *图：PPT 第 15 页——IDEA 里的 tlias 多模块结构：`tlias-parent` 与各子模块并列；图中除了本篇用到的 `tlias-pojo`、`tlias-utils`、`tlias-web-management`，还有课程后面继续拆出来的 `tlias-web-system`、`tlias-web-report`，它们同样是"认"`tlias-parent` 当父工程*
 
 链子中间那层 `tlias-parent` 很关键：它**自己也是别人的子工程**（继承 `spring-boot-starter-parent`），同时又是三个业务模块的父工程 —— 这就是 Maven 的"继承链"。
@@ -106,7 +106,7 @@ spring-boot-starter-parent（SpringBoot 官方的父工程，管 SpringBoot 全�
 2. **父工程自己也要继承 `spring-boot-starter-parent`** —— SpringBoot 那一堆依赖的版本、编译插件配置都在它里面，继承过来就相当于"白拿一份官方版本清单"；
 3. **`<relativePath/>` 写空** —— 意思是"别去上级目录找，直接去仓库里拿"，因为 `spring-boot-starter-parent` 是下载到本地仓库的第三方构件，不是我们工程目录里的模块。
 
-![父工程 pom 片段](assets/92-Maven继承与聚合/15-父工程pom片段.jpg)
+![父工程 pom 片段](https://img.tsh520.cn/file/blog/article/15-父工程pom片段.jpg)
 *图：PPT 第 15 页——父工程 pom 的写法：上半段是 `<parent>`（继承 `spring-boot-starter-parent`、`<relativePath/>` 写空），下半段是父工程自己的坐标与 `<packaging>pom</packaging>`*
 
 > [!WARNING]
@@ -131,7 +131,7 @@ spring-boot-starter-parent（SpringBoot 官方的父工程，管 SpringBoot 全�
 
 注意这段配置里**没有 `groupId`** —— 因为子工程配置了继承关系之后，**坐标中的 groupId 是可以省略的**，会自动继承父工程的（`com.itheima`）。PPT 第 15 页的那张截图专门把子工程 pom 里被"继承"影响的位置高亮了出来：
 
-![子工程 pom 片段](assets/92-Maven继承与聚合/15-子工程pom片段.jpg)
+![子工程 pom 片段](https://img.tsh520.cn/file/blog/article/15-子工程pom片段.jpg)
 *图：PPT 第 15 页——子工程 pom：`<parent>` 里的三项坐标 + `<relativePath>` 指到父工程的 pom.xml；下半段子工程自己的坐标里，`groupId` 是可以省掉的（图中做了强调）*
 
 ### 3.3 ③ 在父工程中配置各个工程共有的依赖

@@ -26,7 +26,7 @@ PPT 第 29 页把"获取"的原理说得非常直白：
 2. **Tomcat 负责解析它**，把请求行、请求头、请求体里的内容整理成一个 Java 对象——`HttpServletRequest`（**请求对象**）；
 3. 调用 Controller 方法的时候，服务器把这个对象**直接作为方法参数传进来**。所以方法里只要写上这个参数，就能随便取数据，**一行协议解析代码都不用写**。
 
-![原始HTTP请求报文](assets/33-SpringBoot获取请求数据/29-原始HTTP请求报文.jpg)
+![原始HTTP请求报文](https://img.tsh520.cn/file/blog/article/29-原始HTTP请求报文.jpg)
 *图：PPT 第 29 页配的原始请求报文——第一行是请求行（`GET /brand/findAll?name=OPPO&status=1 HTTP/1.1`），第二行起是请求头（`Accept`、`Accept-Encoding`、`Accept-Language`、`Host: localhost:8080`、`User-Agent: Mozilla/5.0 … Chrome/…`）。这一整段就是 Tomcat 要解析的对象，本篇六个方法不过是各取其中一段：`getRequestURI()` 取 `/brand/findAll`、`getQueryString()` 取 `name=OPPO&status=1`、`getHeader("Host")` 取 `localhost:8080`、`getHeader("User-Agent")` 取最后那一长串。注意这段报文里没有 `Content-Type`、`Content-Length`、`Cookie`——因为它是 GET 请求，压根没有请求体*
 
 > [!TIP]

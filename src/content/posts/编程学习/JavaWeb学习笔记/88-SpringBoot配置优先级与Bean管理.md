@@ -103,7 +103,7 @@ aliyun:
 | Java 系统属性 | `-Dserver.port=9000` | Run/Debug Configurations 的 **VM options** |
 | 命令行参数 | `--server.port=10010` | Run/Debug Configurations 的 **Program arguments** |
 
-![IDEA 里的运行配置](assets/88-SpringBoot配置优先级与Bean管理/05-IDEA运行配置系统属性与命令行参数.jpg)
+![IDEA 里的运行配置](https://img.tsh520.cn/file/blog/article/05-IDEA运行配置系统属性与命令行参数.jpg)
 *图：IDEA 的 Run/Debug Configurations 窗口——VM options 里写着 `-Dserver.port=9000`，Program arguments 里写着 `--server.port=10010`，两个输入框正好对应两种外置配置方式*
 
 两种写法的形状不一样，记的时候别混：**Java 系统属性是 `-D` 开头、等号连接**（`-Dserver.port=9000`），**命令行参数是 `--` 开头**（`--server.port=10010`）。前者是 JVM 层面的属性，后者是给应用传的参数（就是我们一直在 `main` 方法里看到的那个 `String[] args`——[57 篇](/posts/编程学习/javaweb学习笔记/57-tlias项目准备与开发规范/)里 `SpringApplication.run(..., args)` 的那个 `args`）。

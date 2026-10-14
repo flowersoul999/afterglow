@@ -57,7 +57,7 @@ https://docs.spring.io/spring-boot/docs/3.1.3/reference/htmlsingle/#using.build-
 
 在 IDEA 的 Maven 面板里展开 `Dependencies` 就能看到（PPT 第 16 页的截图）：
 
-![起步依赖依赖树](assets/31-SpringBoot工程剖析/16-起步依赖依赖树.jpg)
+![起步依赖依赖树](https://img.tsh520.cn/file/blog/article/16-起步依赖依赖树.jpg)
 *图：PPT 第 16 页——IDEA 里 `spring-boot-starter-web` 下面挂着一串依赖：`spring-boot-starter`、`spring-boot-starter-json`、`spring-boot-starter-tomcat`（里面是 `tomcat-embed-core` 10.1.12 等）、`spring-web`、`spring-webmvc`，最下面是 `spring-boot-starter-test`，后面标着 `(test)`*
 
 更完整的清单可以命令行打出来（`mvn dependency:tree`）。本机实测：
@@ -103,7 +103,7 @@ PPT 第 17 页只写了两个词：**内嵌 Tomcat** / **运行**。把上一节
 
 上一节证明"Tomcat 在依赖里"，这一节证明"Tomcat 真的被启起来了"。本机启动工程的真实日志：
 
-![启动日志](assets/31-SpringBoot工程剖析/17-启动日志.jpg)
+![启动日志](https://img.tsh520.cn/file/blog/article/17-启动日志.jpg)
 *图：PPT 第 17 页——运行启动类后控制台的输出：先打印 Spring Boot 的 banner（`:: Spring Boot :: (v3.1.3)`），然后是启动过程日志，中间几行是 `Tomcat initialized with port(s): 8080 (http)`、`Starting service [Tomcat]`、`Starting Servlet engine: [Apache Tomcat/10.1.12]`、`Tomcat started on port(s): 8080 (http) with context path ''`，最后一行是 `Started SpringbootWebQuickstartApplication in 1.72 seconds`*
 
 > [!TIP]
@@ -160,7 +160,7 @@ PPT 第 17 页只写了两个词：**内嵌 Tomcat** / **运行**。把上一节
 
 上一篇建的工程在 IDEA 里展开是这样：
 
-![工程目录结构](assets/31-SpringBoot工程剖析/16-工程目录结构.jpg)
+![工程目录结构](https://img.tsh520.cn/file/blog/article/16-工程目录结构.jpg)
 *图：PPT 第 16、17 页——`springboot_web_quickstart` 工程的结构：`src/main/java/com/itheima` 下是 `HelloController` 和 `SpringbootWebQuickstartApplication`（启动类），`src/main/resources` 与 `src/test` 两个目录，最外层是 `pom.xml`*
 
 | 位置 | 放什么 | 说明 |

@@ -102,7 +102,7 @@ PPT 第 66 页：
 2. 启动类上那个 `@SpringBootApplication` 是个"组合注解"，它的内部**已经包含了 `@ComponentScan`**，所以我们从来没写过它、却发现 `@Component` 好使；
 3. 扫描范围是**启动类所在包及其子包**——所以三层所在的 `com.itheima.controller`、`com.itheima.service`、`com.itheima.dao` 必须待在启动类包（`com.itheima`）**里面**。
 
-![启动类与子包目录结构](assets/39-IOC与DI详解/66-启动类与子包目录结构.jpg)
+![启动类与子包目录结构](https://img.tsh520.cn/file/blog/article/66-启动类与子包目录结构.jpg)
 *图：PPT 第 66 页用来说明扫描范围的工程结构——启动类 `TliasManagementApplication` 就在 `src/main/java/com/itheima/` 下，`controller`、`dao`、`pojo`、`service` 四个包都是它的**子包**；"启动类所在包及其子包"里所有的 `@Component/@Controller/@Service/@Repository` 类才会被扫到、创建成 bean*
 
 启动类本身（课程代码，注释直接写在注解后面）：
@@ -246,7 +246,7 @@ PPT 第 70 页先给结论，再摆现场：
 
 > **`@Autowired` 注解，默认是按照类型进行注入的。如果存在多个相同类型的 bean，将会报出如下错误：**
 
-![同类型Bean冲突报错](assets/39-IOC与DI详解/70-同类型Bean冲突报错.jpg)
+![同类型Bean冲突报错](https://img.tsh520.cn/file/blog/article/70-同类型Bean冲突报错.jpg)
 *图：PPT 第 70 页贴出来的真实报错——`Field userService in com.itheima.controller.UserController required a single bean, but 2 were found`，下面列出两个候选 bean（`userServiceImpl`、`userServiceImpl2`）以及它们各自的 class 文件路径，最后给出 Action 建议：把其中一个标成 `@Primary`、改成接受多个 bean、或用 `@Qualifier` 指明要哪一个*
 
 ### 实测：本机把两个同类型 bean 摆在一起，启动直接失败

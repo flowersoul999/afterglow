@@ -35,7 +35,7 @@ PPT 第 4 页先描述了一个所有项目都会遇到的局面：一个**商�
 
 本机的实验工程正好可以作为"拆分之前"的样子 —— 这是一份完整的 Tlias 工程，所有代码都在一个模块 `tlias-web-management` 里（本机数了一下：主程序 `src/main/java` 下 **38 个 java 文件**，测试程序下还有 6 个）：
 
-![分模块之前 tlias 单工程结构](assets/91-Maven分模块设计与开发/07-tlias单工程源码结构.jpg)
+![分模块之前 tlias 单工程结构](https://img.tsh520.cn/file/blog/article/07-tlias单工程源码结构.jpg)
 *图：PPT 第 7 页——拆分之前的 tlias 工程：实体类（`pojo`）、工具类（`utils`）和 `controller`、`service`、`mapper`、`anno`、`aop`、`config`、`exception`、`filter`、`interceptor` 全部平级挂在同一个模块的 `com.itheima` 包下，应用启动类就在最外层*
 
 于是 PPT 第 5 页给出解法：**把大项目拆分成若干个子模块，再多加一个"通用组件"模块装公共代码**；这一页的定义后面总结页还会再问一遍，先记住它：
@@ -107,7 +107,7 @@ PPT 第 8 页把实战任务说得很短，就两句话：
 
 **第 1 步：新建一个空的 Maven 模块。** 在 IDEA 里 `File → New → Module`（或右键工程 → `New → Module`），选 Maven、起名 `tlias-pojo`。刚建好时它里面只有一个 `pom.xml`，结构还是标准的 Maven 三件套：
 
-![Maven 模块的目录结构](assets/91-Maven分模块设计与开发/07-模块目录结构.jpg)
+![Maven 模块的目录结构](https://img.tsh520.cn/file/blog/article/07-模块目录结构.jpg)
 *图：PPT 第 7 页——一个 Maven 模块的内部结构：一个 `pom.xml` + `src/main`、`src/test` 两个源码目录；"分模块"只是把代码分散到多个这样的小工程里，每个模块本身仍然是标准的 Maven 结构*
 
 **第 2 步：把实体类搬进 tlias-pojo。** 本机实验工程里，搬过去的是 **13 个实体类**：`Emp`、`Dept`、`Student`、`Clazz`、`ClazzCountOption`、`EmpExpr`、`EmpLog`、`EmpQueryParam`、`JobOption`、`LoginInfo`、`OperateLog`、`PageResult`、`Result`。（`JobOption`、`EmpQueryParam` 这种"查询参数、下拉选项"类也跟着实体走。）

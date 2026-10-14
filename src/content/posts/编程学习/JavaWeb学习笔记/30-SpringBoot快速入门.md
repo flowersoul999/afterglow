@@ -76,7 +76,7 @@ PPT 第 6、7 页给了一段相同的说明：
 | **Spring Cloud** | 分布式系统常用模式的工具集，用于**构建和部署微服务** |
 | **Spring Security** | 认证与授权，保护你的应用 |
 
-![SpringBoot官方介绍](assets/30-SpringBoot快速入门/09-SpringBoot官方介绍.jpg)
+![SpringBoot官方介绍](https://img.tsh520.cn/file/blog/article/09-SpringBoot官方介绍.jpg)
 *图：PPT 第 9 页——spring.io 上 Spring Boot 项目的官方卡片，一句话概括了它存在的理由（快速构建 Spring 应用并尽快跑起来）*
 
 ### 为什么还需要 SpringBoot（PPT 第 8-9 页）
@@ -158,12 +158,12 @@ PPT 第 13 页的"步骤总结"多补了第 3 条：**运行启动类，测试**
 
 IDEA 里 `New Module` → 左边选 **Spring Initializr**（PPT 第 12 页截图里的样子）：
 
-![创建SpringBoot工程](assets/30-SpringBoot快速入门/12-创建SpringBoot工程.jpg)
+![创建SpringBoot工程](https://img.tsh520.cn/file/blog/article/12-创建SpringBoot工程.jpg)
 *图：PPT 第 12 页——New Module 的 Spring Initializr 页面。Server URL 默认是 `start.spring.io`，Type 选 Maven、Language 选 Java、JDK 选 17、Packaging 选 Jar，填好 Name、Group（`com.itheima`）、Artifact 后点 Next*
 
 到下一页的 Dependencies 里，把 **Web → Spring Web** 勾上（右侧 Added dependencies 里会出现 Spring Web）：
 
-![勾选SpringWeb依赖](assets/30-SpringBoot快速入门/12-勾选SpringWeb依赖.jpg)
+![勾选SpringWeb依赖](https://img.tsh520.cn/file/blog/article/12-勾选SpringWeb依赖.jpg)
 *图：PPT 第 12 页——勾选 Spring Web 依赖。右侧的说明写着"Build web, including RESTful, applications using Spring MVC. Uses Apache Tomcat as the default embedded container"，这一句话已经预告了下一篇的主角（Spring MVC + 内嵌 Tomcat）*
 
 点 Create 之后，IDEA 会生成工程并开始联网下载依赖。生成的工程里自带的 `pom.xml`、启动类、配置文件长什么样，下一篇 [31 篇](/posts/编程学习/javaweb学习笔记/31-springboot工程剖析/)逐个拆。
@@ -240,14 +240,14 @@ Started SpringbootWebQuickstartApplication in 1.803 seconds
 
 PPT 第 14 页专门讲了创建工程时最常见的坑。现象是：Name、Group 都填好了，一点 Next 就弹错误框——
 
-![官方脚手架连接超时](assets/30-SpringBoot快速入门/14-官方脚手架连接超时.jpg)
+![官方脚手架连接超时](https://img.tsh520.cn/file/blog/article/14-官方脚手架连接超时.jpg)
 *图：PPT 第 14 页——创建工程时报 `Initialization failed for 'https://start.spring.io'`，错误详情是 `Cannot download 'https://start.spring.io': Connect timed out`*
 
 原因很简单：**默认的脚手架服务器 `start.spring.io` 在国外**，本地网络连不上（不是 IDEA 坏了，也不是你填错了）。
 
 PPT 第 14 页给的解决方案是**换一个国内能连通的脚手架**：在 New Module 页面点 Server URL 后面的编辑按钮，把地址改成阿里的 **`https://start.aliyun.com`**：
 
-![改用阿里云脚手架](assets/30-SpringBoot快速入门/14-改用阿里云脚手架.jpg)
+![改用阿里云脚手架](https://img.tsh520.cn/file/blog/article/14-改用阿里云脚手架.jpg)
 *图：PPT 第 14 页——弹出 Spring Initializr Server URL 对话框，把 Server URL 改成 `https://start.aliyun.com`，确定后继续 Next 即可正常创建*
 
 > [!WARNING]

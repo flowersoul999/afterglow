@@ -30,7 +30,7 @@ PPT 第 40 页给出定义：
 
 PPT 第 40、41 页配的都是阿里云官网 OSS 产品页的截图，上面那两个数字最能说明"高可靠"是什么水平：
 
-![阿里云对象存储 OSS 产品页](assets/73-阿里云OSS与参数配置化/40-阿里云对象存储产品页.jpg)
+![阿里云对象存储 OSS 产品页](https://img.tsh520.cn/file/blog/article/40-阿里云对象存储产品页.jpg)
 *图：阿里云官网的"对象存储 OSS"产品页——99.9999999999%（12 个 9）的数据持久性、99.995% 的数据可用性，页面右上角是"管理控制台"入口*
 
 拿上一节那三个问题对照一下，OSS 是怎么解决的：
@@ -295,7 +295,7 @@ public class UploadController {
 
 集成完之后回头看工具类，那三个参数原本是这么写的：
 
-![参数写死在代码里](assets/73-阿里云OSS与参数配置化/48-参数写死在代码里.jpg)
+![参数写死在代码里](https://img.tsh520.cn/file/blog/article/48-参数写死在代码里.jpg)
 *图：PPT 第 48 页摆出的"入门程序版"工具类——`endpoint`、`bucketName`、`region` 三个参数直接写在 Java 代码里*
 
 PPT 第 48 页的问题是："**如果将这些参数信息，写在 java 代码中有什么问题？**"答案四个字：
@@ -334,7 +334,7 @@ aliyun:
 
 再在类里逐个注入：
 
-![用 @Value 逐个注入配置](assets/73-阿里云OSS与参数配置化/49-Value注解注入配置.jpg)
+![用 @Value 逐个注入配置](https://img.tsh520.cn/file/blog/article/49-Value注解注入配置.jpg)
 *图：PPT 第 49 页的 `AliyunOSSOperator`——每个字段上面贴一行 `@Value("${aliyun.oss.xxx}")`，一个属性一个属性地注入*
 
 ```java
@@ -358,7 +358,7 @@ PPT 第 50 页紧跟着就是批评：
 
 > 使用 `@Value` 注解注入配置文件的配置项，**如果配置项多，注入繁琐，不便于维护管理和复用**。
 
-![@Value 逐个注入的重复写法](assets/73-阿里云OSS与参数配置化/50-Value重复注入的写法.jpg)
+![@Value 逐个注入的重复写法](https://img.tsh520.cn/file/blog/article/50-Value重复注入的写法.jpg)
 *图：PPT 第 50 页配的图——同样的一段 `@Value` 注入在代码里出现了两遍，配置项一多，这种"一个字段一行注解"的写法既啰嗦、又到处重复*
 
 "繁琐"在哪、"不便复用"在哪，说具体点：
@@ -371,7 +371,7 @@ PPT 第 50 页紧跟着就是批评：
 
 PPT 第 51 页给出改进方案：**建一个"属性类"，把一组配置项一次性绑定到它身上**。
 
-![用 @ConfigurationProperties 批量绑定属性](assets/73-阿里云OSS与参数配置化/51-配置类批量绑定属性.jpg)
+![用 @ConfigurationProperties 批量绑定属性](https://img.tsh520.cn/file/blog/article/51-配置类批量绑定属性.jpg)
 *图：PPT 第 51 页的 `AliyunOSSProperties`——类上贴 `@ConfigurationProperties(prefix = "aliyun.oss")`，下面三个字段就是那三项配置，不用再一个字段一行 `@Value`*
 
 课程资料 `资料/05. 阿里云OSS/AliyunOSSProperties.java`：
@@ -399,7 +399,7 @@ public class AliyunOSSProperties {
 
 用的时候，谁需要这组参数就注入这个属性类：
 
-![注入配置类后取值使用](assets/73-阿里云OSS与参数配置化/51-注入配置类后取值使用.jpg)
+![注入配置类后取值使用](https://img.tsh520.cn/file/blog/article/51-注入配置类后取值使用.jpg)
 *图：PPT 第 51 页——`AliyunOSSOperator` 里 `@Autowired` 注入 `AliyunOSSProperties`，用的时候通过 `aliyunOSSProperties.getEndpoint()`、`getBucketName()` 取值*
 
 ```java

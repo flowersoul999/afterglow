@@ -229,7 +229,7 @@ agent = create_agent(
 )
 ```
 
-![](assets/16-Agent的结构化输出/ch07-p059-错误模板与重试.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p059-错误模板与重试.jpg)
 *图：`handle_errors=True` 时的真实消息流——模型一次发了两个结构化结果，系统回给它两条带内置错误模板的 ToolMessage（"Error: Model incorrectly returned multiple structured responses … Please fix your mistakes."），模型据此重试*
 
 这种情况下：
@@ -242,16 +242,16 @@ agent = create_agent(
 
 常见的两个异常类型：`MultipleStructuredOutputsError`（输出多个结构化结果）、`StructuredOutputValidationError`（结果不符合 Schema）。
 
-![](assets/16-Agent的结构化输出/ch07-p066-指定异常类型重试.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p066-指定异常类型重试.jpg)
 *图：`handle_errors=(MultipleStructuredOutputsError, StructuredOutputValidationError)` 时——异常被捕获（程序没中断），回给模型的仍是内置错误模板，模型重新推理*
 
-![](assets/16-Agent的结构化输出/ch07-p066-重试成功结果.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p066-重试成功结果.jpg)
 *图：重试成功后——ToolMessage 的 content 变成了自定义的"提取完成！"，`structured_response` 里正常拿到 `ContactInfo(name='张三', …)`*
 
 > [!WARNING]
 > 格式化输出出错时，Agent 内部会**反复重试**直到输出符合要求——可能要重试多次。这意味着**错误处理是有成本的**（额外的模型调用）。
 
-![](assets/16-Agent的结构化输出/ch07-p067-自定义错误打印.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p067-自定义错误打印.jpg)
 *图：`handle_errors=custom_error_handler` 时，自定义处理函数里打印出的异常类型与详情（这里捕获到的是 `MultipleStructuredOutputsError`）*
 
 ![](assets/16-Agent的结构化输出/ch07-p068-自定义错误提示回传.jpg)

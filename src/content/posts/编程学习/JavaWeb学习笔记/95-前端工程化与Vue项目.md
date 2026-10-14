@@ -53,7 +53,7 @@ PPT 第 4 页又把最开始的定义摆了一遍：
 ]
 ```
 
-![由数据渲染出的员工表格](assets/95-前端工程化与Vue项目/30-数据渲染出的员工表格.jpg)
+![由数据渲染出的员工表格](https://img.tsh520.cn/file/blog/article/30-数据渲染出的员工表格.jpg)
 *图：PPT 第 4 页用来解释 Vue 的那张表——"序号 / 姓名 / 头像 / 性别 / 职位"这些内容不是手写的 HTML，而是上面那份数据**渲染**出来的结果*
 
 ## Vue 是一个框架，也是一个生态（PPT 第 5 页）
@@ -150,7 +150,7 @@ PPT 第 12 页：
 
 去官网 https://nodejs.org/ 下载 **LTS（长期支持版）** 的安装包，一路下一步即可。
 
-![Node.js 官网下载页](assets/95-前端工程化与Vue项目/07-Node官网下载页.jpg)
+![Node.js 官网下载页](https://img.tsh520.cn/file/blog/article/07-Node官网下载页.jpg)
 *图：PPT 第 13 页的 nodejs.org 中文首页——绿色按钮就是下载 LTS 版；页面右边那段 `createServer` 示例代码说明了一件事：**NodeJS 让 JavaScript 能脱离浏览器运行**（所以它能当"前端构建工具的运行环境"）*
 
 课程的资料包里也自带了安装包（`资料\01. NodeJS\` 目录）。
@@ -192,7 +192,7 @@ npm create vue@3.3.4
 
 **本课程这几项全部选默认的 No**（第 5 页讲的 VueRouter、Pinia 属于"生态"，用到再装）。
 
-![创建 Vue 项目的交互式问答](assets/95-前端工程化与Vue项目/09-创建Vue项目交互式问答.jpg)
+![创建 Vue 项目的交互式问答](https://img.tsh520.cn/file/blog/article/09-创建Vue项目交互式问答.jpg)
 *图：PPT 第 16 页的命令行截图——`npm create vue@3.3.4` 会先提示要安装并执行 `create-vue`（Vue 官方的项目脚手架工具），然后逐个问你上面那八个问题；最后打印出 `Done. Now run:` 和三条后续命令（`cd vue-project1` / `npm install` / `npm run dev`），正好就是后面的三步*
 
 命令里的 `@3.3.4` 是**版本号**：`npm create 包名@版本` 的意思是"下载并执行这个包的脚手架"，锁版本是为了保证和课程演示的效果一致。
@@ -217,7 +217,7 @@ npm install          # 安装当前项目需要的所有依赖
 
 用 VS Code 打开这个项目（[04 篇](/posts/编程学习/javaweb学习笔记/04-前端开发工具-vscode/)装过），左边就是这张图的样子：
 
-![Vue 项目的目录结构](assets/95-前端工程化与Vue项目/12-Vue项目目录结构.jpg)
+![Vue 项目的目录结构](https://img.tsh520.cn/file/blog/article/12-Vue项目目录结构.jpg)
 *图：PPT 第 18 页的项目结构——`.vscode`、`node_modules`、`public`、`src` 四个文件夹加 6 个文件，最下面是 NPM 脚本面板（`dev` / `build` / `preview` 三条命令，`npm run dev` 就是点这里对应的那条）。这就是"规范化"落地后的样子：**每个位置放什么，是约定好的***
 
 PPT 逐条给了职责说明，加上工程里实际能看到的文件，一起整理成表：
@@ -270,7 +270,7 @@ npm run dev        # 启动开发服务器
 
 启动后命令行会打印访问地址，浏览器打开 **http://localhost:5173** 就能看到页面：
 
-![启动开发服务器](assets/95-前端工程化与Vue项目/11-启动开发服务器.jpg)
+![启动开发服务器](https://img.tsh520.cn/file/blog/article/11-启动开发服务器.jpg)
 *图：PPT 第 19 页的命令行截图——`npm run dev` 之后 Vite 报告 `ready in 372 ms`，并给出地址 `Local: http://localhost:5173/`。**端口 5173 是 Vite 的默认端口**，也就是访问项目要用的地址*
 
 本机实测（同一套命令）：

@@ -324,7 +324,7 @@ public User findByUsernameAndPassword(String uname, String pwd);
 
 顺着 PPT 第 33 页那条 `#` 与 `$` 的问答想一下：这里的 `username`、`password` 都是**参数值**，所以两个都用 `#{}`——如果用 `${}` 拼，登录接口就成了注入的靶子。
 
-![Mapper接口方法写法](assets/54-MyBatis增删改查/36-Mapper接口方法写法.jpg)
+![Mapper接口方法写法](https://img.tsh520.cn/file/blog/article/36-Mapper接口方法写法.jpg)
 *图：课程 `UserMapper` 接口的截图——删除方法用 `#{id}` 取参数、把返回值声明成 `Integer` 接住影响行数；新增方法接收整个 `User` 对象，SQL 里直接写 `#{属性名}`*
 
 ## 必答问答（PPT 第 33、37 页）

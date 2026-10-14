@@ -16,7 +16,7 @@ order: 9
 
 从这一篇开始做课程的第二个案例：**参照页面原型，完成员工管理页面制作**。页面整体分四个区域：
 
-![Tlias 员工管理页面原型](assets/09-Flex弹性布局/41-顶部导航栏原型.jpg)
+![Tlias 员工管理页面原型](https://img.tsh520.cn/file/blog/article/41-顶部导航栏原型.jpg)
 *图：页面原型上标出的第一个部分是顶部导航栏（灰底、左边标题、右边"退出登录"）*
 
 **页面原型：指在应用程序开发初期，由产品经理制作的一个早期项目模型**，它用于展示页面的基本布局、功能和交互设计。通常用来帮助设计师、开发者等更好地理解和讨论最终产品的外观和行为。
@@ -46,7 +46,7 @@ order: 9
 | **Flex Container** | 弹性容器：加了 `display: flex` 的**父元素** | `<div id="container">` |
 | **Flex item** | 弹性项目：容器里**直接被它包着的子元素** | 三个 `<div class="item">` |
 
-![flex 的主轴与交叉轴](assets/09-Flex弹性布局/42-flex主轴与交叉轴.jpg)
+![flex 的主轴与交叉轴](https://img.tsh520.cn/file/blog/article/42-flex主轴与交叉轴.jpg)
 *图：绿色的是 Flex Container，紫色的是 Flex item；`row` 箭头是主轴方向（水平向右），`column` 箭头是交叉轴方向（垂直向下）*
 
 ## flex 的三个属性
@@ -64,7 +64,7 @@ PPT 给了完整的属性表：
 | | `space-around` | **平分剩余空间** |
 | | `space-between` | **先两边贴边，再平分剩余空间** |
 
-![flex 属性表](assets/09-Flex弹性布局/42-flex属性表.jpg)
+![flex 属性表](https://img.tsh520.cn/file/blog/article/42-flex属性表.jpg)
 *图：PPT 原表——最左列是属性名，中间是取值，右边是含义*
 
 ### display: flex 与 flex-direction
@@ -146,7 +146,7 @@ PPT 给了完整的属性表：
 </body>
 ```
 
-![导航栏的 flex 代码](assets/09-Flex弹性布局/42-导航栏flex代码.jpg)
+![导航栏的 flex 代码](https://img.tsh520.cn/file/blog/article/42-导航栏flex代码.jpg)
 *图：PPT 上截的就是这段 `.navbar` 样式——`display: flex` 开启弹性布局、`justify-content: space-between` 一行分两端、`align-items: center` 垂直居中*
 
 代码里有五个点值得说清楚：

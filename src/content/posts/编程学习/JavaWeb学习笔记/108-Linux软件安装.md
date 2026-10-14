@@ -338,7 +338,7 @@ sbin/nginx               # 启动 nginx 服务（PPT 原文）
 
 启动成功后，nginx **默认监听 80 端口**，在 Windows 的浏览器里访问服务器的 IP，就能看到它的默认首页：
 
-![nginx 装好后的欢迎页](assets/108-Linux软件安装/62-nginx欢迎页.jpg)
+![nginx 装好后的欢迎页](https://img.tsh520.cn/file/blog/article/62-nginx欢迎页.jpg)
 *图：PPT 第 62 页配的验证截图——装完并启动 nginx 后，在浏览器里访问 Linux 服务器的 IP（`192.168.100.128`）看到「Welcome to nginx!」，说明这台机器上的 nginx 已经起来了、80 端口也通（这台机器就是 [106 篇](/posts/编程学习/javaweb学习笔记/106-linux概述与系统安装/)里装好的那台 CentOS 7 虚拟机）。这一页就是"安装成功"的判定标准——[109 篇](/posts/编程学习/javaweb学习笔记/109-项目部署到linux/)要把这个默认首页换成 Tlias 的前端页面*
 
 访问不通就按两条线索查：**nginx 起了没有**（`ps -ef | grep nginx`）、**80 端口放行了没有**（上一节的四步）。

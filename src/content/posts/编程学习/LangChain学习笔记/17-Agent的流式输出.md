@@ -81,7 +81,7 @@ for chunk in customer_service_agent.stream(QUESTION, stream_mode="values"):
     print("-" * 50)
 ```
 
-![](assets/17-Agent的流式输出/ch07-p070-values模式输出.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p070-values模式输出.jpg)
 *图：values 模式的输出——每一片都是"到目前为止的完整状态"，消息列表一片比一片长（`[HumanMessage]` → `[HumanMessage, AIMessage]` → … → 最后一条是最终回答）*
 
 适合**每一步都要完整状态**的场景（每片都是"到目前为止的全量状态"，消息列表会越来越长）。
@@ -94,7 +94,7 @@ for chunk in customer_service_agent.stream(QUESTION, stream_mode="updates"):
     print("-" * 50)
 ```
 
-![](assets/17-Agent的流式输出/ch07-p070-updates模式输出.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p070-updates模式输出.jpg)
 *图：updates 模式的输出——每一片只带 `model` 或 `tools` 这一个节点的增量（模型决定调工具 / 工具返回了什么），比 values 清爽得多*
 
 **不传 `stream_mode` 时就是它**。每片只包含这一步新增/变化的内容——想观察"Agent 决定调用哪个工具、工具返回了什么"，用这个最清爽。
@@ -107,7 +107,7 @@ for chunk in customer_service_agent.stream(QUESTION, stream_mode="messages"):
     print(chunk[0].content, end="", flush=True)
 ```
 
-![](assets/17-Agent的流式输出/ch07-p071-messages模式输出.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p071-messages模式输出.jpg)
 *图：messages 模式的输出——一片片 `AIMessageChunk`，`content` 就是"我""来""帮""您""查""询"这样一个字一个字冒出来的 token*
 
 > [!TIP]
@@ -128,12 +128,12 @@ for chunk in customer_service_agent.stream(QUESTION, stream_mode="tasks"):
     print("-" * 50)
 ```
 
-![](assets/17-Agent的流式输出/ch07-p071-tasks模式输出.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p071-tasks模式输出.jpg)
 *图：tasks 模式的输出——每个 task 都带 `id`、`name`（model / tools）、`input`、`error`、`result`，`model` 和 `tools` 交替出现，一眼看清任务生命周期*
 
 `tasks` 输出任务的开始/结束时间、结果与错误；`debug` 在它基础上多出任务步骤、时间戳、task 类型（`task` / `task_result`）。**排查"Agent 卡在哪一步"时很好用。**
 
-![](assets/17-Agent的流式输出/ch07-p072-debug模式输出.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p072-debug模式输出.jpg)
 *图：debug 模式的输出——比 tasks 多出 `step`（第几步）、`timestamp`、`type`（`task` 开始 / `task_result` 结束），而且开始和结束是成对出现的*
 
 ### checkpoints：需要先开检查点
@@ -162,7 +162,7 @@ for chunk in customer_service_agent.stream(
     print(chunk)
 ```
 
-![](assets/17-Agent的流式输出/ch07-p073-checkpoints模式输出.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p073-checkpoints模式输出.jpg)
 *图：checkpoints 模式的输出——检查点 #1 到 #7 依次触发，每片都带 `checkpoint_id`、`parent_config`、`source`（input / loop）、`next`（下一个节点）、`tasks` 等状态信息*
 
 > [!NOTE]
@@ -300,7 +300,7 @@ for stream_mode, chunk in customer_service_agent.stream(
     print(f"当前流模式: {stream_mode}, 当前数据: {chunk}")
 ```
 
-![](assets/17-Agent的流式输出/ch07-p076-多模式组合输出.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p076-多模式组合输出.jpg)
 *图：同时指定 `["tasks", "updates"]` 时的输出——每一片前面都会标出"当前流模式: tasks"或"当前流模式: updates"，两类信息交错出现*
 
 > [!TIP]

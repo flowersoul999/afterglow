@@ -320,7 +320,7 @@ PPT 第 46 页："执行指定生命周期的两种方式"：
 
 **方式一（IDEA 面板）**：右侧 Maven 面板里，每个模块下面有 **Lifecycle** 一栏，列着 `clean`、`validate`、`compile`、`test`、`package`、`verify`、`install`、`site`、`deploy` 这些阶段，**双击哪一个就跑哪一个**；再往下是 **Plugins** 一栏，列的是真正干活的插件（`clean`、`compiler`、`jar`、`surefire` 等，括号里是插件的坐标与版本）：
 
-![生命周期与插件面板](assets/26-Maven依赖管理与生命周期/47-生命周期与插件面板.jpg)
+![生命周期与插件面板](https://img.tsh520.cn/file/blog/article/47-生命周期与插件面板.jpg)
 *图：IDEA 右侧 Maven 面板（PPT 第 47 页）——上面 Lifecycle 是**阶段**（双击即执行），下面 Plugins 是**插件**（compile 由 compiler 插件执行、test 由 surefire 插件执行、package 由 jar 插件执行）*
 
 **方式二（命令行）**：在项目目录下敲 `mvn <阶段>`，PPT 第 46 页列的常见命令：
@@ -334,7 +334,7 @@ mvn install     # 安装：把 jar 装进本地仓库
 
 PPT 第 46 页给的截图就是命令行执行 `mvn compile` 的真实结果——从红色框起来的命令行开始，往下依次是插件执行的日志，最后 **`BUILD SUCCESS`**：
 
-![命令行compile结果](assets/26-Maven依赖管理与生命周期/46-命令行compile结果.jpg)
+![命令行compile结果](https://img.tsh520.cn/file/blog/article/46-命令行compile结果.jpg)
 *图：PPT 第 46 页——在项目目录下执行 `mvn compile`，蓝色日志是编译过程（`maven-compiler-plugin:3.1:compile`、`Compiling 1 source file to ...\target\classes`），最后一行 `BUILD SUCCESS` 表示成功（红色框是命令本身）*
 
 两种方式**效果完全一样**（IDEA 面板双击，本质也是在后台调那一套阶段的命令），区别只是：

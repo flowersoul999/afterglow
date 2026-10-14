@@ -44,16 +44,16 @@ PPT 第 3 页给出项目名，第 4-6 页讲需求——**Tlias 智能学习辅
 
 这些功能不是靠文字想象的，PPT 配了系统页面截图（第 5 页把上面这些需求列成清单，**第 6 页干脆直接把部门管理的页面摆了出来**——本章接下来要做的正是这个模块）。挑几张最能说明问题的：
 
-![Tlias部门管理页面](assets/57-Tlias项目准备与开发规范/04-部门管理页面.jpg)
+![Tlias部门管理页面](https://img.tsh520.cn/file/blog/article/04-部门管理页面.jpg)
 *图：系统的部门管理页（PPT 第 4-6 页）——一张表格展示所有部门，带「新增」按钮，每行有「修改」「删除」；本章做的就是这张表背后的接口*
 
-![Tlias员工管理页面](assets/57-Tlias项目准备与开发规范/05-员工管理页面.jpg)
+![Tlias员工管理页面](https://img.tsh520.cn/file/blog/article/05-员工管理页面.jpg)
 *图：员工管理页（PPT 第 4-5 页）——比部门管理复杂得多：姓名/性别/入职时间三个条件查询、新增员工、批量删除、分页，还带头像列*
 
-![员工数据统计图表](assets/57-Tlias项目准备与开发规范/05-报表统计员工数据.jpg)
+![员工数据统计图表](https://img.tsh520.cn/file/blog/article/05-报表统计员工数据.jpg)
 *图：报表统计（PPT 第 4-5 页）——员工职位统计（柱状图）与员工性别统计（环形图）*
 
-![班级学员统计图表](assets/57-Tlias项目准备与开发规范/05-报表统计班级学员.jpg)
+![班级学员统计图表](https://img.tsh520.cn/file/blog/article/05-报表统计班级学员.jpg)
 *图：同一模块的另外两张报表（PPT 第 4-5 页）——班级人数统计与学员学历统计*
 
 看这张图就能明白"前后端分离"为什么主流：**页面上的每一个数字、每一行表格，都是后端接口返回的数据渲染出来的**。本章要写的就是这些数据背后的接口。
@@ -194,10 +194,10 @@ PPT 第 18 页先抛了两个问题，都是前后端分离带来的：
 >
 > **作用**：接口文档管理、接口请求测试、Mock 服务。官网：`https://apifox.com/`
 
-![Apifox官网首页](assets/57-Tlias项目准备与开发规范/19-Apifox官网首页.jpg)
+![Apifox官网首页](https://img.tsh520.cn/file/blog/article/19-Apifox官网首页.jpg)
 *图：Apifox 官网首页（PPT 第 19 页）——标语写得很直白「API 文档、API 调试、API Mock、API 自动化测试」的"API 一体化协作平台"，右下角那句 `Apifox = Postman + Swagger + Mock + JMeter` 说明了它顶掉了四个工具*
 
-![Apifox接口管理界面](assets/57-Tlias项目准备与开发规范/20-Apifox接口管理界面.jpg)
+![Apifox接口管理界面](https://img.tsh520.cn/file/blog/article/20-Apifox接口管理界面.jpg)
 *图：Apifox 的接口管理界面（PPT 第 20 页）——左侧按目录管理接口，示例项目里已经躺着 GET 查询/POST 新增/PUT 修改/DELETE 删除四个请求，右上角有"测试环境"下拉；底部还支持导入 Swagger、Postman、cURL 等 20 多种格式*
 
 PPT 第 21 页回答了"**为什么要用 Apifox**"：
@@ -227,10 +227,10 @@ PPT 第 22 页是「准备工作」目录页的第三次出现（说明工程搭
 
 创建过程跟 [30 篇](/posts/编程学习/javaweb学习笔记/30-springboot快速入门/)一样，用 IDEA 的 Spring Initializr：填好工程名、包名、JDK，再在依赖页勾选需要的依赖。
 
-![IDEA创建SpringBoot工程](assets/57-Tlias项目准备与开发规范/23-IDEA创建SpringBoot工程.jpg)
+![IDEA创建SpringBoot工程](https://img.tsh520.cn/file/blog/article/23-IDEA创建SpringBoot工程.jpg)
 *图：创建工程时填的信息（PPT 第 23 页）——Name 与 Artifact 都是 `tlias-web-management`，Group 是 `com.itheima`，Package name 是 `com.itheima`，JDK 与 Java 都选 17，打包方式 Jar*
 
-![创建工程时选择的依赖](assets/57-Tlias项目准备与开发规范/23-创建工程选择依赖.jpg)
+![创建工程时选择的依赖](https://img.tsh520.cn/file/blog/article/23-创建工程选择依赖.jpg)
 *图：依赖选择页（PPT 第 23 页）——勾了 MyBatis Framework 和 MySQL Driver，右侧 Added dependencies 里能看到最终四项：Lombok、Spring Web、MyBatis Framework、MySQL Driver*
 
 这正是 PPT 说的四个依赖，课程工程 `pom.xml` 里对应的坐标如下：

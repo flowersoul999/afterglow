@@ -280,7 +280,7 @@ public void testGetGender2(String idCard){                                  // �
 
 PPT 第 64 页给了一个"让 AI 帮你写测试"的例子：**基于 AI，测试 `UserService` 中的 `getGender` 方法**：
 
-![getGender业务方法](assets/28-JUnit断言与常见注解/64-getGender业务方法.jpg)
+![getGender业务方法](https://img.tsh520.cn/file/blog/article/64-getGender业务方法.jpg)
 *图：PPT 第 64 页——要被 AI 测试的 `getGender` 方法（含中文注释：给定一个身份证号计算出该用户的性别；方法里先校验身份证号是否为 null 或长度不为 18，不合法就 `throw new IllegalArgumentException("无效的身份证号码")`，最后用第 17 位的奇偶判断"男/女"）*
 
 课程代码里已经放好了 AI 生成的那个测试类 `UserServiceAiTest.java`，它和手写的 `UserServiceTest` 最大的区别是**覆盖得更全、注解用得更规范**：

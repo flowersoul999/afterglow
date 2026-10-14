@@ -93,7 +93,7 @@ PPT 把这一页的顺序总结成"**查询 – 使用 – 创建 – 删除**"�
 | `create database if not exists db01;` | `Query OK, 0 rows affected, 1 warning (0.00 sec)`（不报错，只给一条 warning） |
 | `drop database if exists db_not_exist;` | `Query OK, 0 rows affected, 1 warning (0.00 sec)` |
 
-![命令行客户端的数据库操作](assets/41-SQL分类与数据库操作/26-命令行客户端操作.jpg)
+![命令行客户端的数据库操作](https://img.tsh520.cn/file/blog/article/26-命令行客户端操作.jpg)
 *图：PPT 第 26 页——命令行客户端里的实操：`show databases` 列出了 6 个库（`db01`、`db02` 加四个系统库），`drop database db03` 第一次 `Query OK`、再执行一次就报 `ERROR 1008 (HY000): Can't drop database 'db03'; database doesn't exist`，而加上 `if exists` 之后变成 `Query OK, 0 rows affected, 1 warning`——这就是 if exists / if not exists 存在的意义*
 
 ## 两个注意点（PPT 第 24-25 页）
@@ -145,12 +145,12 @@ PPT 第 28 页演示的是"**用 DataGrip 连上 MySQL**"这两步。
 
 第一步：打开 DataGrip 的 **Database Explorer**，点 `+` → `Data Source` → 选 **MySQL**：
 
-![DataGrip新建数据源](assets/41-SQL分类与数据库操作/27-DataGrip新建数据源.jpg)
+![DataGrip新建数据源](https://img.tsh520.cn/file/blog/article/27-DataGrip新建数据源.jpg)
 *图：PPT 第 28 页——在 DataGrip 里新建数据源：Database Explorer 面板点 `+`，选 Data Source → MySQL（Recent 里直接就有）*
 
 第二步：在连接配置页填四样东西，然后下载驱动：
 
-![DataGrip连接配置](assets/41-SQL分类与数据库操作/27-DataGrip连接配置.jpg)
+![DataGrip连接配置](https://img.tsh520.cn/file/blog/article/27-DataGrip连接配置.jpg)
 *图：PPT 第 28 页——DataGrip 的连接配置页：Host 填 IP 地址、Port 填端口号（本机是 localhost:3306）、User 填用户名、Password 填密码，下面的 URL 会自动拼成 `jdbc:mysql://localhost:3306`；右下方标红的位置要点一下 Download，把驱动下下来才能连通*
 
 对照 [上一篇](/posts/编程学习/javaweb学习笔记/40-数据库概述与mysql入门/)的命令行连接，这两个界面填的其实是同一组信息：

@@ -65,7 +65,7 @@ public class JdbcTest {
 }
 ```
 
-![JDBC版查询全部用户代码](assets/52-JDBC与MyBatis的对比/23-JDBC版查询全部用户代码.jpg)
+![JDBC版查询全部用户代码](https://img.tsh520.cn/file/blog/article/23-JDBC版查询全部用户代码.jpg)
 *图：PPT 第 23 页 JDBC 版代码的完整样子——"准备工作（注册驱动/获取连接/获取执行对象）→ 执行 SQL 并 while 解析结果集 → 释放资源"三段，中间那段每一列都要自己 `getXxx` 取出来、自己 `new User` 装进去*
 
 几个"看一眼就懂"的负担：
@@ -95,7 +95,7 @@ public interface UserMapper {
 }
 ```
 
-![MyBatis版Mapper接口](assets/52-JDBC与MyBatis的对比/24-MyBatis版Mapper接口.jpg)
+![MyBatis版Mapper接口](https://img.tsh520.cn/file/blog/article/24-MyBatis版Mapper接口.jpg)
 *图：PPT 第 24 页把 JDBC 版删光之后只剩这两段——数据源 4 行配置、Mapper 接口 3 行；PPT 专门给这张图配了一句"Mapper接口"*
 
 PPT 第 24 页就是把第 23 页的 JDBC 代码拿掉，只留这两段——**演示"省下来的到底是什么"**。

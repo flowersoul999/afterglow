@@ -50,12 +50,12 @@ views/EmpList.vue     ← 页面组件（案例里真正的员工列表页）
 
 先看入口页面 `index.html`——它是整个项目里**唯一的 HTML 文件**，内容少得出奇：
 
-![入口页面 index.html](assets/96-Vue项目开发流程与组合式API/14-入口页面indexhtml.jpg)
+![入口页面 index.html](https://img.tsh520.cn/file/blog/article/14-入口页面indexhtml.jpg)
 *图：PPT 第 23 页的 `index.html`——`<body>` 里只有一个空的 `<div id="app"></div>`，加一行 `<script type="module" src="/src/main.js"></script>`。**页面骨架是空的**，真正的内容全靠脚本挂进去*
 
 再看入口文件 `main.js`：
 
-![入口文件 main.js](assets/96-Vue项目开发流程与组合式API/15-入口文件mainjs.jpg)
+![入口文件 main.js](https://img.tsh520.cn/file/blog/article/15-入口文件mainjs.jpg)
 *图：PPT 第 23 页的 `src/main.js`——引入全局样式、引入 Vue 的 `createApp`、引入根组件 `App.vue`，最后 `createApp(App).mount('#app')`。这行 `mount` 挂的就是 `index.html` 里的那个空 div*
 
 > [!NOTE]
@@ -63,7 +63,7 @@ views/EmpList.vue     ← 页面组件（案例里真正的员工列表页）
 
 根组件 `App.vue` 换成自己的内容之前，工程显示的是脚手架自带的欢迎页：
 
-![项目默认首页](assets/96-Vue项目开发流程与组合式API/13-项目默认首页效果.jpg)
+![项目默认首页](https://img.tsh520.cn/file/blog/article/13-项目默认首页效果.jpg)
 *图：PPT 第 22 页 / 第 19 页的那个页面——浏览器地址栏是 `localhost:5173`，页面上写着 "You did it!"，左侧是 Vue 的 V 标、右侧是若干条链接。它就是"默认首页"，也是我们**马上要替换掉的东西***
 
 课程案例的做法很直接：把 `App.vue` 的模板换成自己的页面组件。本机实测的工程里，`src/App.vue` 的真实内容就这么几行：
@@ -104,7 +104,7 @@ PPT 第 24 页：
 | `<script setup>` | JS 逻辑（数据、函数、钩子） | **控制模板的数据及行为** |
 | `<style scoped>` | CSS 样式 | **当前组件的 CSS 样式** |
 
-![单文件组件的三个部分](assets/96-Vue项目开发流程与组合式API/17-根组件Appvue.jpg)
+![单文件组件的三个部分](https://img.tsh520.cn/file/blog/article/17-根组件Appvue.jpg)
 *图：PPT 第 24 页的 `App.vue`——上面是 `<script setup>`（`ref('Hello Vue3')` 准备数据），中间是 `<template>`（`<h1>{{ message }}</h1>` 使用数据），下面是 `<style scoped>`（本组件样式）。一个文件里把"逻辑 / 结构 / 样式"三件事装齐，这就是"单文件组件"这个名字的由来*
 
 几点说明：
@@ -139,7 +139,7 @@ createApp({
 }).mount('#container')
 ```
 
-![选项式 API 的写法](assets/96-Vue项目开发流程与组合式API/18-选项式API写法.jpg)
+![选项式 API 的写法](https://img.tsh520.cn/file/blog/article/18-选项式API写法.jpg)
 *图：PPT 第 26 页的选项式 API 代码——`data()`、`methods`、`mounted()` 这些"**选项**"写在同一个对象里；样式上就是把 [22 篇](/posts/编程学习/javaweb学习笔记/22-实战-vueaxios员工列表/)的代码原样搬进工程的样子（`this.searchForm`、`this.empList` 都在 `data()` 里）*
 
 PPT 对选项式 API 的解释是：
@@ -350,7 +350,7 @@ const empList = ref([]);
 
 本机实测的页面（`npm run dev` 之后用普通 Chrome 打开 `http://localhost:5173`）：
 
-![本机运行的员工列表页](assets/96-Vue项目开发流程与组合式API/96-本机运行的员工列表页.jpg)
+![本机运行的员工列表页](https://img.tsh520.cn/file/blog/article/96-本机运行的员工列表页.jpg)
 *图：本机实测的案例页面——上面是搜索表单（姓名输入框 + 性别/职位下拉 + 查询/清空按钮），下面是表格；表格里是**接口返回的真实数据**，不是写死的死数据*
 
 表格渲染出的 **4 行真实数据**（接口 `https://web-server.itheima.net/emps/list` 返回的）：

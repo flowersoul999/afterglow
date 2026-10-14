@@ -28,7 +28,7 @@ PPT 第 9 页给的需求：
 
 先看看要装的是什么数据：
 
-![user表数据](assets/50-JDBC查询与预编译SQL/09-user表数据.jpg)
+![user表数据](https://img.tsh520.cn/file/blog/article/09-user表数据.jpg)
 *图：PPT 第 9 页配的 `user` 表数据截图——5 行记录，列是 id、username、password、name、age。"封装成 User 对象"就是把其中**一行的 5 个格子**，变成一个 `User` 对象的 5 个属性（PPT 这张老截图里 daqiao 的密码是 1234567890，课程资料 `user.txt` 和本机表里是 123456，只是同一张表的不同版本，不影响讲解）*
 
 `User` 实体类长这样（课程 `jdbc-demo` 的 `com.itheima.pojo.User`，用 lombok 三个注解省掉 getter/setter/构造器/toString）：
@@ -260,7 +260,7 @@ PPT 第 12 页给的定义：
 
 "通过控制输入"是什么意思？——**用户在输入框里填的东西，最后跑进了 SQL 语句里**。
 
-![后台管理系统登录页](assets/50-JDBC查询与预编译SQL/12-后台登录页面.jpg)
+![后台管理系统登录页](https://img.tsh520.cn/file/blog/article/12-后台登录页面.jpg)
 *图：PPT 第 12 页配的那个后台管理系统登录页——帐号、密码两个输入框，点"登录"后后端就是拿这两个值去 `user` 表里查用户。这张页面上"帐号"和"密码"两个格子，就是攻击者能控制的全部输入*
 
 ### 直接把用户输入拼进 SQL，会出什么事
@@ -395,7 +395,7 @@ PPT 第 13 页把这一节收成两问：
 | **如何执行预编译 SQL ？** | 三步：① `conn.prepareStatement("… where username = ? and password = ?")` 拿到 `PreparedStatement`（SQL 里用 `?` 占位）；② `pstmt.setString(1, "daqiao")`、`pstmt.setString(2, "123456")` 按序号逐个给参数（**从 1 开始**）；③ `pstmt.executeQuery()`（查询）或 `pstmt.executeUpdate()`（增删改）——**不用再传 SQL** |
 | **为什么要使用预编译 SQL ？** | 两个原因：**安全（防止 SQL 注入）**、**性能更高**（语句结构只编译一次，编译结果可缓存复用） |
 
-![预编译SQL代码](assets/50-JDBC查询与预编译SQL/13-预编译SQL代码.jpg)
+![预编译SQL代码](https://img.tsh520.cn/file/blog/article/13-预编译SQL代码.jpg)
 *图：PPT 第 13 页配的"执行预编译 SQL"代码——`conn.prepareStatement(...)` 里 SQL 带着两个 `?`，接着两次 `setString` 按序号把值填进去，最后 `executeQuery()` 拿结果集。截图里填的用户名是 linchong（PPT 的旧版截图），换成 daqiao 就是本篇实测里那条查询，写法完全一样*
 
 ## AI 辅助：让 AI 写这段查询代码（PPT 第 9 页的"AI 辅助"标记）

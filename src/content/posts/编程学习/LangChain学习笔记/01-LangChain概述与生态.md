@@ -11,7 +11,7 @@ order: 1
 
 ## 为什么需要 LangChain
 
-![](assets/01-LangChain概述与生态/ch01-p001-从传统应用到智能体时代.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p001-从传统应用到智能体时代.jpg)
 *图：从 PC 互联网时代、移动互联网时代一路走到 AI 智能化时代，应用形态的演进取向*
 
 ### 应用形态的三次跃迁
@@ -37,7 +37,7 @@ order: 1
 
 所以要构建真正实用的 AI 应用，必须把大模型与**外部工具、数据源和记忆机制**有机结合——这正是 LangChain 要解决的问题。
 
-![](assets/01-LangChain概述与生态/ch01-p001-大模型三大局限.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p001-大模型三大局限.jpg)
 *图：单一的大语言模型的三大局限——知识受训练数据限制、无法直接与外部系统交互、不具备状态保持能力*
 
 ### LangChain 的定位
@@ -70,7 +70,7 @@ LangChain 是大模型与应用之间的**中间层**，可统一调用各类大
 | 自动化写作与格式化生成 | 格式不标准、质量不稳定 | 配合提示词模板与输出解析器 |
 | 数据连接与结构化处理 | 非结构化数据难利用 | 从 PDF/Excel 提取信息、自然语言转 SQL |
 
-![](assets/01-LangChain概述与生态/ch01-p002-广泛适用核心场景.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p002-广泛适用核心场景.jpg)
 *图：LangChain 广泛适用的六大核心场景全景——RAG、Agent 智能体、对话机器人、多模态、内容生成、数据连接与处理*
 
 ### 六类场景的完整表述（课程原文）
@@ -100,7 +100,7 @@ LangChain 是大模型与应用之间的**中间层**，可统一调用各类大
 | **海量数据与治理层** | 结构化 / 非结构化数据；数据处理 / 清洗 / 标注（Postman 数据接口） | 数据开发 / 清洗工程师 |
 | **算力与 Infra 基础设施层** | 算力：GPU / NPU 数据中心；Infra 平台：K8s、Docker、Dify 部署 | 大模型运维、Infra 工程师 |
 
-![](assets/01-LangChain概述与生态/ch01-p003-大模型五层架构与岗位映射.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p003-大模型五层架构与岗位映射.jpg)
 *图：AI 大模型与 Agent 应用开发的完整架构与岗位映射——从底层的算力与 Infra、海量数据与治理，往上是 Model Foundation、行业/多模态应用大模型，最上面是应用与（Agent）层*
 
 ### Agents 编排与控制
@@ -126,7 +126,7 @@ LangChain 是大模型与应用之间的**中间层**，可统一调用各类大
 | 平台化 | 2024–2025 上半年 | LangGraph 与 LangServe 发布，从框架走向平台 |
 | 深层智能体 | 2025 下半年至今 | 推出 Deep Agent（定位 Agent Harness，智能体执行框架） |
 
-![](assets/01-LangChain概述与生态/ch01-p004-社区星标增长曲线.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p004-社区星标增长曲线.jpg)
 *图：LangChain 在 GitHub 上的 Star 增长曲线——从 2022 年开源起一路攀升到 12 万以上*
 
 ### 时间线的阶段细节
@@ -146,7 +146,7 @@ LangChain 是大模型与应用之间的**中间层**，可统一调用各类大
 
 LangChain 长期因 API 变动频繁被戏称为"版本碎钞机"。2024 年起团队把链和智能体标记为弃用，转向基于 LangGraph 的统一智能体抽象；同时 GPT-4 之后"工具调用、结构化输出、系统提示词"都成了模型自带能力，再包一层显得多此一举——**这一阶段开发者大规模流失**。
 
-![](assets/01-LangChain概述与生态/ch01-p005-框架问题诊断三痛点.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p005-框架问题诊断三痛点.jpg)
 *图：LangChain 框架被吐槽的三大问题——文档混乱且更新滞后、抽象过度导致调试困难、版本不兼容*
 
 2025-10-20 发布 **LangChain v1.0.0 + LangGraph v1.0.0**，是里程碑事件：官方首次明确 **API 稳定保证（2.0 前无破坏性变更）**。
@@ -188,7 +188,7 @@ LangChain 长期因 API 变动频繁被戏称为"版本碎钞机"。2024 年起�
 | `langchain-community` | 第三方集成（合作伙伴包如 langchain-openai、langchain-anthropic，按需安装） |
 | `langgraph` | 深度整合 LangGraph 1.0，协调多个 Chain/Agent/Tools，支持循环调用 |
 
-![](assets/01-LangChain概述与生态/ch01-p007-核心包最小化与供应商拆分.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p007-核心包最小化与供应商拆分.jpg)
 *图：v1.2 的包结构——核心包最小化，langchain-core 只保留核心抽象接口，模型供应商与旧 API 各自拆成独立包*
 
 > [!TIP]
@@ -200,7 +200,7 @@ LangChain 长期因 API 变动频繁被戏称为"版本碎钞机"。2024 年起�
 - 英文文档：https://docs.langchain.com/oss/python/langchain/overview
 - API 查询（最常查）：https://reference.langchain.com/python/langchain/
 
-![](assets/01-LangChain概述与生态/ch01-p008-API文档页面截图.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p008-API文档页面截图.jpg)
 *图：API 文档查询页——LangChain、LangChain Core、LangChain Classic 等模块的接口都在这里查*
 
 ### 官网与 GitHub 组织
@@ -251,7 +251,7 @@ LangChain 是整个生态的**核心与起点**，为开发者提供模型调用
 
 通俗理解：**LangChain = 能力抽象层（有什么能力）**，**LangGraph = 执行与编排层（怎么跑）**。官方强调"快速起步用 LangChain，复杂控制用 LangGraph，二者并行协同"。
 
-![](assets/01-LangChain概述与生态/ch01-p010-能力层与编排层分工.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p010-能力层与编排层分工.jpg)
 *图：两层分工——LangChain 提供标准能力（有什么能力），LangGraph 用状态机、工作流与多 Agent 系统负责"怎么跑"*
 
 ### 图式结构带来了什么
@@ -270,7 +270,7 @@ LangChain 是整个生态的**核心与起点**，为开发者提供模型调用
 - **长期记忆**：结合 LangGraph 状态存储，跨对话积累经验
 - **可扩展中间件**：嵌入安全审计、性能监控或自定义业务逻辑
 
-![](assets/01-LangChain概述与生态/ch01-p011-官方文档三者对比.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p011-官方文档三者对比.jpg)
 *图：官方文档给出的三者选择建议——想开箱即用地做智能体从 Deep Agents 起步，需要自己定制就用 LangChain，更复杂的确定性工作流编排上 LangGraph*
 
 ### Deep Agent 的定位补充
@@ -284,7 +284,7 @@ LangChain 是整个生态的**核心与起点**，为开发者提供模型调用
 > [!NOTE]
 > 三者**不是竞争关系**：从 LangChain 快速搭建，用 LangGraph 打磨生产稳定性，再用 Deep Agent 赋予更强的自主能力——这才是完整的生态玩法。
 
-![](assets/01-LangChain概述与生态/ch01-p011-应用开发体系图.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p011-应用开发体系图.jpg)
 *图：基于 LLM 的应用开发体系图——LangChain 打底（基础能力层），LangGraph 居中做高级编排，Deep Agent 在上层处理复杂任务*
 
 ### LangSmith：让智能体的运行过程可见
@@ -298,7 +298,7 @@ LangChain 是整个生态的**核心与起点**，为开发者提供模型调用
 | 评测与质量控制 | 支持人工与自动化评测 |
 | 团队协作 | 共享测试集与调用记录 |
 
-![](assets/01-LangChain概述与生态/ch01-p012-监控看板界面.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p012-监控看板界面.jpg)
 *图：LangSmith 的监控看板——LLM 调用次数与成功/失败曲线、延迟分位数（P50/P99）、成本与 Token 消耗*
 
 ### LangSmith 官网与质量闭环

@@ -457,10 +457,10 @@ content='近期，受全球芯片短缺等多重因素影响，...' name='get_ne
 | `"required"` | 模型**必须**调用工具，数量不限 |
 | `"any"` | 等价于 `required` |
 
-![](assets/10-Tools进阶与实战/ch05-p035-OpenAI官方文档说明.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch05-p035-OpenAI官方文档说明.jpg)
 *图：OpenAI 官方文档中 tool_choice 的取值说明（none / auto / required）*
 
-![](assets/10-Tools进阶与实战/ch05-p035-DeepSeek官方文档说明.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch05-p035-DeepSeek官方文档说明.jpg)
 *图：DeepSeek 官方文档同样规定了这三个取值，并说明"没有工具时默认 none、有工具时默认 auto"*
 
 ```python

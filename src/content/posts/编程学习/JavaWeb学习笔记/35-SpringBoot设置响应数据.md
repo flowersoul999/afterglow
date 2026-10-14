@@ -31,7 +31,7 @@ PPT 第 40 页把[33 篇](/posts/编程学习/javaweb学习笔记/33-springboot�
 
 换句话说：**响应对象就是"这次回给浏览器的报文"在 Java 里的样子**，我们往里塞什么，浏览器就收到什么。
 
-![HTTP响应报文示例](assets/35-SpringBoot设置响应数据/40-HTTP响应报文示例.jpg)
+![HTTP响应报文示例](https://img.tsh520.cn/file/blog/article/40-HTTP响应报文示例.jpg)
 *图：PPT 第 40 页配的响应报文——第一行 `HTTP/1.1 200 OK` 是**响应行**；往下 `Server: Apache-Coyote/1.1`（内嵌 Tomcat 给自己署的名）、`Content-Type: text/html;charset=UTF-8`、`Content-Length: 21`、`Date: …` 是**响应头**；空行之后 `<h1>Hello HTTP ~~</h1>` 是**响应体**。这张图正好演示了下一篇案例里会看到的现象：**响应头这些行全是服务器写的**，代码里只负责给出内容*
 
 > [!TIP]

@@ -26,7 +26,7 @@ order: 1
 > [!NOTE]
 > PPT 上有一页新闻截图做例证：阿里云给通义灵码分配了正式员工工号 **AI001**，在内部全面推行 AI 编程，用通义灵码辅助写代码、读代码、查 Bug、优化代码；官方口径是"公司未来 20% 的代码将由通义灵码编写，但程序员仍然是研发的核心"，并且通义灵码已集成到 IDEA、VS Code 这些开发工具中。
 
-![阿里云 AI001 新闻截图](assets/01-JavaWeb课程导学/02-阿里云AI001新闻截图.jpg)
+![阿里云 AI001 新闻截图](https://img.tsh520.cn/file/blog/article/02-阿里云AI001新闻截图.jpg)
 *图：课程用这则新闻说明"AI 编程已经是企业里的日常"——通义灵码被分配工号 AI001，在 IDEA、VS Code 等工具里辅助写代码、查 Bug、优化代码*
 
 ### 传统 Java 课 vs Java+AI 课：四项能力对照
@@ -49,19 +49,19 @@ PPT 用一张表对比了两种课程练出来的能力（这一页在课上是�
 
 我们平时打开的网站就是 Web——淘宝、京东、唯品会这类电商页面，以及企业里各种管理系统，都算：
 
-![淘宝首页](assets/01-JavaWeb课程导学/14-淘宝首页.jpg)
+![淘宝首页](https://img.tsh520.cn/file/blog/article/14-淘宝首页.jpg)
 *图：电商网站（淘宝）——首页上的分类、轮播、商品卡片、登录入口，都是"前端程序"展示出来的界面*
 
-![京东首页](assets/01-JavaWeb课程导学/14-京东首页.jpg)
+![京东首页](https://img.tsh520.cn/file/blog/article/14-京东首页.jpg)
 *图：电商网站（京东）——课上直接拿 `https://www.jd.com` 举例，它就是通过浏览器访问的 Web 网站*
 
-![唯品会首页](assets/01-JavaWeb课程导学/14-唯品会首页.jpg)
+![唯品会首页](https://img.tsh520.cn/file/blog/article/14-唯品会首页.jpg)
 *图：电商网站（唯品会）——同一个"Web"的另一种页面风格*
 
-![客达天下企业管理系统](assets/01-JavaWeb课程导学/15-客达天下企业管理系统.jpg)
+![客达天下企业管理系统](https://img.tsh520.cn/file/blog/article/15-客达天下企业管理系统.jpg)
 *图：企业管理系统（客达天下）——后台类网站的典型长相：左侧菜单 + 顶部筛选 + 数据卡片*
 
-![元坤WMS仓储管理系统](assets/01-JavaWeb课程导学/15-元坤WMS仓储管理系统.jpg)
+![元坤WMS仓储管理系统](https://img.tsh520.cn/file/blog/article/15-元坤WMS仓储管理系统.jpg)
 *图：仓储管理系统（元坤 WMS）——带搜索表单、批量操作按钮、分页表格，这门课后半段做的项目就是这类界面*
 
 ## 一个 Web 系统的三部分
@@ -108,22 +108,22 @@ PPT 用 4 个关键词总结课程的设计：
 
 这 4 条在 PPT 上各自配了截图，正好代表项目里的几个阶段：
 
-![Tlias员工管理页面](assets/01-JavaWeb课程导学/20-Tlias员工管理页面.jpg)
+![Tlias员工管理页面](https://img.tsh520.cn/file/blog/article/20-Tlias员工管理页面.jpg)
 *图：贯穿课程的实战项目 Tlias 智能学习辅助系统——员工管理页面（项目驱动式教学的主案例）*
 
-![Tlias学员管理页面](assets/01-JavaWeb课程导学/20-Tlias学员管理页面.jpg)
+![Tlias学员管理页面](https://img.tsh520.cn/file/blog/article/20-Tlias学员管理页面.jpg)
 *图：Tlias 的学员管理页面——同样的"搜索表单 + 批量按钮 + 分页表格"结构，换成另一张业务表*
 
-![Tlias数据统计报表](assets/01-JavaWeb课程导学/20-Tlias数据统计报表.jpg)
+![Tlias数据统计报表](https://img.tsh520.cn/file/blog/article/20-Tlias数据统计报表.jpg)
 *图：Tlias 的数据统计页（员工职位统计柱状图、员工性别统计环形图）——报表统计也是后端的实战内容*
 
-![员工管理需求描述文档](assets/01-JavaWeb课程导学/21-员工管理需求描述文档.jpg)
+![员工管理需求描述文档](https://img.tsh520.cn/file/blog/article/21-员工管理需求描述文档.jpg)
 *图：企业级开发规范里的第一环——"员工管理-需求描述"，连字段名、必填、类型、长度限制、输入限制都写清楚（这是写代码之前的依据）*
 
-![Docker部署项目截图](assets/01-JavaWeb课程导学/21-Docker部署项目截图.jpg)
+![Docker部署项目截图](https://img.tsh520.cn/file/blog/article/21-Docker部署项目截图.jpg)
 *图：最后的部署环节——在服务器上用 docker compose 构建镜像、起 mysql / tlias-server / nginx 三个容器*
 
-![接口文档示例](assets/01-JavaWeb课程导学/22-接口文档示例.jpg)
+![接口文档示例](https://img.tsh520.cn/file/blog/article/22-接口文档示例.jpg)
 *图：前后端分离开发的核心产物——接口文档（请求路径、请求方式、响应数据的 code/msg/data 结构），课程里会写 30+ 个这样的接口*
 
 ## 课程收获
@@ -141,20 +141,20 @@ PPT 用 4 个关键词总结课程的设计：
 
 PPT 上展示的项目形态是这样的：
 
-![iHRM人力资源系统](assets/01-JavaWeb课程导学/25-iHRM人力资源系统.jpg)
+![iHRM人力资源系统](https://img.tsh520.cn/file/blog/article/25-iHRM人力资源系统.jpg)
 *图：企业后台系统（iHRM 人力资源管理系统）——表格 + 部门筛选 + 权限菜单*
 
-![畅购商城首页](assets/01-JavaWeb课程导学/25-畅购商城首页.jpg)
+![畅购商城首页](https://img.tsh520.cn/file/blog/article/25-畅购商城首页.jpg)
 *图：电商网站（畅购商城）——首页导航、分类、轮播、商品楼层*
 
-![贝壳找房移动端页面](assets/01-JavaWeb课程导学/25-贝壳找房移动端页面.jpg)
+![贝壳找房移动端页面](https://img.tsh520.cn/file/blog/article/25-贝壳找房移动端页面.jpg)
 *图：移动端页面（贝壳找房 App 首页）——同一套前端技术也能做移动端页面*
 
 ## 答疑途径
 
 PPT 的"答疑途径"一页放的就是课程群/评论区的实际提问与回复：
 
-![答疑提问与解答截图](assets/01-JavaWeb课程导学/26-答疑提问与解答截图.jpg)
+![答疑提问与解答截图](https://img.tsh520.cn/file/blog/article/26-答疑提问与解答截图.jpg)
 *图：课上举的答疑例子——学员私信问"MyBatis 里 `@Delete` 注解的 `#{id}` 报红线"，回复是"右键 → Uninject language，去掉语言注入后重新选择"*
 
 > [!TIP]

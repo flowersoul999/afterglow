@@ -32,10 +32,10 @@ order: 97
 
 PPT 第 33 页用两张图对比了"自己写控件"和"用组件库"的样子——同样一个表单（性别单选、姓名输入框、学历下拉、爱好多选框）：
 
-![原生 HTML 表单控件](assets/97-ElementPlus组件库/20-原生表单控件.jpg)
+![原生 HTML 表单控件](https://img.tsh520.cn/file/blog/article/20-原生表单控件.jpg)
 *图：PPT 第 33 页的原生写法——用 `input`、`select` 这些浏览器自带控件拼出来的表单，样式是浏览器默认的（方框、灰边、对齐难看），要好看就得自己写一大堆 CSS*
 
-![ElementPlus 的表单组件](assets/97-ElementPlus组件库/21-ElementPlus表单组件.jpg)
+![ElementPlus 的表单组件](https://img.tsh520.cn/file/blog/article/21-ElementPlus表单组件.jpg)
 *图：同一组表单项换成 ElementPlus 的组件——边框、圆角、间距、占位文字、下拉箭头都是配好的，还自动带交互状态（悬停、聚焦）。**这就是组件库的价值：把"好看的控件 + 交互细节"做成现成的部件，拿来就用***
 
 > [!IMPORTANT]
@@ -131,7 +131,7 @@ PPT 第 38 页的目录页列了四个组件：**表格组件、分页条组件�
 
 本机实测：课程工程里有一个专门的演示页面 `src/views/ElementDemo.vue`，把四个组件全放在一页里（这就是 PPT 第 39~48 页练手用的现成 demo）：
 
-![本机 ElementPlus 组件演示页](assets/97-ElementPlus组件库/97-本机ElementPlus组件演示页.jpg)
+![本机 ElementPlus 组件演示页](https://img.tsh520.cn/file/blog/article/97-本机ElementPlus组件演示页.jpg)
 *图：本机实测把 `App.vue` 指向 `ElementDemo.vue` 后的页面——从上到下依次是**按钮**（两行，Default / Primary / Success / Info / Warning / Danger 六种样式各一套实心、一套 plain 描边，共 12 个）、**表格**、**分页条**、**打开对话框的按钮**、**表单**。一页就能把常用的几类组件都看一遍*
 
 ### 表格组件（PPT 第 39~40 页）
@@ -140,7 +140,7 @@ PPT 第 38 页的目录页列了四个组件：**表格组件、分页条组件�
 
 PPT 第 40 页用一张官方文档的截图点出了关键：
 
-![表格组件的代码与数据](assets/97-ElementPlus组件库/24-表格组件代码与数据.jpg)
+![表格组件的代码与数据](https://img.tsh520.cn/file/blog/article/24-表格组件代码与数据.jpg)
 *图：PPT 第 40 页的表格代码——上半部分是 `<template>`：`<el-table :data="tableData">` 里放三个 `<el-table-column prop="..." label="..."/>`；下半部分是 `<script setup>`：`tableData` 是一份数组，每个对象里就是每列要显示的属性。**表格的写法就是"给一份数组 + 声明每列显示哪个字段"***
 
 必答问答（PPT 第 40 页）：
@@ -213,7 +213,7 @@ const handleCurrentChange = (val) => {
 
 > 用途（PPT 原文）：**在保留当前页面状态的情况下，告知用户并承载相关操作。**
 
-![对话框组件效果](assets/97-ElementPlus组件库/25-对话框组件效果.jpg)
+![对话框组件效果](https://img.tsh520.cn/file/blog/article/25-对话框组件效果.jpg)
 *图：PPT 第 44 页的对话框——弹窗浮在页面上层（背景被压暗），里面可以放输入框、下拉框，底部是 Cancel / Confirm 按钮。**页面本身没有跳走**（这就是"保留当前页面状态"），用户处理完关掉弹窗就回到原来的位置*
 
 必答问答（PPT 第 45 页）：
@@ -254,7 +254,7 @@ const dialogTableVisible = ref(false);   //false=藏起来，true=显示出来
 
 > 用途（PPT 原文）：**表单包含 输入框, 单选框, 下拉选择, 多选框 等用户输入的组件。使用表单，可以收集、验证和提交数据。**
 
-![表单组件效果](assets/97-ElementPlus组件库/26-表单组件效果.jpg)
+![表单组件效果](https://img.tsh520.cn/file/blog/article/26-表单组件效果.jpg)
 *图：PPT 第 47 页的表单——一行一个 `el-form-item`，标签在左、控件在右，里面有输入框、下拉框、日期选择、开关、多选框、文本域，最下面是提交/取消按钮。**表单的本事是三件：把用户输入收集起来、做校验、提交出去***
 
 必答问答（PPT 第 48 页）：
@@ -317,7 +317,7 @@ PPT 第 50 页给的任务是两句话：
 
 > **制作如下页面，并异步获取数据完成页面展示**——**页面布局**、**动态加载数据并渲染展示**。
 
-![案例页面最终效果](assets/97-ElementPlus组件库/27-案例页面最终效果.jpg)
+![案例页面最终效果](https://img.tsh520.cn/file/blog/article/27-案例页面最终效果.jpg)
 *图：PPT 第 50 页的案例页面——**页面布局**：上半部分是搜索表单（姓名输入框 + 性别下拉 + 职位下拉 + 查询/清空按钮），下半部分是员工表格（ID / 姓名 / 头像 / 性别 / 职位 / 入职日期 / 更新时间）；**动态加载数据**：表格里的 4 行数据是页面打开后从接口取回来的*
 
 拆成两张"表"来看，这个页面就是用组件搭起来的：

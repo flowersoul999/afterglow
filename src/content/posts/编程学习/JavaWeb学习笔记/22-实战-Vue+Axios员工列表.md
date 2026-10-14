@@ -36,7 +36,7 @@ order: 22
 https://web-server.itheima.net/emps/list?name=xxx&gender=xxx&job=xxx
 ```
 
-![案例最终效果](assets/22-实战-Vue+Axios员工列表/36-员工列表最终效果.jpg)
+![案例最终效果](https://img.tsh520.cn/file/blog/article/36-员工列表最终效果.jpg)
 *图：这张 PPT 就是案例做完的样子（第 27、36、38 页反复用它）——搜索表单在上、员工表格在下，**表格里的三行数据全部来自接口**；表面上和 20 篇的死数据版长得一模一样，区别在"数据是从服务器要来的"*
 
 整体流程四步（后面按这四步走）：
@@ -204,7 +204,7 @@ PPT 列了完整的表（这张表要记住阶段名字，尤其是 **`mounted`*
 | `beforeUnmount` | 组件销毁前 |
 | `unmounted` | 组件销毁后 |
 
-![Vue 生命周期流程图](assets/22-实战-Vue+Axios员工列表/39-Vue生命周期流程图.jpg)
+![Vue 生命周期流程图](https://img.tsh520.cn/file/blog/article/39-Vue生命周期流程图.jpg)
 *图：PPT 第 40 页的生命周期流程图——从左往右看：组件被渲染 → `beforeCreate`（创建前）→ `created`（创建后）→ 编译模板 → `beforeMount`（载入前）→ **initial render（创建并插入 DOM 节点）** → **`mounted`（挂载完成）**；此后数据变化会在 **Mounted ↔ re-render** 之间循环（每轮触发 `beforeUpdate` / `updated`）；组件被卸载时依次经过 `beforeUnmount` / `unmounted`。**页面上的元素什么时候"真的在"？答案就在 `mounted` 这个位置**——所以在它这里发请求最合适*
 
 ### 案例里怎么用
@@ -219,7 +219,7 @@ mounted() {
 }
 ```
 
-![用 mounted 钩子自动发请求](assets/22-实战-Vue+Axios员工列表/42-mounted钩子发送请求.jpg)
+![用 mounted 钩子自动发请求](https://img.tsh520.cn/file/blog/article/42-mounted钩子发送请求.jpg)
 *图：PPT 第 41～42 页给出的 `mounted` 写法——`createApp({ data() {...}, mounted() { console.log('Vue挂载完毕, 发送请求获取数据 ...'); } })`；钩子函数和数据、方法写在同一个对象里，`this` 同样指向 Vue 实例，所以能直接 `this.search()`*
 
 为什么放在 `mounted`（挂载完成）而不是更早的钩子？因为**这时页面元素已经渲染到页面上了**——表格、表单都在，`search()` 拿回来的数据显示上去正好；再早（`beforeCreate` / `created`）时还没"上屏"。

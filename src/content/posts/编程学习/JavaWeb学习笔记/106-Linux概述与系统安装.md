@@ -150,7 +150,7 @@ PPT 第 8 页列了三款虚拟机软件：
 | **VirtualBox** | 免费开源的那款 |
 | **VMLite WorkStation** | 更轻量的选择 |
 
-![服务器硬件](assets/106-Linux概述与系统安装/08-服务器硬件.jpg)
+![服务器硬件](https://img.tsh520.cn/file/blog/article/08-服务器硬件.jpg)
 *图：PPT 第 8 页配的服务器实物——"物理机安装"就是把操作系统**直接装到这样一台机器的硬件上**；而学习阶段手上只有一台笔记本/台式机，所以走"虚拟机安装"这条路，用软件在这台电脑里再"造"出一台机器来*
 
 > [!TIP]
@@ -164,7 +164,7 @@ PPT 第 8 页列了三款虚拟机软件：
 
 > **虚拟机安装**：直接双击运行资料中的 VMWare 安装程序，根据提示完成安装即可。
 
-![VMware 安装向导](assets/106-Linux概述与系统安装/09-VMware安装向导.jpg)
+![VMware 安装向导](https://img.tsh520.cn/file/blog/article/09-VMware安装向导.jpg)
 *图：PPT 第 9 页配的安装界面——**VMware Workstation Pro 16** 的安装向导第一步，"下一步 / 取消"。安装过程没有需要特别设置的地方：接受许可、选安装目录（想省 C 盘空间就换到 D 盘）、一路下一步，最后重启一下*
 
 第 11 页是**挂载镜像**（把老师给的 CentOS 7 虚拟机文件"挂"到 VMware 里）：
@@ -175,17 +175,17 @@ PPT 第 8 页列了三款虚拟机软件：
 
 **① 解压镜像包到磁盘目录**——把资料里的 CentOS7 压缩包解压出来，会看到一个目录（PPT 图里是 `D:\VMimages\CentOS7-1`），里面是一堆虚拟机文件：
 
-![双击 vmx 完成挂载](assets/106-Linux概述与系统安装/11-双击vmx完成挂载.jpg)
+![双击 vmx 完成挂载](https://img.tsh520.cn/file/blog/article/11-双击vmx完成挂载.jpg)
 *图：PPT 第 11 页配的解压结果——`CentOS 7 64 位.vmx`（红色箭头指的那个，图标上带着 VMware 的标志）是整台虚拟机的"入口文件"，`.vmdk` 是虚拟硬盘（一台机器可能被切成 s001～s013 好几个）、`.nvram` / `.vmsd` 是状态与快照文件。**这一堆文件都不能删、不能单独移动，要动就整个文件夹一起动***
 
 **② 双击 `.vmx` 完成挂载**——双击之后 Windows 会问"用什么打开"，选 **VMware Workstation**：
 
-![选择 VMware 打开 vmx](assets/106-Linux概述与系统安装/11-选择VMware打开vmx.jpg)
+![选择 VMware 打开 vmx](https://img.tsh520.cn/file/blog/article/11-选择VMware打开vmx.jpg)
 *图：PPT 第 11 页配的"你要如何打开这个文件?"对话框——选 **VMware Workstation** 并勾上"始终使用此应用打开 .vmx 文件"，之后再双击就直接进 VMware 了（第一次没勾的话，每次都要再选一遍）*
 
 **③ 启动服务器**——这台虚拟机就被"挂"进 VMware 的列表里了，点"**开启此虚拟机**"开机：
 
-![开启此虚拟机](assets/106-Linux概述与系统安装/11-开启此虚拟机.jpg)
+![开启此虚拟机](https://img.tsh520.cn/file/blog/article/11-开启此虚拟机.jpg)
 *图：PPT 第 11 页配的 VMware 界面——左侧是这台机器的设备清单（内存 4 GB、处理器 2 个、硬盘 50 GB、**网络适配器 NAT**、CD/DVD 正在使用文件……），右侧中间那个红箭头指向的按钮就是"**开启此虚拟机**"；底部"虚拟机详细信息"里能看到配置文件路径（`.vmx`）和"状态：已关机"*
 
 开机之后要登录：**用户名 `root`，密码 `1234`**（PPT 原文给的）。`root` 是 Linux 的**超级管理员**，相当于 Windows 的 Administrator——后面 [108 篇](/posts/编程学习/javaweb学习笔记/108-linux软件安装/)装软件、[109 篇](/posts/编程学习/javaweb学习笔记/109-项目部署到linux/)部署项目，用的都是这个账号。
@@ -208,10 +208,10 @@ PPT 第 8 页列了三款虚拟机软件：
 
 虚拟网络编辑器藏在 VMware 的菜单里：
 
-![虚拟网络编辑器入口](assets/106-Linux概述与系统安装/10-虚拟网络编辑器入口.jpg)
+![虚拟网络编辑器入口](https://img.tsh520.cn/file/blog/article/10-虚拟网络编辑器入口.jpg)
 *图：PPT 第 10 页配的位置图——VMware 的菜单栏"**编辑(E) → 虚拟网络编辑器(N)...**"，就是从这里进去改虚拟机用的那张"虚拟网卡"*
 
-![NAT 模式与子网 IP](assets/106-Linux概述与系统安装/10-NAT模式与子网IP.jpg)
+![NAT 模式与子网 IP](https://img.tsh520.cn/file/blog/article/10-NAT模式与子网IP.jpg)
 *图：PPT 第 10、12 页配的核心设置界面——上半张表里 **VMnet8** 的类型是"**NAT 模式**"（`VMnet8` 就是 VMware 给 NAT 模式准备的虚拟网卡，`VMnet1` 是仅主机模式，`VMnet0` 是桥接）；下半部分是它的详细设置：勾着 **NAT 模式（用于共享主机的 IP 地址）**，下面的"**子网 IP (I)：192.168.100.0**"和"子网掩码 255.255.255.0"就是 PPT 第 12 页要求改的那一项。改完点"应用 / 确定"*
 
 > [!IMPORTANT]
@@ -302,7 +302,7 @@ $ which java nginx mysql vim              # 这四个软件装在哪儿（只回
 
 > **公司在北京，服务器可能在上海/天津/香港/海外，该如何进行软件安装/项目部署？**
 
-![机房里的服务器](assets/106-Linux概述与系统安装/13-机房里的服务器.jpg)
+![机房里的服务器](https://img.tsh520.cn/file/blog/article/13-机房里的服务器.jpg)
 *图：PPT 第 13 页配的机房照片——服务器躺在**机房**里，人在办公室，中间隔着城市甚至国界。总不可能背着显示器键盘飞过去装软件：所以**能操作到的只有网络**，这就是"远程连接"要解决的问题*
 
 答案就是**远程连接**：服务器在哪儿不重要，只要能通过网络连到它的 **22 端口**，在自己的电脑上敲命令，效果和坐在它面前一模一样。
@@ -332,19 +332,19 @@ $ which java nginx mysql vim              # 这四个软件装在哪儿（只回
 
 > 直接双击运行 FinalShell 的安装程序完成安装即可。
 
-![FinalShell 安装向导](assets/106-Linux概述与系统安装/16-FinalShell安装向导.jpg)
+![FinalShell 安装向导](https://img.tsh520.cn/file/blog/article/16-FinalShell安装向导.jpg)
 *图：PPT 第 16 页配的安装界面——FinalShell 3.8.3 的安装向导，"最终用户许可协议"这一步（按 PgDn 读完、点"我接受(I)"继续）。同样是一路下一步的普通 Windows 安装，不需要额外配置*
 
 ### FinalShell 连接虚拟机（PPT 第 17 页）
 
 装完之后就是**配一个连接**，让它去连我们刚装好的那台 CentOS 7。数据来自网络配置那一步查到的 IP（PPT 里的机器是 `192.168.100.128`）：
 
-![FinalShell 新建 SSH 连接](assets/106-Linux概述与系统安装/17-FinalShell新建SSH连接.jpg)
+![FinalShell 新建 SSH 连接](https://img.tsh520.cn/file/blog/article/17-FinalShell新建SSH连接.jpg)
 *图：PPT 第 17 页配的"新建连接"对话框——左侧树里选的是 **SSH 连接**（下面还有"终端 / 代理服务器 / 隧道"可展开）；右侧"常规"里 **名称和主机都填虚拟机的 IP `192.168.100.128`**、"端口 **22**"（SSH 的默认端口）；"认证"里方法选**密码**、**用户名 `root`**、**密码**（课程里就是 `1234`）。填完点确定*
 
 配好的连接会出现在连接管理器里，双击就能连上：
 
-![FinalShell 连接管理器](assets/106-Linux概述与系统安装/17-FinalShell连接管理器.jpg)
+![FinalShell 连接管理器](https://img.tsh520.cn/file/blog/article/17-FinalShell连接管理器.jpg)
 *图：PPT 第 17 页配的连接管理器——列表里躺着配好的连接（`192.168.100.128`、端口 `22`、用户 `root`），右键或双击即可打开一个远程终端；下面还勾着"连接后关闭窗口"。连上之后，**面板里敲的命令 = 在虚拟机里敲的命令**，接下来 [107 篇](/posts/编程学习/javaweb学习笔记/107-linux常用命令/)的所有命令都可以在这里练*
 
 > [!WARNING]
@@ -362,12 +362,12 @@ $ which java nginx mysql vim              # 这四个软件装在哪儿（只回
 
 先看 Windows 是怎么组织的：
 
-![Windows 的磁盘分区](assets/106-Linux概述与系统安装/19-Windows的磁盘分区.jpg)
+![Windows 的磁盘分区](https://img.tsh520.cn/file/blog/article/19-Windows的磁盘分区.jpg)
 *图：PPT 第 19 页配的 Windows"此电脑"——**本地磁盘 (C:)、软件 (D:)、文档 (E:)** 三个盘各自独立，每个盘下面都是一棵树。Windows 的目录结构是"**多棵树**"，根是盘符（`C:\`、`D:\`）*
 
 再看 Linux：
 
-![Linux 目录树](assets/106-Linux概述与系统安装/19-Linux目录树.jpg)
+![Linux 目录树](https://img.tsh520.cn/file/blog/article/19-Linux目录树.jpg)
 *图：PPT 第 19 页配的 Linux 根目录——**只有一个根 `/`**，下面挂着一排目录（`bin`、`boot`、`dev`、`etc`、`home`、`lib`、`opt`、`root`、`sbin`、`tmp`、`usr`、`var`……），每个目录下面再套子目录。整台机器**只有这一棵树**，所有文件都在这棵树上的某个位置*
 
 | | Windows | Linux |
@@ -396,7 +396,7 @@ PPT 第 20 页把根目录下的 12 个目录逐个标了中文说明（**这张
 | **usr** | 存放**系统应用程序**（`/usr/local` 是"后来自己装的软件"的地盘——[108 篇](/posts/编程学习/javaweb学习笔记/108-linux软件安装/)装的 JDK、MySQL、Nginx 全在 `/usr/local` 下） |
 | **var** | 存放**运行时需要改变数据的文件**，例如**日志文件**（项目跑起来之后日志一般落在 `/var/log` 一带） |
 
-![Linux 目录结构示意图](assets/106-Linux概述与系统安装/20-Linux目录结构图.jpg)
+![Linux 目录结构示意图](https://img.tsh520.cn/file/blog/article/20-Linux目录结构图.jpg)
 *图：PPT 第 20 页配的目录结构图——最上面是根 `/`，一层层往下挂：`/usr` 下有 `bin`、`local`、`src`（自己装的软件在 `local`、源码包在 `src`），`/etc` 下有 `rc.d` → `rc3.d` / `rc5.d` / `init.d`（系统服务和自启动脚本），左边一列还有 `bin`、`sbin`、`tmp`、`lib`、`var`、`home`、`opt`。**记住"倒挂的树"这个形状**：越靠上越"系统"，越往下越"具体某个软件自己的东西"*
 
 目录为什么重要？因为后面每一篇都在往这些目录里放东西——**装软件放 `/usr/local`、环境变量改 `/etc/profile`、日志在 `/var/log` 一带、自己的试验放 `/tmp` 或家目录**。位置错了轻则找不到文件，重则覆盖系统的东西。

@@ -36,12 +36,12 @@ IDEA **自己带了一个 Maven**（安装包里内置的那份，设置页里�
 
 设置走的是"**全局**"这一档，打开方式在欢迎页的 **Customize → All settings...**（PPT 第 28 页第一张图点的就是这个）：
 
-![IDEA全局设置入口](assets/25-IDEA集成Maven与项目坐标/28-IDEA全局设置入口.jpg)
+![IDEA全局设置入口](https://img.tsh520.cn/file/blog/article/28-IDEA全局设置入口.jpg)
 *图：PPT 第 28 页的入口操作——IDEA 欢迎页左侧 Customize，右侧最下面点 `All settings...` 进全局设置（项目里则是 `File → Settings`）*
 
 进去之后按 **`Build, Execution, Deployment → Build Tools → Maven`** 展开，就是三个路径所在的页面：
 
-![Maven三个路径配置](assets/25-IDEA集成Maven与项目坐标/28-Maven三个路径配置.jpg)
+![Maven三个路径配置](https://img.tsh520.cn/file/blog/article/28-Maven三个路径配置.jpg)
 *图：PPT 第 28 页的核心配置页——`Maven home path` = 解压目录、`User settings file` = `conf\settings.xml`（右侧 Override 已勾选）、`Local repository` = `mvn_repo`，三项要和 settings.xml 里的配置对得上*
 
 > [!NOTE]
@@ -49,10 +49,10 @@ IDEA **自己带了一个 Maven**（安装包里内置的那份，设置页里�
 
 同一次配置里 PPT 还顺手设了另外两项（第 28 页的后两张图）——**它们决定"用哪个 JDK 跑 Maven""编译出来的字节码是几版"**：
 
-![Maven运行器JDK设置](assets/25-IDEA集成Maven与项目坐标/28-Maven运行器JDK设置.jpg)
+![Maven运行器JDK设置](https://img.tsh520.cn/file/blog/article/28-Maven运行器JDK设置.jpg)
 *图：PPT 第 28 页——`Maven → Runner` 页里的 `JRE` 选 **17（Oracle OpenJDK version 17）**，也就是"IDEA 调 Maven 时用 JDK 17"，和 `mvn -v` 里那行 `Java version: 17` 对得上*
 
-![Java编译器字节码版本](assets/25-IDEA集成Maven与项目坐标/28-Java编译器字节码版本.jpg)
+![Java编译器字节码版本](https://img.tsh520.cn/file/blog/article/28-Java编译器字节码版本.jpg)
 *图：PPT 第 28 页——`Compiler → Java Compiler` 页里的 `Project bytecode version` 也选 **17**，即"编译出来的 .class 是 Java 17 的字节码"，与 pom.xml 里 `maven.compiler.source/target = 17` 一致*
 
 > [!TIP]
@@ -78,7 +78,7 @@ IDEA **自己带了一个 Maven**（安装包里内置的那份，设置页里�
 
 在 IDEA 里（任意打开的工程中）**`File → New → Module...`**，左边列表选 **New Module**，右边填信息：
 
-![新建Maven模块界面](assets/25-IDEA集成Maven与项目坐标/29-新建Maven模块界面.jpg)
+![新建Maven模块界面](https://img.tsh520.cn/file/blog/article/29-新建Maven模块界面.jpg)
 *图：PPT 第 29 页的 New Module 对话框——Name 是 `maven-project01`、Location 决定项目建在磁盘的哪个目录、Language 选 Java、**Build system 选 Maven**、JDK 选 17、Parent 保持 `<None>`，下面 `Advanced Settings` 里填 GroupId 和 ArtifactId*
 
 | 对话框里的项 | 填什么 | 课程示例 |
@@ -248,29 +248,29 @@ IDEA 里一份"打开的工程"（Project）可以装多个模块（Module）。
 
 1. **File** 菜单里点 **Project Structure**（也可以直接按快捷键 `Ctrl+Alt+Shift+S`）：
 
-   ![进入ProjectStructure](assets/25-IDEA集成Maven与项目坐标/34-进入ProjectStructure.jpg)
+   ![进入ProjectStructure](https://img.tsh520.cn/file/blog/article/34-进入ProjectStructure.jpg)
    *图：PPT 第 34 页第一步——`File` 菜单里的 `Project Structure...`（后面标着快捷键 Ctrl+Alt+Shift+S）*
 
 2. 左边选 **Modules**，再点顶部工具条上的 **`+` → Import Module**：
 
-   ![模块导入菜单](assets/25-IDEA集成Maven与项目坐标/34-模块导入菜单.jpg)
+   ![模块导入菜单](https://img.tsh520.cn/file/blog/article/34-模块导入菜单.jpg)
    *图：PPT 第 34 页第二步——Project Structure 的 Modules 页，点 `+` 后选 `Import Module`（旁边 New Module 是上一节用的那种）*
 
 3. 在弹出的文件选择框里**选中那个项目的 `pom.xml`**，点 OK：
 
-   ![选择pomxml文件](assets/25-IDEA集成Maven与项目坐标/34-选择pomxml文件.jpg)
+   ![选择pomxml文件](https://img.tsh520.cn/file/blog/article/34-选择pomxml文件.jpg)
    *图：PPT 第 34 页第三步——Select File or Directory to Import 对话框，路径框里选中的正是 `web-project01\maven-project02\pom.xml`（对话框第一行也写明支持 "Maven project file (pom.xml)"）*
 
 ### 方式二：Maven 面板 → `+`（Add Maven Projects）
 
 右侧的 **Maven 面板**（没有的话 `View → Tool Windows → Maven`）顶部工具条上有个 **`+`**，点它就是 **Add Maven Projects**：
 
-![Maven面板加号](assets/25-IDEA集成Maven与项目坐标/35-Maven面板加号.jpg)
+![Maven面板加号](https://img.tsh520.cn/file/blog/article/35-Maven面板加号.jpg)
 *图：PPT 第 35 页第一步——Maven 面板（此时里面只有 `maven-project01` 一个模块），顶部工具条第 4 个图标是 `+`*
 
 点了 `+` 之后同样弹出选择框，**选 pom.xml**：
 
-![选择pomxml路径](assets/25-IDEA集成Maven与项目坐标/35-选择pomxml路径.jpg)
+![选择pomxml路径](https://img.tsh520.cn/file/blog/article/35-选择pomxml路径.jpg)
 *图：PPT 第 35 页第二步——Select Path 对话框，选中 `web-project1\maven-project02\pom.xml`；导入成功后 Maven 面板里会多出这个模块*
 
 ### 两条建议

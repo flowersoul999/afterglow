@@ -33,7 +33,7 @@ PPT 第 59 页给的原文定义只有一句，但很关键：
 
 "**纵向**"这两个字是理解它的钥匙——普通查询是"横着"一行一行地看记录，聚合函数是"竖着"把一整列的值抓起来算一个结果。PPT 第 59 页的那张图就是 `emp` 表里的数据：
 
-![DataGrip里的员工表数据](assets/47-DQL聚合函数与分组查询/59-DataGrip里的员工表数据.jpg)
+![DataGrip里的员工表数据](https://img.tsh520.cn/file/blog/article/59-DataGrip里的员工表数据.jpg)
 *图：PPT 第 59 页——DataGrip 里 `emp` 表的数据（id、username、name、gender、salary 等列）。聚合函数就是把这样的一列值（比如整列 salary）当成一个整体来算：整列加起来是总薪资 `sum`，整列平均一下是平均薪资 `avg`，整列里最小的那个是 `min`*
 
 ### 五个聚合函数（PPT 第 59 页）

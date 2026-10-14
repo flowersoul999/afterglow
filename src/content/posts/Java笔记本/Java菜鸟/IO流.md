@@ -18,7 +18,7 @@ descriptionSource: ai
 - **构造器**：
 
   1. new File(String pathname)：根据路径字符串构建。  
-![|500](assets/IO流/file-20260311151251583.png)​
+![|500](https://img.tsh520.cn/file/blog/article/file-20260311151251583.png)​
 2. new File(File parent, String child)：根据父目录文件对象+子路径构建。
 3. new File(String parent, String child)：根据父目录字符串+子路径构建。
 ### 1.3 获取文件信息

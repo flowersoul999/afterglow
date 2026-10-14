@@ -207,7 +207,7 @@ where e.name like concat('%',#{name},'%') and e.gender = #{gender} and e.entry_d
 
 > **查询条件随着用户输入的条件变化而变化**
 
-![多条件查询页面](assets/68-条件分页查询与动态SQL/64-多条件查询页面.jpg)
+![多条件查询页面](https://img.tsh520.cn/file/blog/article/64-多条件查询页面.jpg)
 *图：PPT 第 64 页配的多条件查询页面——搜索区里每个条件都可以填、也可以空着（这里画的是"活动编号 / 渠道来源 / 活动日期"三个条件），后端 SQL 必须跟着用户实际填的内容变化，这就是动态 SQL 要解决的问题*
 
 ### 动态 SQL 是什么（PPT 第 63 页）

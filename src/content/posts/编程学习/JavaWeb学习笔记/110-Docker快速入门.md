@@ -47,7 +47,7 @@ PPT 第 3～8 页是**第 19 章的"安装 MySQL 回顾"**：六屏终端，把 
 | 7 | 启动服务、用临时密码登录、改密码 | `systemctl start mysql`、`mysql -uroot -pxxxxx`、`ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '1234';` |
 | 8 | 第 7 页的尾巴（"后续省略"）——然后给出三条吐槽 | 见下面三条痛点 |
 
-![MySQL 官网的下载页](assets/110-Docker快速入门/03-mysql安装包下载页.jpg)
+![MySQL 官网的下载页](https://img.tsh520.cn/file/blog/article/03-mysql安装包下载页.jpg)
 *图：PPT 第 3～8 页配的这张图是 MySQL 官网的下载页（`dev.mysql.com/downloads/mysql`）——"General Availability (GA) Releases"里要选 `Linux - Generic`、`Linux - Generic (glibc 2.12) (x86, 64-bit)`，再从三个压缩包里挑出那个 586.5M 的 `mysql-8.0.33-linux-glibc2.12-x86_64.tar.xz`。PPT 第 8 页那句"安装包哪里下载，找不到"说的就是这一步：光把页面找对、把平台和包名选对，就够劝退一批人*
 
 六屏命令滚完，PPT 第 8 页把这一整套的"代价"总结成三句话（原文）：
@@ -170,7 +170,7 @@ a6cec8ff4765ca0876d0453f3ccab205fca29b5dce74f8cfbad8d76571bf79be
 
 ### 一张结构图（PPT 第 16 页）
 
-![Docker 的整体结构](assets/110-Docker快速入门/16-docker架构图.jpg)
+![Docker 的整体结构](https://img.tsh520.cn/file/blog/article/16-docker架构图.jpg)
 *图：PPT 第 16 页的结构图——左边是 **Client**（我们敲命令的地方），中间是 **DOCKER_HOST**（里面跑着 `docker daemon` 守护进程，下面挂着 Containers 容器和 Images 本地镜像），右边是 **Registry** 镜像仓库（图上画着 Ubuntu、MySQL、NGINX 这些现成的镜像）。箭头就是数据流向：`docker pull` 把镜像从仓库拉到本地，`docker run` 拿本地镜像创建容器，`docker build` 则从 Dockerfile 造出一个新镜像（[112 篇](/posts/编程学习/javaweb学习笔记/112-docker自定义镜像与网络/)）*
 
 这张图按角色拆开看：

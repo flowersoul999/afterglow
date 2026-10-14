@@ -468,10 +468,10 @@ docker run -d \
 
 三个都是"本地目录挂载"的写法——**开头都带 `/`**（`/root/mysql/...`），所以 Docker 认它们是宿主机上真实存在的目录，而不是数据卷名。
 
-![HeidiSQL 的连接配置界面](assets/111-Docker常见命令与数据卷/18-mysql客户端连接界面.jpg)
+![HeidiSQL 的连接配置界面](https://img.tsh520.cn/file/blog/article/18-mysql客户端连接界面.jpg)
 *图：PPT 里配的 MySQL 客户端截图（这里是 HeidiSQL 的"会话管理器"）——主机填服务器 IP、端口填映射出来的端口、用户和密码填 `-e` 里设的那两个，就能连上跑起来的 MySQL。容器里的数据库也是这么连：**填宿主机 IP + 宿主机端口**（[110 篇](/posts/编程学习/javaweb学习笔记/110-docker快速入门/)第 18 页那个 `jdbc:mysql://192.168.100.128:3307`）*
 
-![HeidiSQL 里看到的库和表](assets/111-Docker常见命令与数据卷/18-mysql客户端库表数据.jpg)
+![HeidiSQL 里看到的库和表](https://img.tsh520.cn/file/blog/article/18-mysql客户端库表数据.jpg)
 *图：连上之后看到的库与表（左侧是库表树、右侧是表数据）——这就是"MySQL 容器真的能用了"的判定标准。挂载了 `/root/mysql/init` 之后，容器**第一次启动**会自动执行里面的 `.sql` 脚本，用客户端连上看到的这些库表就是那批脚本建出来的*
 
 > [!WARNING]

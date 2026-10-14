@@ -64,7 +64,7 @@ PPT 第 51、52 页还把"阶段"和"方法"对应了起来，这是这一节最
 
 那么"看代码"是为了什么？因为真实业务方法往往**又长又绕**，读一遍都费劲，出了问题更没法靠肉眼看出来：
 
-![业务方法代码示例](assets/27-JUnit单元测试入门/51-业务方法代码示例.jpg)
+![业务方法代码示例](https://img.tsh520.cn/file/blog/article/51-业务方法代码示例.jpg)
 *图：PPT 第 51 页（讲测试方法那页）上配的业务方法截图——这是课程实战项目里"统计指定时间区间营业额"的方法：先取日期列表、再按日期去数据库查原始数据、再把结果梳理成日期→营业额的映射并补 0，中间还夹着流式操作和 SQL 调用；这类方法属于**白盒测试**要盯的东西，靠肉眼检查结果对不对基本不可能*
 
 ## 单元测试是什么
@@ -98,7 +98,7 @@ PPT 第 54 页的下一页给出定义：
 
 在学 JUnit 之前，很多人是这么"测试"的——写一个带 `main` 方法的类，把要测的方法挨个调一遍：
 
-![main方法测试代码](assets/27-JUnit单元测试入门/54-main方法测试代码.jpg)
+![main方法测试代码](https://img.tsh520.cn/file/blog/article/54-main方法测试代码.jpg)
 *图：PPT 第 54 页的"main 方法测试"——一个 `Test` 类，`main` 方法里按顺序调用 `findAllStudent()`、`addStudent()`、`updateStudent()`、`deleteStudent()`，每个测试方法都是 `private static void`，结果全靠 `System.out.println` 打印出来自己看*
 
 PPT 第 54 页把这种方式和 JUnit 单元测试摆在一起做了对比（"VS"）：
@@ -111,7 +111,7 @@ PPT 第 54 页把这种方式和 JUnit 单元测试摆在一起做了对比（"V
 
 "一个失败不影响其他"这一条在实操里差别特别大：main 方法里第 2 个测试抛了异常，第 3、4 个测试就再也不会执行，你还得把前面的注释掉重跑；JUnit 会把所有 `@Test` 方法都跑一遍，最后一次性告诉你哪些红了。运行结果也就是 PPT 第 55 页那句"**测试通过：绿色；测试失败：红色**"：
 
-![JUnit测试运行结果](assets/27-JUnit单元测试入门/54-JUnit测试运行结果.jpg)
+![JUnit测试运行结果](https://img.tsh520.cn/file/blog/article/54-JUnit测试运行结果.jpg)
 *图：PPT 第 54 页的 JUnit 运行结果面板——右上角统计 "Tests failed: 2, passed: 4 of 6 tests"，左边每个测试方法前面是**绿色对勾**（通过）或**红色叉**（失败），右下角是选中失败方法后给出的原因：`org.opentest4j.AssertionFailedError`，`Expected :null`、`Actual :Jack:1`（预期为 null，实际拿到了 Jack:1，说明断言没通过）*
 
 ## 快速入门：四步跑通第一个单元测试

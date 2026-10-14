@@ -277,7 +277,7 @@ public void doFilter(ServletRequest request, ServletResponse response, FilterCha
 }
 ```
 
-![Filter 执行流程的演示代码](assets/83-过滤器Filter/39-Filter执行流程代码.jpg)
+![Filter 执行流程的演示代码](https://img.tsh520.cn/file/blog/article/39-Filter执行流程代码.jpg)
 *图：PPT 第 39 页"Filter 执行流程"的演示代码——`chain.doFilter(...)` 之前是放行前逻辑，之后那行是放行后逻辑，一行代码就把"放行还会回来"讲清楚了*
 
 把请求想成"进一扇门、办完事再出来"：请求从门外进来时，先执行 `chain.doFilter(...)` **之前**的放行前逻辑；`chain.doFilter(...)` 这句就是"开门放行"，请求走到资源（Controller）里干活；资源干完、响应往回走时，**又回到同一个 `doFilter` 方法里 `chain.doFilter(...)` 的下一行**继续执行放行后逻辑。同一个 `doFilter` 方法在一次请求里被"经过"了两次——去一次、回一次，但**代码只执行了一遍**，回程执行的是放行后那半段。

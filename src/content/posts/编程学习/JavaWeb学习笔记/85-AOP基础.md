@@ -132,7 +132,7 @@ PPT 第 6 页把需求钉死：
 </dependency>
 ```
 
-![pom.xml 中引入 AOP 依赖](assets/85-AOP基础/08-引入AOP依赖.jpg)
+![pom.xml 中引入 AOP 依赖](https://img.tsh520.cn/file/blog/article/08-引入AOP依赖.jpg)
 *图：PPT 第 8 页贴的 pom.xml 片段——`spring-boot-starter-aop` 是 Spring Boot 官方的起步依赖，版本交给父工程管，不用自己写*
 
 这和 [56 篇](/posts/编程学习/javaweb学习笔记/56-springboot配置文件/)以来一直用的 `spring-boot-starter-web`、`mybatis-spring-boot-starter` 是一个道理：**starter = 一组依赖 + 自动配置**。加了它，Spring 才会去认 `@Aspect` 这类注解、才会替你生成代理对象。
@@ -169,7 +169,7 @@ public class RecordTimeAspect {
 }
 ```
 
-![统计耗时的切面类](assets/85-AOP基础/08-记录耗时切面.jpg)
+![统计耗时的切面类](https://img.tsh520.cn/file/blog/article/08-记录耗时切面.jpg)
 *图：课程代码里的 `RecordTimeAspect`——类上 `@Aspect` + `@Component` 表明"这是一个交给 Spring 管理的切面"，方法上的 `@Around("execution(...)")` 说明"管哪些方法"，方法体里就是原来那段三步计时代码*
 
 一段一段拆开看，每一处都有它非写不可的理由：
@@ -242,10 +242,10 @@ mybatis:
 - **切面（Aspect）**：`RecordTimeAspect` 这个**类**——它把"通知（怎么做）"和"切入点（对谁做）"**绑在一起**。PPT 的图中把这一层画成"切面类"里装着"通知"和"切入点表达式"。
 - **目标对象（Target）**：`DeptServiceImpl` 的**那个对象**——通知最终应用的"受害者"，也就是原始业务对象。
 
-![原始业务类（目标对象）](assets/85-AOP基础/10-目标对象业务类.jpg)
+![原始业务类（目标对象）](https://img.tsh520.cn/file/blog/article/10-目标对象业务类.jpg)
 *图：课程代码里的 `DeptServiceImpl`——它就是"目标对象"：类里 `list` / `delete` / `save` / `getById` 每个方法都是连接点，类里的代码干干净净、一行计时代码都没有*
 
-![只匹配 list 方法的切面](assets/85-AOP基础/12-切面只匹配list方法.jpg)
+![只匹配 list 方法的切面](https://img.tsh520.cn/file/blog/article/12-切面只匹配list方法.jpg)
 *图：PPT 第 12 页把切入点表达式从 `*.*(..)` 换成了 `list(..)`——可见"切入点是一张筛选单"：表达式写成什么样，就只有被它匹配上的连接点才被加上通知*
 
 再强调一遍那组关系（这是最关键的一层）：

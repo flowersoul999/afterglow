@@ -13,7 +13,7 @@ order: 6
 
 当智能体系统逐渐复杂时，单靠 `print` 调试已经不够用了。**LangSmith 是 LangChain 官方推出的可视化监控与测试平台**，用于跟踪、记录和分析智能体运行过程中的**完整调用链路**，让内部运行过程变得透明、可评估。
 
-![](assets/06-LangSmith的使用/ch03-p001-主界面与功能菜单.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch03-p001-主界面与功能菜单.jpg)
 *图：LangSmith 主界面——左侧菜单列全了 Tracing、Monitoring、Datasets、Playground、Studio 等功能*
 
 核心目标：
@@ -80,23 +80,23 @@ order: 6
 
 1. 访问官网 https://smith.langchain.com/ 注册或登录
 
-![](assets/06-LangSmith的使用/ch03-p003-注册登录页面.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch03-p003-注册登录页面.jpg)
 *图：注册 / 登录页面（注册时先选数据区域，之后不能改）*
 
 2. 进入设置 → 创建 API Key
 
-![](assets/06-LangSmith的使用/ch03-p004-设置入口与密钥页.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch03-p004-设置入口与密钥页.jpg)
 *图：左侧菜单最下方的 Settings 入口，进去就是 API Keys 页面*
 
 3. **点 copy 保存好**：
 
-![](assets/06-LangSmith的使用/ch03-p005-创建后复制密钥弹窗.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch03-p005-创建后复制密钥弹窗.jpg)
 *图：创建成功后的复制弹窗——API Key 只在这里显示一次*
 
 > [!WARNING]
 > API Key **只在创建弹窗里出现一次**，关掉弹窗后官网就再也看不到内容了（只能删除重建）。务必先复制保存。
 
-![](assets/06-LangSmith的使用/ch03-p006-删除密钥确认弹窗.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch03-p006-删除密钥确认弹窗.jpg)
 *图：需要作废密钥时，点列表右侧的图标删除（删除前会二次确认）*
 
 ## 配置四个环境变量
@@ -150,13 +150,13 @@ print(model.invoke("你好"))
 
 运行后到 LangSmith 官网，进入 `LANGSMITH_PROJECT` 指定的项目，就能看到这次调用的完整链路（输入提示词、模型返回、Token 消耗、耗时）。
 
-![](assets/06-LangSmith的使用/ch03-p008-追踪项目列表界面.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch03-p008-追踪项目列表界面.jpg)
 *图：Tracing 界面里按 LANGSMITH_PROJECT 命名的项目，Trace Count / 延迟 / Token / 成本一目了然*
 
 > [!TIP]
 > 有了它，"模型为什么答错了"这类问题就不用靠猜了：点开那条 trace，能直接看到**实际发出去的完整提示词**——八成问题都出在你以为发了什么、实际发了什么不一样。
 
-![](assets/06-LangSmith的使用/ch03-p009-监控报表看板界面.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch03-p009-监控报表看板界面.jpg)
 *图：Monitoring 界面的运行报表——可切换项目，按标签查看一段时间内的调用趋势*
 
 ### 继续往下看：详情页与运行报表

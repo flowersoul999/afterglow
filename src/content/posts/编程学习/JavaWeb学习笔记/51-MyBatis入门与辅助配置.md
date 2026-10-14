@@ -102,7 +102,7 @@ PPT 还在这一页给了个**提示**（原话）：
 - **MySQL Driver**（MySQL 驱动，也就是上一篇 `mysql-connector-j` 那个 jar）
 - **Lombok**（用来给实体类自动生成 `getter/setter/toString` 等）
 
-![IDEA创建工程勾选MyBatis依赖](assets/51-MyBatis入门与辅助配置/17-创建工程勾选MyBatis依赖.jpg)
+![IDEA创建工程勾选MyBatis依赖](https://img.tsh520.cn/file/blog/article/17-创建工程勾选MyBatis依赖.jpg)
 *图：PPT 第 17 页的创建工程界面——Spring Boot 版本 3.2.6，勾了 MyBatis Framework 与 MySQL Driver，右侧"Added dependencies"里还有 Lombok*
 
 勾选之后 IDEA 会往 `pom.xml` 里写完依赖，等价的手写内容是这样的（课程工程 `springboot-mybatis-quickstart/pom.xml` 的节选）：
@@ -160,7 +160,7 @@ insert into user(id, username, password, name, age) values
     (5, 'zhaoyun',  '12345678', '赵云', 27);
 ```
 
-![user表结构与五条数据](assets/51-MyBatis入门与辅助配置/17-用户表与五条数据.jpg)
+![user表结构与五条数据](https://img.tsh520.cn/file/blog/article/17-用户表与五条数据.jpg)
 *图：PPT 第 17 页配的 user 表——5 条数据，五列分别是 id、username、password、name、age；本机实测用的就是这张表（PPT 截图里 daqiao 那行的密码是 `1234567890`，课程建表脚本里写的是 `123456`——以脚本为准）*
 
 表有了，还要一个"装数据"的实体类 `User`，**属性名和列名一一对应**（PPT 第 17 页的截图）：
@@ -184,7 +184,7 @@ public class User {
 }
 ```
 
-![User实体类属性](assets/51-MyBatis入门与辅助配置/17-User实体类属性.jpg)
+![User实体类属性](https://img.tsh520.cn/file/blog/article/17-User实体类属性.jpg)
 *图：PPT 第 17 页的实体类——五个属性对应表里的五列，每个属性后面标了列的含义*
 
 > [!TIP]
@@ -202,7 +202,7 @@ spring.datasource.username=root
 spring.datasource.password=1234
 ```
 
-![数据源连接配置](assets/51-MyBatis入门与辅助配置/17-数据源连接配置.jpg)
+![数据源连接配置](https://img.tsh520.cn/file/blog/article/17-数据源连接配置.jpg)
 *图：PPT 第 17 页的 application.properties——四行配置，第一行是 JDBC 连接地址（库里写着要连的数据库名 web01）*
 
 对照[上一篇](/posts/编程学习/javaweb学习笔记/50-jdbc查询与预编译sql/)的 JDBC 代码看，这四行就是把当初**硬编码在 Java 里的** url、用户名、密码搬到了配置文件里——[52 篇](/posts/编程学习/javaweb学习笔记/52-jdbc与mybatis的对比/)会专门说这件事：JDBC 的痛点之一是"硬编码"，MyBatis 的第一个解法就是"配置化"。
@@ -234,7 +234,7 @@ public interface UserMapper {
 }
 ```
 
-![Mapper接口与注解SQL](assets/51-MyBatis入门与辅助配置/17-Mapper接口与注解SQL.jpg)
+![Mapper接口与注解SQL](https://img.tsh520.cn/file/blog/article/17-Mapper接口与注解SQL.jpg)
 *图：PPT 第 17 页的 Mapper 接口——@Mapper 标在接口上，方法上直接用 @Select 写 SQL，返回 List&lt;User&gt;*
 
 三个关键点：
@@ -331,7 +331,7 @@ PPT 第 19 页原话：
 2. 在弹出的窗口里填 **Host `localhost`、Port `3306`、User `root`、Password 你自己的密码、Database `web01`**（填好后 URL 会自动拼成 `jdbc:mysql://localhost:3306/web01`）；
 3. 点 **Test Connection** 确认能连通，然后 OK。
 
-![IDEA配置MySQL数据库连接](assets/51-MyBatis入门与辅助配置/20-IDEA配置数据库连接.jpg)
+![IDEA配置MySQL数据库连接](https://img.tsh520.cn/file/blog/article/20-IDEA配置数据库连接.jpg)
 *图：PPT 第 20 页的 Data Sources and Drivers 窗口——Host、Port、User、Password、Database 五格填完，URL 一栏自动生成，Test Connection 能过就说明 IDEA 拿到了表结构*
 
 连上之后，IDEA 就知道 `user` 表有哪些列，Mapper 里的 SQL 立刻变得"可读"：关键字高亮、表名字段名有提示、点表名能跳转表结构。
@@ -340,7 +340,7 @@ PPT 第 19 页原话：
 
 光标停在 `@Select("...")` 里 → 按 **Alt+Enter** → 选 **Inject language or reference** → 在列表里选 **MySQL (SQL)**：
 
-![SQL提示注入语言](assets/51-MyBatis入门与辅助配置/19-SQL提示注入语言.jpg)
+![SQL提示注入语言](https://img.tsh520.cn/file/blog/article/19-SQL提示注入语言.jpg)
 *图：PPT 第 19 页的两步——Alt+Enter 打开上下文菜单里的 "Inject language or reference"，把这段字符串声明成 MySQL 的 SQL 语言*
 
 > [!TIP]

@@ -93,7 +93,7 @@ User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
 
 再看 **POST** 的：
 
-![POST请求报文](assets/32-HTTP协议与请求数据格式/24-POST请求报文.jpg)
+![POST请求报文](https://img.tsh520.cn/file/blog/article/24-POST请求报文.jpg)
 *图：PPT 第 24-26 页——一条真实的 POST 报文：请求行是 `POST /brand HTTP/1.1`（路径里没有参数）；请求头有 `Content-Length: 161`、`Content-Type: application/json;charset=UTF-8`、`Cookie: ...`、`Host: localhost:8080` 等；**空行之后**是请求体 `{"status":1,"brandName":"黑马","companyName":"黑马程序员","id":"","description":"黑马程序员"}`（参数全在这里，长度正好对上 `Content-Length` 的 161 字节）*
 
 对照 PPT 第 24、26 页的定义，逐段拆解这两条报文：

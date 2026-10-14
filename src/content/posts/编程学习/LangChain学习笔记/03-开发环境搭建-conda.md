@@ -20,7 +20,7 @@ LangChain 1.2 要求 **Python >= 3.10**，课程使用 **Python 3.13.12**。
 
 相较于**全局环境（系统环境）**，每个**虚拟环境**都有自己独立的一套：Python 解释器、pip 命令、第三方依赖包，**不和其它项目产生干扰**。做 AI 项目尤其需要——不同项目的依赖版本冲突是家常便饭。
 
-![](assets/03-开发环境搭建-conda/ch01-p013-全局环境与虚拟环境.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p013-全局环境与虚拟环境.jpg)
 *图：全局环境与虚拟环境的对比——全局环境共用一套 Lib、Scripts（pip.exe/python.exe），而每个工程目录下的 .venv 都有自己独立的一套，互不干扰*
 
 ### 三种方案对比
@@ -136,7 +136,7 @@ pip list                             # 查看已安装包
 建议：**优先 conda install，conda 没有的再用 pip install。**
 检查某个包是从哪来的：`conda list` 里 conda 装的显示频道名，pip 装的显示 `pypi`。
 
-![](assets/03-开发环境搭建-conda/ch01-p016-包的来源渠道对照.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p016-包的来源渠道对照.jpg)
 *图：用 conda list 看包来源——Channel 列写 pypi 的是 pip 装的，写上频道地址（如 conda-forge）的是 conda 装的*
 
 ## PyCharm 简介与下载
@@ -145,7 +145,7 @@ pip list                             # 查看已安装包
 
 下载地址（课程给的是"其它版本"入口）：https://www.jetbrains.com/pycharm/download/other/#releases-2025
 
-![](assets/03-开发环境搭建-conda/ch01-p017-PyCharm下载页与版本.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p017-PyCharm下载页与版本.jpg)
 *图：PyCharm 下载页——Version 选 2025.3，再按系统挑安装包（课程用的是 2025.3.3）*
 
 > [!TIP]
@@ -163,7 +163,7 @@ print(langchain.__version__)
 
 能打印出版本号（如 `1.2.12`）就说明环境没问题。
 
-![](assets/03-开发环境搭建-conda/ch01-p017-PyCharm解释器设置.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p017-PyCharm解释器设置.jpg)
 *图：PyCharm 新建工程时选择 Custom environment → Conda，并指定刚创建的 langchain1.2 环境*
 
 ## 相关

@@ -23,7 +23,7 @@ LangChain 1.0 提供了**跨模型统一的 Message 标准**（OpenAI / Anthropi
 | 可扩展性高 | 方便添加多模态内容或自定义字段 |
 | 可追踪性好 | 为 LangSmith 等调试工具提供一致的上下文结构 |
 
-![](assets/07-Message与对话历史/ch04-p001-为什么需要消息列表.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch04-p001-为什么需要消息列表.jpg)
 *图：左边是"挑战"（大模型没有记忆、服务端不维护历史），右边是"方案"（应用维护消息列表）*
 
 ## 消息的内部结构
@@ -34,7 +34,7 @@ LangChain 1.0 提供了**跨模型统一的 Message 标准**（OpenAI / Anthropi
 | **Content** | 消息内容 |
 | **Metadata** | （可选）元数据：消息 ID、响应时间、token 消耗量、消息标签等 |
 
-![](assets/07-Message与对话历史/ch04-p012-模型返回字段解析.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch04-p012-模型返回字段解析.jpg)
 *图：模型返回的 AIMessage 字段解析（content、additional_kwargs、response_metadata、usage_metadata）*
 
 ## 四种消息类型
@@ -110,7 +110,7 @@ HumanMessage(
 
 `name` 和 `id` 都属于**元数据字段**，作用是**当消息类型相同**时把不同消息区分开。但**不是所有模型都支持这一功能**，是否支持取决于模型供应商，需要查官方手册——比如 OpenAI 的 API 手册就明确写了 `name` 是 `ChatCompletionUserMessageParam` 的字段：
 
-![](assets/07-Message与对话历史/ch04-p008-OpenAI的name参数说明.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch04-p008-OpenAI的name参数说明.jpg)
 *图：OpenAI 官方 API 手册中的 name 参数——"为同一 role 的参与者提供区分信息"*
 
 课程用 CloseAI 平台的 `gpt-5.4-mini` 演示了 `name` 的作用——**多人对话的发言者抽取**：
@@ -237,10 +237,10 @@ msg2 = HumanMessage("你好啊")        # 只有纯字符串时，可以省略�
 # 多模态（图片/音频）就用字典列表，具体格式遵循模型供应商的 API 规范
 ```
 
-![](assets/07-Message与对话历史/ch04-p020-多模态内容格式规范.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch04-p020-多模态内容格式规范.jpg)
 *图：OpenAI 官方文档里 content 的字典列表写法（text + image_url 两种 block）*
 
-![](assets/07-Message与对话历史/ch04-p020-多模态测试图片.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch04-p020-多模态测试图片.jpg)
 *图：多模态示例中发给模型的测试图片（课程里保存为 image_test.png）*
 
 ### 多模态实战：字典列表到底怎么写
@@ -297,7 +297,7 @@ print(response.content)
 
 过去处理图片、音频甚至模型的"思维链（Reasoning）"时，各厂商格式各异，要写大量适配代码；`content_blocks` 终结了这种混乱。
 
-![](assets/07-Message与对话历史/ch04-p024-思考内容字段位置.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch04-p024-思考内容字段位置.jpg)
 *图：DeepSeek 思考模式的输出——思考内容藏在 additional_kwargs 的 reasoning_content 字段里*
 
 - 数据结构：`list[TypedDict]`

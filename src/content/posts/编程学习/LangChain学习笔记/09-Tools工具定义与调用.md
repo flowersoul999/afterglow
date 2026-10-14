@@ -17,7 +17,7 @@ order: 9
 
 工具是构建智能体的**核心要素之一**（还记得那个公式吗：`Agent = LLM + Planning + **Tools** + Memory + Action）。
 
-![](assets/09-Tools工具定义与调用/ch05-p001-工具应用场景.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch05-p001-工具应用场景.jpg)
 *图：LangChain 框架里工具的典型应用场景——搜索、计算器、数据库/文件、邮件/沟通*
 
 ## 工具调用 = 函数调用
@@ -47,7 +47,7 @@ order: 9
 
 **大模型能根据对话上下文决定何时调用工具以及传递哪些参数**——这也是它比"硬编码 if-else"强的地方。我们写的 LangChain 应用，对应的就是图里的"AI 助手/应用"那一环。
 
-![](assets/09-Tools工具定义与调用/ch05-p003-工具调用整体流程.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch05-p003-工具调用整体流程.jpg)
 *图：工具调用的经典流程——用户提问、模型要工具、应用执行、结果回传、模型生成最终回复*
 
 ### 从 Message 流转看
@@ -78,7 +78,7 @@ print(final.content)
 > [!IMPORTANT]
 > 关键点：**模型自己不执行工具**。它只是"提出调用请求（tool_calls）"，真正执行的是你的代码，执行完再以 `ToolMessage` 回传——**这个"请求→执行→回传"的循环，就是智能体的最小骨架**。
 
-![](assets/09-Tools工具定义与调用/ch05-p006-四步工具调用流程.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch05-p006-四步工具调用流程.jpg)
 *图：完整的四步调用流程图——有 tool_calls 就挂载 AI 响应、生成 ToolMessage、回传后再调模型*
 
 ## 定义方式一：不用 @tool

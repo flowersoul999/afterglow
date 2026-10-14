@@ -20,7 +20,7 @@ PPT 第 43 页是本章的两大块分隔页（JDBC / MyBatis），第 44 页进
 
 天天在改的那个 `application.properties` 长这样（本机课程工程的完整版）：
 
-![properties配置文件臃肿](assets/56-SpringBoot配置文件/45-properties配置文件臃肿.jpg)
+![properties配置文件臃肿](https://img.tsh520.cn/file/blog/article/45-properties配置文件臃肿.jpg)
 *图：PPT 第 45 页配的 `application.properties` 真身——同一个 `spring.datasource` 前缀重复了 4 遍、`mybatis.configuration` 重复了 6 遍，一眼看不出层级关系*
 
 PPT 给它标了两个字：**臃肿**、**层级结构不清晰**。
@@ -153,13 +153,13 @@ app-demo:
 
 PPT 第 48 页的动作只有一个：**在 `application.yml` 配置文件里配置相关的配置项**——把原来写在 `application.properties` 里的内容整体改成 yml 写法。本机课程工程里正好有改写前、改写后的两份：
 
-![改写前的properties配置](assets/56-SpringBoot配置文件/48-改写前的properties配置.jpg)
+![改写前的properties配置](https://img.tsh520.cn/file/blog/article/48-改写前的properties配置.jpg)
 *图：改写前——`application.properties` 的数据源部分（`spring.datasource.xxx` 每行重复前缀）与 MyBatis 日志配置*
 
-![改写后的yml配置](assets/56-SpringBoot配置文件/48-改写后的yml配置.jpg)
+![改写后的yml配置](https://img.tsh520.cn/file/blog/article/48-改写后的yml配置.jpg)
 *图：改写后——同一份配置的 `application.yml` 版本：`spring` 下面缩进出 `application`、`datasource`，`mybatis` 下面缩进出 `configuration`；前缀只出现一次*
 
-![数据源yml写法](assets/56-SpringBoot配置文件/49-数据源yml写法.jpg)
+![数据源yml写法](https://img.tsh520.cn/file/blog/article/49-数据源yml写法.jpg)
 *图：PPT 第 49 页配的 yml 数据源写法（只保留了 `spring.datasource` 这一块）——`driver-class-name`、`url`、`username`、`password` 四个键左对齐*
 
 把点换成层级，可供操作的做法就是"**一层一层往右退格**"：

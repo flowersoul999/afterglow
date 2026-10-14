@@ -26,10 +26,10 @@ order: 89
 
 第 16 页用一组对比开场：一边是 Spring 时代"**繁琐（依赖、配置）**"，另一边是 SpringBoot 的"**简单、快捷**"。页面上挂着三张图，其中两张是官方对该项目的自我描述：
 
-![Spring Framework 的官方描述](assets/89-SpringBoot自动配置原理/16-SpringFramework官方定位.jpg)
+![Spring Framework 的官方描述](https://img.tsh520.cn/file/blog/article/16-SpringFramework官方定位.jpg)
 *图：Spring 官网对 Spring Framework 的说明——它提供依赖注入、事务管理、Web 应用、数据访问等**核心支持**，但这些能力要怎么搭起来、配置怎么写，全得自己安排*
 
-![Spring Boot 的官方描述](assets/89-SpringBoot自动配置原理/16-SpringBoot官方定位.jpg)
+![Spring Boot 的官方描述](https://img.tsh520.cn/file/blog/article/16-SpringBoot官方定位.jpg)
 *图：Spring 官网对 Spring Boot 的说明原文是"Takes an opinionated view of building Spring applications and gets you up and running as quickly as possible"——它对如何搭建 Spring 应用**拿了一套自己的主张**（opinionated view），目标就是让项目**尽快跑起来***
 
 "拿了一套自己的主张"具体落在两件事上。第 17 页把 SpringBoot 的核心概括成两个词：
@@ -47,15 +47,15 @@ order: 89
 
 第 18 页翻到"**起步依赖 / 自动配置**"的小节页，第 19 页列出我们早就见过的一串 starter：`spring-boot-starter-web`、`spring-boot-starter-aop`、`spring-boot-starter-test`、`mybatis-spring-boot-starter`、`pagehelper-spring-boot-starter`、`spring-boot-starter-…`。
 
-![项目依赖里的各类 starter](assets/89-SpringBoot自动配置原理/19-项目依赖里的各类starter.jpg)
+![项目依赖里的各类 starter](https://img.tsh520.cn/file/blog/article/19-项目依赖里的各类starter.jpg)
 *图：Tlias 工程 IDEA 的 Dependencies 列表——`spring-boot-starter-web`、`mybatis-spring-boot-starter`、`pagehelper-spring-boot-starter`、`spring-boot-starter-aop`、`spring-boot-starter-test` 等等，一眼能看到"每个功能点一个 starter"的命名习惯*
 
 可是工程里真正手写的依赖只有寥寥几行。第 20 页给出答案——**依赖传递**：
 
-![展开 starter 看传递依赖](assets/89-SpringBoot自动配置原理/20-展开starter看传递依赖.jpg)
+![展开 starter 看传递依赖](https://img.tsh520.cn/file/blog/article/20-展开starter看传递依赖.jpg)
 *图：把 `spring-boot-starter-web` 展开——它引了 `spring-boot-starter` 、`spring-boot-starter-json`、`spring-boot-starter-tomcat`，再往下一层才是 `spring-web`、`spring-webmvc`、`spring-beans`、`spring-core`、`jackson-*`、`tomcat-embed-*`……我们一行都没写，全是被"传"进来的*
 
-![starter 的依赖传递全图](assets/89-SpringBoot自动配置原理/20-starter的依赖传递全图.jpg)
+![starter 的依赖传递全图](https://img.tsh520.cn/file/blog/article/20-starter的依赖传递全图.jpg)
 *图：同一件事的另一种画法——从 `spring-boot-starter-web` 出发的依赖传递图（往右是它的传递依赖，往左是依赖它的那一层），箭头方向就是 Maven 的传递方向*
 
 这就是起步依赖的原理：[26 篇](/posts/编程学习/javaweb学习笔记/26-maven依赖管理与生命周期/)讲的**依赖传递**——`spring-boot-starter-web` 自己不带多少代码，它的价值全在 `pom.xml` 里写着一串**它需要的坐标**；我们引它，它再引它需要的，一路传下去，Web 开发要用的一大堆 jar 就都到位了。所以：
@@ -71,10 +71,10 @@ order: 89
 
 光看定义不好体会，PPT 用了一段测试代码当证据：
 
-![不写任何配置直接注入 Gson](assets/89-SpringBoot自动配置原理/22-无需配置直接注入Gson.jpg)
+![不写任何配置直接注入 Gson](https://img.tsh520.cn/file/blog/article/22-无需配置直接注入Gson.jpg)
 *图：这段测试代码里 `Gson` 可以直接 `@Autowired` 注入，还能调 `gson.toJson(...)`——它的来源就是 PPT 同页那段 `com.google` 的 `<dependency>` 片段；而工程里从没有人写过 Gson 的 bean 定义*
 
-![我们的项目结构](assets/89-SpringBoot自动配置原理/22-我们的项目结构.jpg)
+![我们的项目结构](https://img.tsh520.cn/file/blog/article/22-我们的项目结构.jpg)
 *图：对照着看这个工程的结构——`com.itheima` 下只有 controller / mapper / pojo / service 四个包和一个引导类，`resources` 里连 Gson 的影子都没有；"容器里为什么会有 Gson"这个问题，只能由 SpringBoot 自己回答*
 
 顺着这个问题往下挖：容器里那些**没经过我们手**就存在的 bean（Tomcat 相关的、SpringMVC 相关的、Jackson 的、Gson 的……）都是**自动配置**的产物，它们由一批形如 `XxxAutoConfiguration` 的类负责声明。那么下一个问题自然就是：**这些类是怎么被 SpringBoot 找到并加载的？** PPT 第 23 页翻到"**实现方案 / 源码跟踪 / 自定义 starter**"的小节页，答案分两步给：先用一个第三方工具包演示"都有哪些实现方案"，再顺着源码看"SpringBoot 自己用的是哪一套"。
@@ -96,7 +96,7 @@ public class TokenParser {
 
 头上明明标着 `@Component`（[38 篇](/posts/编程学习/javaweb学习笔记/38-分层解耦与ioc-di入门/)讲过它的作用：交给 IOC 容器管理），可把它作为依赖引进"我们的项目"之后，注入 `TokenParser` 却失败——**bean 根本不在容器里**。
 
-![第三方工具包与我们的项目](assets/89-SpringBoot自动配置原理/24-第三方工具包itheima-utils结构.jpg)
+![第三方工具包与我们的项目](https://img.tsh520.cn/file/blog/article/24-第三方工具包itheima-utils结构.jpg)
 *图：第三方工具包的类都在 `com.example` 包下（`EnableHeaderConfig`、`HeaderConfig`、`HeaderGenerator`、`HeaderParser`、`MyImportSelector`、`TokenParser`），而我们的引导类在 `com.itheima` 包下——两个包名八竿子打不着，这就是问题所在*
 
 原因在第 27 页的问答里点破，其本质是**组件扫描的范围**：基于 `@Component` 及其衍生注解声明的 bean，要想生效**必须被组件扫描注解扫描到**；而 `@SpringBootApplication` 里的 `@ComponentScan`（下一节源码跟踪细看）**默认只扫引导类所在包及其子包**——引导类在 `com.itheima`，工具包在 `com.example`，扫不到，`@Component` 就白标了。
@@ -216,7 +216,7 @@ public class SpringbootWebConfigApplication {
 
 PPT 说它是"**该注解标识在 SpringBoot 工程引导类上，是 SpringBoot 中最最最重要的注解**"，并且"由三个部分组成"：
 
-![SpringBootApplication 注解源码](assets/89-SpringBoot自动配置原理/29-SpringBootApplication注解源码.jpg)
+![SpringBootApplication 注解源码](https://img.tsh520.cn/file/blog/article/29-SpringBootApplication注解源码.jpg)
 *图：点开 `@SpringBootApplication` 看到它自己的源码——头三行正是 `@SpringBootConfiguration`、`@EnableAutoConfiguration`、带两个排除过滤器的 `@ComponentScan`；下面那行 `public @interface SpringBootApplication` 说明它本质是一个注解*
 
 | 组成部分 | 作用（PPT 原文） |
@@ -264,10 +264,10 @@ META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
 
 它躺在 `spring-boot-autoconfigure` 这个 jar 包里：
 
-![autoconfigure 包的 META-INF 目录](assets/89-SpringBoot自动配置原理/30-autoconfigure包的META-INF目录.jpg)
+![autoconfigure 包的 META-INF 目录](https://img.tsh520.cn/file/blog/article/30-autoconfigure包的META-INF目录.jpg)
 *图：`spring-boot-autoconfigure-3.1.3.jar` 的 `META-INF` 目录——`spring` 子目录下就是 `org.springframework.boot.autoconfigure.AutoConfiguration.imports`；注意它上面还躺着一个 `spring.factories`，那是老版本读的文件（版本差异见下）*
 
-![imports 文件里的自动配置类](assets/89-SpringBoot自动配置原理/30-imports文件里的自动配置类.jpg)
+![imports 文件里的自动配置类](https://img.tsh520.cn/file/blog/article/30-imports文件里的自动配置类.jpg)
 *图：打开这个 `.imports` 文件，一行一个自动配置类的**全类名**——`data.jpa.JpaRepositoriesAutoConfiguration`、`data.ldap.LdapRepositoriesAutoConfiguration`、`data.mongo.*`、`data.neo4j.*`、`data.r2dbc.*`、`data.redis.*`……名单长得能翻好几屏*
 
 > [!IMPORTANT]
@@ -308,12 +308,12 @@ PPT 第 31 页给的说明：
 
 拿前面那个 Gson 的例子把三条对一遍：
 
-![Gson 的条件装配写法](assets/89-SpringBoot自动配置原理/31-Gson的条件装配写法.jpg)
+![Gson 的条件装配写法](https://img.tsh520.cn/file/blog/article/31-Gson的条件装配写法.jpg)
 *图：自动配置类里那个造 Gson 的 `@Bean` 方法——方法上叠着 `@ConditionalOnMissingBean`：容器里还没有 Gson 这个 bean 时才执行这个方法*
 
 合起来看就是自动配置类 `GsonAutoConfiguration` 的完整逻辑：**类上**用"有 Gson 的字节码吗"决定这个自动配置类要不要处理（工程里没引 Gson 依赖，它就整体不生效）；**方法上**用"容器里已经有 Gson 的 bean 了吗"决定这个 `@Bean` 方法要不要执行（用户自己定义过就尊重用户的）。顺着这个思路，前面那个"什么是自动配置"的谜就解开了：**我们引了 Gson 依赖 → 类条件满足 → 方法条件满足 → Gson 被自动注册 → 所以可以直接 `@Autowired`**。
 
-![IDEA 里的 Conditional 衍生注解](assets/89-SpringBoot自动配置原理/31-Conditional的衍生注解.jpg)
+![IDEA 里的 Conditional 衍生注解](https://img.tsh520.cn/file/blog/article/31-Conditional的衍生注解.jpg)
 *图：IDEA 里敲 `@Conditional` 时自动补全出来的一长串衍生注解——`@ConditionalOnBean`、`@ConditionalOnClass`、`@ConditionalOnCloudPlatform`、`@ConditionalOnExpression`、`@ConditionalOnJava`、`@ConditionalOnMissingBean`、`@ConditionalOnMissingClass`、`@ConditionalOnNotWebApplication`、`@ConditionalOnProperty`、`@ConditionalOnResource`、`@ConditionalOnSingleCandidate`、`@ConditionalOnWarDeployment`、`@ConditionalOnWebApplication`……PPT 讲的三个只是其中最常用的*
 
 ### 本机实测：`@ConditionalOnMissingBean` 到底管什么

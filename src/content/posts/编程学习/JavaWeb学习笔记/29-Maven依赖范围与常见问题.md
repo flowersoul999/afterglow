@@ -182,7 +182,7 @@ PPT 第 70 页就讲一个问题（页面标题"05 Maven 常见问题"），先�
 
 PPT 第 70 页配的截图就是第 3 条说的"**maven 面板还会报红**"的样子：
 
-![Maven面板依赖报红](assets/29-Maven依赖范围与常见问题/70-Maven面板依赖报红.jpg)
+![Maven面板依赖报红](https://img.tsh520.cn/file/blog/article/70-Maven面板依赖报红.jpg)
 *图：PPT 第 70 页——IDEA 右侧 Maven 面板的 Dependencies 列表里，好几个依赖被红波浪线标出来（`spring-context` 下面挂着的 `spring-aop`、`spring-beans`、`spring-core`、`spring-expression`、`micrometer-observation` 这些传递性依赖都红着）；列表里 `org.junit.jupiter:junit-jupiter:5.9.3 (test)` 后面的 **`(test)`** 就是这一篇讲的依赖范围标记——这也是"依赖下载出问题时，先看这个面板"的原因*
 
 ### 为什么"文件不删就不会再下载"

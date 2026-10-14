@@ -79,12 +79,12 @@ order: 3
 
 代码里的层级关系（骨架长什么样）：
 
-![HTML骨架代码结构](assets/03-HTML快速入门/13-HTML骨架代码结构.jpg)
+![HTML骨架代码结构](https://img.tsh520.cn/file/blog/article/13-HTML骨架代码结构.jpg)
 *图：HTML 基本骨架的代码结构——`<html>` 里套 `<head>` 和 `<body>`，`<title>` 在 head 里，`<h1>` 和 `<img>` 在 body 里（子标签要缩进）*
 
 写完之后双击文件用浏览器打开，就能看到效果：
 
-![浏览器运行效果](assets/03-HTML快速入门/12-浏览器运行效果.jpg)
+![浏览器运行效果](https://img.tsh520.cn/file/blog/article/12-浏览器运行效果.jpg)
 *图：浏览器里的运行效果——浏览器标签页显示 `<title>` 里的"HTML快速入门"，页面里显示 `<h1>` 的内容和 `<img>` 引入的图片*
 
 ## 网页头部与网页主体

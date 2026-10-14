@@ -30,7 +30,7 @@ PPT 第 40 页给的定义：
 | 语句 | `create` / `drop` / `alter` / `show` / `desc` | `insert` / `update` / `delete` |
 | 打个比方 | 盖房子、改户型 | 往房子里搬家具、换家具、搬走 |
 
-![表中的数据记录](assets/45-DML数据的新增修改删除/40-表里的数据记录.jpg)
+![表中的数据记录](https://img.tsh520.cn/file/blog/article/40-表里的数据记录.jpg)
 *图：PPT 第 40 页——一张典型的二维表（`id`、`name`、`age`、`gender` 四列，下面是三行数据）。DML 增删改操作的就是这些"一行行的记录"*
 
 PPT 第 41 页把 DML 又拆成三块，也是这一篇的三节：**`insert`（新增）→ `update`（修改）→ `delete`（删除）**。

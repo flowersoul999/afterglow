@@ -124,7 +124,7 @@ PPT 上写着 `@Around("execution(...)")` 和 `@Around("@annotation(...)")` 两�
 
 先看工程里要记日志的接口都在哪：
 
-![各控制器里的增删改方法](assets/87-AOP案例-记录操作日志/30-各控制器的增删改方法.jpg)
+![各控制器里的增删改方法](https://img.tsh520.cn/file/blog/article/30-各控制器的增删改方法.jpg)
 *图：PPT 第 30 页配的工程结构截图——`com.itheima.controller` 包下的 `ClazzController`、`DeptController`、`EmpController`……每个 Controller 里都有 `save` / `update` / `delete` 这一组增删改方法（还有 `findAll`、`getInfo`、`page` 这类查询方法，它们**不记**）。日志表要记的是"所有 Controller 的增删改"，写法上只有两条路：靠方法名匹配，或者靠方法上的标记*
 
 **写法一：`execution` 拼三个 `||`**（PPT 第 30 页给出的第一种写法）：
@@ -237,7 +237,7 @@ PPT 第 32 页先纠正一个望文生义的误会：
 
 名字里的 `Local` 修饰的不是"线程"，而是"变量"——它是"**线程本地的变量**"。原理上，每个 `Thread` 对象内部都挂着一个自己的 Map（`ThreadLocalMap`），`ThreadLocal` 对象本身只是一个"钥匙"：
 
-![Thread 类里的 ThreadLocalMap 字段](assets/87-AOP案例-记录操作日志/32-Thread源码中的ThreadLocalMap.jpg)
+![Thread 类里的 ThreadLocalMap 字段](https://img.tsh520.cn/file/blog/article/32-Thread源码中的ThreadLocalMap.jpg)
 *图：PPT 第 32 页配的 JDK 源码截图（`Thread.java`）——`Thread` 类里有一个 `ThreadLocal.ThreadLocalMap threadLocals = null;` 字段：**每个线程各有一个这样的 Map**，`ThreadLocal` 的 set/get 就是往"当前线程的那个 Map"里放/取。所以同一个 `ThreadLocal` 对象在线程 A、线程 B 里各自保存一份值，互不可见——这就是线程隔离*
 
 PPT 用四根线程的示意图画过这件事：`Thread-1`~`Thread-4` 各自带一份"线程本地变量"（`ThreadLocalMap`），同一个 `ThreadLocal` 在四份 Map 里对应的值可以完全不同。

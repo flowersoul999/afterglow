@@ -326,7 +326,7 @@ services:
 | **项目（Project）** | **这一整套服务**（由这一个 compose 文件定义的一组容器），是 Compose 管理的最小整体 | 整个 `docker-compose.yml` 文件（默认用"文件所在目录名"当项目名，也可以用 `-p` 指定） |
 | **服务（Service）** | 项目里的**一个容器**（用它用哪个镜像、叫什么名字、映射哪些端口、挂什么卷……） | `services:` 下面的 `containerA` / `containerB` / `containerC` 每一项 |
 
-![Docker 吉祥物托着几个集装箱](assets/113-Docker项目部署与DockerCompose/52-Compose管理的一组容器.jpg)
+![Docker 吉祥物托着几个集装箱](https://img.tsh520.cn/file/blog/article/52-Compose管理的一组容器.jpg)
 *图：Docker 的吉祥物手里托着几个"集装箱"——Compose 要管的就是这样一组互相协作的容器（PPT 第 52 页的配图）*
 
 一句话记住这套东西的价值：**"一整套项目"从"一串命令"变成了"一个文件"**——文件能存进 Git、能评审、能一份改一处、能一次全起（也能一次全停）。

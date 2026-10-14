@@ -227,7 +227,7 @@ PPT 第 30 页在"本地仓库"和"私服"之间画了两条命令，正是这�
 
 发布成功之后，用浏览器打开私服的管理界面就能看到传上去的模块（PPT 第 34 页的截图）：
 
-![私服中浏览已上传的模块](assets/93-Maven私服/34-私服仓库浏览.jpg)
+![私服中浏览已上传的模块](https://img.tsh520.cn/file/blog/article/34-私服仓库浏览.jpg)
 *图：PPT 第 34 页——Nexus 管理界面里 `Browse → maven-snapshots` 下按坐标层级列出的内容：`com → itheima → tlias-parent`、`tlias-pojo`、`tlias-utils`、`tlias-web-management`；因为是 `1.0-SNAPSHOT` 版本，所以它们都进了**快照仓库**，这正是"上传地址与版本类型对上了"的最直观证据*
 
 看截图能对上前面两件事：① 仓库是 **maven-snapshots**（快照仓库）—— 因为模块版本都是 `-SNAPSHOT`；② 目录层级就是**坐标的层级**（`com` → `itheima` → 模块名），和本地仓库的目录规律一模一样，[29 篇](/posts/编程学习/javaweb学习笔记/29-maven依赖范围与常见问题/)里找 `xxx.lastUpdated` 用的也是这套规律。

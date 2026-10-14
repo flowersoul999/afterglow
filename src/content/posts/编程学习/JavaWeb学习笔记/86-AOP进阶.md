@@ -99,7 +99,7 @@ public class MyAspect1 {
 }
 ```
 
-![环绕通知的完整写法](assets/86-AOP进阶/15-环绕通知切面.jpg)
+![环绕通知的完整写法](https://img.tsh520.cn/file/blog/article/15-环绕通知切面.jpg)
 *图：PPT 第 15 页贴的切面——`@Around` 方法里 `Object result = pjp.proceed();` 这一行就是"注意 1"，最后的 `return result;` 就是"注意 2"*
 
 > [!IMPORTANT]
@@ -186,7 +186,7 @@ public void pt(){}
 public Object recordTime(ProceedingJoinPoint joinPoint) throws Throwable {
 ```
 
-![抽取公共切入点表达式](assets/86-AOP进阶/16-抽取公共切入点.jpg)
+![抽取公共切入点表达式](https://img.tsh520.cn/file/blog/article/16-抽取公共切入点.jpg)
 *图：PPT 第 16 页的写法——上面用 `@Pointcut` 定义 `pt()`，下面的环绕通知直接写 `@Around("pt()")` 引用它；以后表达式要改，只改一处*
 
 可见性（方法上的修饰符）决定了它能被谁引用，PPT 列了两条：
@@ -253,10 +253,10 @@ public class MyAspect2 {
 
 三个类分别标的是 `@Order(8)`（`MyAspect2`）、`@Order(5)`（`MyAspect3`）、`@Order(3)`（`MyAspect4`）。
 
-![切面类 MyAspect2](assets/86-AOP进阶/19-切面类MyAspect2.jpg)
+![切面类 MyAspect2](https://img.tsh520.cn/file/blog/article/19-切面类MyAspect2.jpg)
 *图：PPT 第 19 页贴的切面类——内容极简：一个 `@Before` 打一行、一个 `@After` 打一行；三个切面类只差类名和日志里的编号*
 
-![@Order 注解片段](assets/86-AOP进阶/19-Order注解片段.jpg)
+![@Order 注解片段](https://img.tsh520.cn/file/blog/article/19-Order注解片段.jpg)
 *图：`@Order(5)` 写在切面类上（和 `@Aspect`、`@Component` 并列）——数字越小，目标方法前越早执行*
 
 ### 本机实测：`@Order(3) / (5) / (8)` 的真实顺序
@@ -293,7 +293,7 @@ MyAspect4 -> after ...      ← @Order(3)
 
 一句话概括两者的分工：**`execution` 靠"方法长什么样"（返回值、包、类、方法名、参数）来挑**；**`@annotation` 靠"方法上贴了什么注解"来挑**。
 
-![按注解匹配切入点](assets/86-AOP进阶/21-按注解匹配切入点.jpg)
+![按注解匹配切入点](https://img.tsh520.cn/file/blog/article/21-按注解匹配切入点.jpg)
 *图：PPT 第 21 页顺便给了一眼 `@annotation` 的样子——`@Before("@annotation(com.itheima.anno.Log)")`，括号里写的是注解的全类名（图里用的是案例工程 tlias 的 `Log` 注解；实验工程 `springboot-aop-quickstart` 里叫 `LogOperation`）*
 
 ### `execution` 的完整语法（PPT 第 22 页）
@@ -406,7 +406,7 @@ public Object logAround(ProceedingJoinPoint joinPoint) throws Throwable {
 }
 ```
 
-![按注解匹配的环绕通知](assets/86-AOP进阶/24-按注解匹配的环绕通知.jpg)
+![按注解匹配的环绕通知](https://img.tsh520.cn/file/blog/article/24-按注解匹配的环绕通知.jpg)
 *图：PPT 第 24 页的写法——`@Around("@annotation(com.itheima.anno.LogOperation)")`，注解的全类名写在括号里；这样切面就只认"贴了这个注解的方法"*
 
 ### 第三步：把注解贴在需要被切的方法上
@@ -429,7 +429,7 @@ public Result save(@RequestBody Dept dept){
 }
 ```
 
-![注解加在方法上](assets/86-AOP进阶/24-注解加在方法上.jpg)
+![注解加在方法上](https://img.tsh520.cn/file/blog/article/24-注解加在方法上.jpg)
 *图：PPT 第 24 页把 `@LogOperation` 贴到了控制器方法上（`delete`、`save`）——从此这些方法会被那个 `@annotation` 切面切中，而没贴注解的方法不受影响*
 
 这种写法最大的好处是**指哪打哪**：不用去数"哪些方法名符合规律"，而是在方法上贴一个注解，语义一目了然；以后新增接口想记录日志，贴一个注解就行——[87 篇](/posts/编程学习/javaweb学习笔记/87-aop案例-记录操作日志/)的案例选的就是这条路。
