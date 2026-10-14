@@ -254,7 +254,7 @@ agent = create_agent(
 ![](https://img.tsh520.cn/file/blog/article/ch07-p067-自定义错误打印.jpg)
 *图：`handle_errors=custom_error_handler` 时，自定义处理函数里打印出的异常类型与详情（这里捕获到的是 `MultipleStructuredOutputsError`）*
 
-![](assets/16-Agent的结构化输出/ch07-p068-自定义错误提示回传.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch07-p068-自定义错误提示回传.jpg)
 *图：自定义处理函数的返回值被直接当作 ToolMessage 的内容回给模型——"检测到多个响应，请选择最相关的一个进行返回。"*
 
 ## 四种 Schema 的完整案例

@@ -48,7 +48,7 @@ LangChain 是大模型与应用之间的**中间层**，可统一调用各类大
 2. **封装底层复杂逻辑**：抽象工具调用、记忆等能力，降低智能体开发难度
 3. **支撑多智能体协作**：依托 LangGraph 等生态，从单智能体拓展至多智能体协作
 
-![](assets/01-LangChain概述与生态/ch01-p002-框架定位三层结构.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p002-框架定位三层结构.jpg)
 *图：LangChain 作为大模型与应用之间的中间层——对上统一调用各类大模型，对下连接数据库、检索引擎、API、文件系统*
 
 ### 课程对定位的完整表述
@@ -221,7 +221,7 @@ LangChain 长期因 API 变动频繁被戏称为"版本碎钞机"。2024 年起�
 | **Deep Agent** | 智能体抽象层 | 智能体执行框架（Agent Harness），自带规划/文件系统/子智能体 |
 | **LangSmith** | 监控与评估层 | 可视化监控与测试平台（追踪调用链路） |
 
-![](assets/01-LangChain概述与生态/ch01-p009-生态全生命周期四层.jpg)
+![](https://img.tsh520.cn/file/blog/article/ch01-p009-生态全生命周期四层.jpg)
 *图：LangChain 生态的四层结构——智能体抽象层（Deep Agent）、运行时编排层（LangGraph）、基础能力层（LangChain）、监控与评估层（LangSmith）*
 
 ### 官方文档入口
