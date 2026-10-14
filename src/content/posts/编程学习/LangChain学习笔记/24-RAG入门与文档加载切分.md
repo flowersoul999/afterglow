@@ -668,7 +668,7 @@ def from_tiktoken_encoder(
 | `separator` | `"\n\n"` | 分割使用的分隔符 |
 | `length_function` | `len` | 计算切块长度的方法 |
 
-![](assets/24-RAG入门与文档加载切分/ch10-p028-切块大小与重叠示意.jpg)
+*（原图缺失：'ch10-p028-切块大小与重叠示意.jpg'，待重传图床后补回）*
 *图：`chunk_size` 是每个切块的最大长度，`chunk_overlap` 是相邻两个切块之间的重叠部分（不重叠就不会切出灰块那一段）*
 
 > [!WARNING]
@@ -689,7 +689,7 @@ def from_tiktoken_encoder(
 | `TokenTextSplitter` | 按 **token** 数切（更贴近模型的真实限制） | 5 块（23、16、17、17、5 字）⚠️ 见下方警告 |
 | `MarkdownHeaderTextSplitter` | 按 Markdown 标题层级切，**并把标题写进 metadata** | `{'h1': '一级标题', 'h2': '二级标题'}` |
 
-![](assets/24-RAG入门与文档加载切分/ch10-p037-递归切分下探与回溯.jpg)
+*（原图缺失：'ch10-p037-递归切分下探与回溯.jpg'，待重传图床后补回）*
 *图：`RecursiveCharacterTextSplitter` 的"先下探、再回溯"——① 按 `separators` 从 `\n\n`、`\n`、` ` 到 `""` 逐级递归切分，超长块继续往下探，合格的块进 `good_splits`；② 再按顺序把小块合并回 chunk，超过 `chunk_size` 就输出并保留 `chunk_overlap`*
 
 > [!WARNING]
