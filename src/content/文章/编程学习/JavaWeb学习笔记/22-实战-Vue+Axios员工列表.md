@@ -341,7 +341,7 @@ mounted() {
 | --- | --- |
 | 这个案例和"常用指令版"的差别？ | 数据来源不同：指令版是 `data` 里的**死数据**；这个版本 `empList: []` 是**空数组**，数据由 **Axios 从接口取回**后赋值 |
 | 为什么 `empList` 要先给空数组？ | `v-for` 要求它存在——空数组时"渲染 0 行"（页面正常），不给或给 `null` 会报错 |
-| 发请求的方法怎么写？ | `async search()` + `let result = await axios.get(\`...?name=${this.searchForm.name}&...\`)` + `this.empList = result.data.data` |
+| 发请求的方法怎么写？ | `async search()` + `let result = await axios.get(\`...?name=\${this.searchForm.name}&...\`)` + `this.empList = result.data.data` |
 | 为什么取两层 `.data`？ | 第一层是 Axios 的响应体（`result.data`），第二层是后端统一返回格式 `{code, msg, data}` 里的业务数据 |
 | 数据取回来还要手动重新渲染吗？ | **不用**——`this.empList = ...` 改完数据，`v-for` 自己按新数组重新渲染（这就是比 [18 篇](/posts/编程学习/javaweb学习笔记/18-实战-js版员工列表/)手写 `render()` 省事的地方） |
 | "清空"按钮做了什么？ | `this.searchForm = {name:'', gender:'', job:''}` **再调一次 `this.search()`**（清完要重新查，否则页面还留着上次的结果） |
@@ -365,7 +365,7 @@ mounted() {
 
 1. 案例流程四步：**数据准备**（`searchForm` + **`empList: []` 空数组**）→ **发请求**（`async search()` + `await axios.get`）→ **渲染**（`v-for` / `v-bind` / `v-if`，与指令版**完全一样**）→ **交互**（`@click` 查询/清空 + `mounted` 自动加载）
 2. 数据准备的关键：`empList` **要先给一个空数组**——`v-for` 遍历 0 次，页面正常只是没有数据行；不给或给 `null` 会报错
-3. 发请求方法：`async search()` 里 `let result = await axios.get(\`https://web-server.itheima.net/emps/list?name=${this.searchForm.name}&gender=${this.searchForm.gender}&job=${this.searchForm.job}\`)`，然后 **`this.empList = result.data.data`**
+3. 发请求方法：`async search()` 里 `let result = await axios.get(\`https://web-server.itheima.net/emps/list?name=\${this.searchForm.name}&gender=\${this.searchForm.gender}&job=\${this.searchForm.job}\`)`，然后 **`this.empList = result.data.data`**
 4. **`result.data.data`**：第一层 `data` 是 **Axios 的响应体**，第二层是后端统一返回格式 **`{code, msg, data}`** 里的业务数据（员工数组）；少写一层会报 `Cannot read properties of undefined`
 5. **改数据即改页面**：`this.empList = ...` 一句赋值，`v-for` 就按新数组重新渲染，**不需要**手动 `render()`、不需要重新绑事件（对比 18 篇）
 6. "清空"按钮：先 `this.searchForm = {name:'', gender:'', job:''}`，**再调一次 `this.search()`**，让页面恢复成全量数据
@@ -444,7 +444,7 @@ mounted() {
   > [!TIP]- 提示（先自己想，实在想不出再点开）
   > **一级 · 思路**：查询方法一共三段——"改提示为加载中"→"发请求并渲染"→"出错就改提示"；清空 = 把条件还原 + 调一次查询方法
   > **二级 · 方法**：`v-model="form.name"`；`` `...?name=${this.form.name}` ``；`this.list = result.data.data`；条数用 `list.length`；错误用 `try / catch`；清空方法末尾调 `this.search()`
-  > **三级 · 骨架**：`async search() { this.tip = '加载中…'; try { let result = await axios.____(\`https://web-server.itheima.net/emps/list?name=${this.____.name}\`); this.list = result.data.____; this.tip = this.list.____ == 0 ? '没有匹配的员工' : \`共 ${this.list.length} 人\`; } catch (err) { this.tip = '____'; } }` / `clear() { this.form.name = '____'; this.search(); }`
+  > **三级 · 骨架**：`async search() { this.tip = '加载中…'; try { let result = await axios.____(\`https://web-server.itheima.net/emps/list?name=\${this.____.name}\`); this.list = result.data.____; this.tip = this.list.____ == 0 ? '没有匹配的员工' : \`共 \${this.list.length} 人\`; } catch (err) { this.tip = '____'; } }` / `clear() { this.form.name = '____'; this.search(); }`
 
   > [!TIP]- 参考答案（做完再点开）
   > ```html
@@ -568,7 +568,7 @@ mounted() {
   > [!TIP]- 提示（先自己想，实在想不出再点开）
   > **一级 · 思路**：先把第 1、2 步写完（数据 + 取数方法），页面自然有数据了再补第 3 步的渲染；表单和按钮是最后一步——每一步都能单独验证
   > **二级 · 方法**：`async search() { try { let result = await axios.get(地址); this.empList = result.data.data; } catch (err) {...} }`；地址用模板字符串拼 `` `https://web-server.itheima.net/emps/list?name=${this.searchForm.name}&gender=${this.searchForm.gender}&job=${this.searchForm.job}` ``；渲染指令照 20 篇；`clear()` 末尾调 `this.search()`；钩子用 `mounted()`
-  > **三级 · 骨架**：`data() { return { searchForm: { name: '____', gender: '', job: '' }, empList: ____ } }` / `async search() { let result = await axios.get(\`……?name=${this.searchForm.____}&gender=${this.searchForm.gender}&job=${this.searchForm.job}\`); this.empList = result.data.____; }` / `clear() { this.searchForm = { name: '', gender: '', job: '' }; this.____(); }` / `mounted() { this.____(); }`
+  > **三级 · 骨架**：`data() { return { searchForm: { name: '____', gender: '', job: '' }, empList: ____ } }` / `async search() { let result = await axios.get(\`……?name=\${this.searchForm.____}&gender=\${this.searchForm.gender}&job=\${this.searchForm.job}\`); this.empList = result.data.____; }` / `clear() { this.searchForm = { name: '', gender: '', job: '' }; this.____(); }` / `mounted() { this.____(); }`
   >
   > **排错顺序**（卡住时按这个查）：
   > 1. 控制台有没有红字？（`Network Error` = 接口连不上；404 = 地址错；CORS = 跨域）

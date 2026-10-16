@@ -447,7 +447,7 @@ let result = await axios.get(url);
   > [!TIP]- 提示（先自己想，实在想不出再点开）
   > **一级 · 思路**：一次请求 = 地址 + "要数据"这个动作；结果要"先看清楚结构再取值"，因为返回的内容外面包了一层
   > **二级 · 方法**：`axios.get(地址)`；成功用 `.then((result) => {...})`，先 `console.log(result.data)` 看结构；员工数组在 `result.data.data`；人数用 `.length`；失败用 `.catch((err) => {...})`
-  > **三级 · 骨架**：`axios.____('https://web-server.itheima.net/emps/list').____((result) => { console.log(result.____); document.querySelector('#out').innerText = \`共 ${result.data.data.____} 人\`; }).____((err) => { ……'加载失败'…… })`
+  > **三级 · 骨架**：`axios.____('https://web-server.itheima.net/emps/list').____((result) => { console.log(result.____); document.querySelector('#out').innerText = \`共 \${result.data.data.____} 人\`; }).____((err) => { ……'加载失败'…… })`
 
   > [!TIP]- 参考答案（做完再点开）
   > ```html
@@ -567,7 +567,7 @@ let result = await axios.get(url);
   > [!TIP]- 提示（先自己想，实在想不出再点开）
   > **一级 · 思路**：把"发请求"包成一个函数，界面上的每个按钮只负责"改一下状态 + 调这个函数"；界面上所有文字都靠"改 DOM 内容"或"改元素内容"来更新
   > **二级 · 方法**：`async function load() { try { … await axios.get(url) … } catch (err) { … } }`；拼参数用模板字符串 `` `...?name=${name}` ``；渲染列表用 `数组.map(item => \`<li>...</li>\`).join('')` 再赋给 `innerHTML`（[16 篇](/posts/编程学习/javaweb学习笔记/16-js-dom操作/)的套路）；POST 用 `axios.post(url, data)`；状态提示就是改某个元素的 `innerText`
-  > **三级 · 骨架**：`async function load() { out.innerText = '____'; try { let result = await axios.____(\`https://web-server.itheima.net/emps/list?name=${____}\`); let list = result.data.data; if (list.length == 0) { out.innerText = '没有匹配的员工'; } else { out.innerHTML = list.____(e => \`<li>${e.name} - ${e.____}</li>\`).join(''); } } catch (err) { out.innerText = '加载失败：' + ____.message; } }`
+  > **三级 · 骨架**：`async function load() { out.innerText = '____'; try { let result = await axios.____(\`https://web-server.itheima.net/emps/list?name=\${____}\`); let list = result.data.data; if (list.length == 0) { out.innerText = '没有匹配的员工'; } else { out.innerHTML = list.____(e => \`<li>\${e.name} - \${e.____}</li>\`).join(''); } } catch (err) { out.innerText = '加载失败：' + ____.message; } }`
 
   > [!TIP]- 参考答案（做完再点开）
   > ```html
