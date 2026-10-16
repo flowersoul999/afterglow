@@ -37,6 +37,7 @@ Firefly-docs/
 cache/
 package/
 .obsidian/
+.obsidian-cloud-only
 
 # AI 摘要补全脚本（包含 API 密钥，不上传 GitHub）
 scripts/fill-descriptions/index.ts
@@ -60,6 +61,7 @@ src/content/.trash
 src/content/notes
 src/.copilot
 src/.opencode
+.workbuddy/
 
 .env*
 

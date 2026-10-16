@@ -58,7 +58,7 @@ const tombstonesDir = path.join(process.cwd(), "src", "content", "墓碑");
 const hasTombstones = fs
 	.readdirSync(tombstonesDir)
 	.some((f) => f.endsWith(".md"));
-const tombstoneEntries = hasTombstones ? await getCollection("墓碑") : [];
+const tombstoneEntries = hasTombstones ? await getCollection("tombstones") : [];
 
 // 站点截图：public/assets/friends-shots/{contentId}.webp。
 // 卡片本身不展示它 —— 只作为 data-screenshot 喂给悬浮预览（#friend-preview）。
