@@ -54,7 +54,13 @@ const moreFriends = items.filter(
 );
 
 // 友链墓碑（纪念下线的友链）：目录无数据时不调用 getCollection（避免 Astro 空集合警告），区块自动隐藏
-const tombstonesDir = path.join(process.cwd(), "src", "content", "友链", "墓碑");
+const tombstonesDir = path.join(
+	process.cwd(),
+	"src",
+	"content",
+	"友链",
+	"墓碑",
+);
 const hasTombstones = fs
 	.readdirSync(tombstonesDir)
 	.some((f) => f.endsWith(".md"));

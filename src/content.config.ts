@@ -235,7 +235,10 @@ const ziyuanCollection = defineCollection({
 const friendsCollection = defineCollection({
 	// !墓碑/** 必须保留：友链墓碑是 友链/ 下的子目录，若不排除会被本集合一并收进来，
 	// 而墓碑文件的字段集（title/avatar/note）不满足 friends 的 schema → zod 校验失败、构建红。
-	loader: glob({ pattern: ["**/*.md", "!墓碑/**"], base: "./src/content/友链" }),
+	loader: glob({
+		pattern: ["**/*.md", "!墓碑/**"],
+		base: "./src/content/友链",
+	}),
 	schema: z.object({
 		title: z.string(),
 		imgurl: z.string(),

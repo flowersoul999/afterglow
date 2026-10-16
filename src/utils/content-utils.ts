@@ -126,10 +126,6 @@ export type ArchiveItem = {
 	};
 };
 
-// 辅助函数
-const isIn = (entryId: string, folder: string) =>
-	entryId.replace(/\\/g, "/").startsWith(`${folder}/`);
-
 export async function getArchiveList(): Promise<ArchiveItem[]> {
 	const posts = await getCollection("posts", ({ data }) => {
 		return import.meta.env.PROD ? data.draft !== true : true;

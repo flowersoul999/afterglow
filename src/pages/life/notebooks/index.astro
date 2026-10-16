@@ -93,11 +93,7 @@ const notebooksWithCovers = await Promise.all(
 				} else {
 					const imageKey = path
 						.normalize(
-							path.join(
-								"../../content/笔记本",
-								book.folderName,
-								rawCover,
-							),
+							path.join("../../content/笔记本", book.folderName, rawCover),
 						)
 						.replace(/\\/g, "/");
 					const loader = notebookCoverFiles[imageKey];

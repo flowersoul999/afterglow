@@ -18,8 +18,7 @@ const isIn = (entryId: string, folder: string) =>
 	entryId.replace(/\\/g, "/").startsWith(`${folder}/`);
 
 // 统计地点
-const places = lifeEntries
-	.map((e) => e.data);
+const places = lifeEntries.map((e) => e.data);
 const placesCount = places.length;
 const visitedCities = new Set(places.map((p) => p.city).filter(Boolean)).size;
 

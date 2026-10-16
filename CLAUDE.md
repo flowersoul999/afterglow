@@ -967,6 +967,13 @@ scope: layout | config | i18n | styles | utils | components | content
 
 > 本仓库 `biome ci` 仅覆盖 `./src`（package.json 固定 `2.5.7`），但 **任何修改后都必须跑**；新增目录（非 `src`）需提前加入 `.gitignore`。
 
+> ⚠️ **本地 `biome ci` 报的 "File content differs from formatting output" 要逐个判断，别一律当 CRLF 误报**（2026-10-16 CI 红过）：Windows + `core.autocrlf=true` 会让工作副本是 CRLF，Biome 期望 LF → 报错，但**仓库里存的是 LF，CI（Linux）不会报**。区分方法：
+> 1. `pnpm exec biome ci ./src --reporter=github 2>&1 | grep "::error" | grep -oE 'file=[^,]+'` 取出全部文件（**别只看 `tail`，会被截断**——这次就是漏看了 4 个真问题）；
+> 2. 逐个统计换行符：**全 CRLF = 本地误报**（跳过）；**含 LF / 混合 / 全 LF = 真问题**（CI 也会红，必须修）；
+> 3. 修法：`pnpm exec biome check --write <那些文件>`（**只传真问题的文件**，别对全 `./src` 跑，会顺带把 13 个 CRLF 文件的行尾也改掉）。
+>
+> 想彻底消灭误报可加 `.gitattributes`（`* text=auto eol=lf`），但那会改所有平台的检出行为，**属项目级决定，先问站长**。
+
 ---
 
 ## 19. PagesCMS 后台（2026-08 接入）
