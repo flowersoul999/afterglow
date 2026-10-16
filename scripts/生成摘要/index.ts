@@ -193,7 +193,7 @@ function sleep(ms: number): Promise<void> {
 // ============================================================
 // 主流程
 // ============================================================
-const POSTS_DIR = path.resolve("src/content/posts");
+const POSTS_DIR = path.resolve("src/content/文章");
 
 async function main() {
   log("🚀", `AI 摘要补全脚本启动`);

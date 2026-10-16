@@ -48,12 +48,12 @@ const realCount = bangumi.filter(
 ).length;
 
 // 统计生活数据
-const lifeEntries = await getCollection("life");
+const lifeEntries = await getCollection("places");
 // 足迹记录（life 集合的 glob 覆盖了 life/notebooks/ 目录，笔记本条目归 notebooks 集合统计，此处排除避免重复）
 const isIn = (entryId: string, folder: string) =>
 	entryId.replace(/\\/g, "/").startsWith(`${folder}/`);
 const placesCount = lifeEntries.filter((entry) =>
-	isIn(entry.id, "places"),
+	true,
 ).length;
 
 // 记录次数 = 影视 + 书籍 + 游戏 + 音乐 + 现实 + 足迹

@@ -21,7 +21,7 @@ content:
       - name: posts
         label: 📝 博客文章
         type: collection
-        path: src/content/posts
+        path: src/content/文章
         format: yaml-frontmatter
         filename:
           template: "{year}-{month}-{day}-{primary}.md"
@@ -183,7 +183,7 @@ content:
       - name: moments
         label: 💬 动态
         type: collection
-        path: src/content/moments
+        path: src/content/动态
         format: yaml-frontmatter
         filename:
           template: "{year}-{month}-{day}.md"
@@ -269,7 +269,7 @@ content:
       - name: friends
         label: 🔗 友情链接
         type: collection
-        path: src/content/friends
+        path: src/content/友链
         format: yaml-frontmatter
         filename:
           template: "{primary}.md"
@@ -334,7 +334,7 @@ content:
       - name: apps
         label: 📱 应用
         type: collection
-        path: src/content/apps
+        path: src/content/应用
         format: yaml-frontmatter
         filename:
           template: "{primary}.md"
@@ -382,7 +382,7 @@ content:
       - name: tombstones
         label: 🪦 友链墓碑
         type: collection
-        path: src/content/tombstones
+        path: src/content/墓碑
         format: yaml-frontmatter
         filename:
           template: "{primary}.md"
@@ -417,7 +417,7 @@ content:
       - name: life-places
         label: 📍 足迹
         type: collection
-        path: src/content/life/places
+        path: src/content/地点
         format: yaml-frontmatter
         filename:
           template: "{year}-{month}-{day}.md"
@@ -505,7 +505,7 @@ content:
       - name: life-notebooks-index
         label: 📔 笔记本索引
         type: collection
-        path: src/content/life/notebooks
+        path: src/content/笔记本
         format: yaml-frontmatter
         filename:
           template: "_index.json"
@@ -553,7 +553,7 @@ content:
       - name: life-notebooks-entries
         label: 📝 笔记本条目
         type: collection
-        path: src/content/life/notebooks
+        path: src/content/笔记本
         format: yaml-frontmatter
         filename:
           template: "{year}-{month}-{day}-{primary}.md"
@@ -614,7 +614,7 @@ content:
       - name: album
         label: 🖼️ 相册
         type: collection
-        path: src/content/album
+        path: src/content/相册
         format: yaml-frontmatter
         filename:
           template: "{year}-{month}-{day}-{primary}.md"
@@ -679,7 +679,7 @@ content:
       - name: daohang
         label: 🧭 导航链接
         type: collection
-        path: src/content/daohang
+        path: src/content/导航
         format: yaml-frontmatter
         filename:
           template: "{primary}.md"
@@ -721,7 +721,7 @@ content:
       - name: ziyuan-resource
         label: 📢 公告/资源
         type: collection
-        path: src/content/ziyuan
+        path: src/content/资源
         format: yaml-frontmatter
         filename:
           template: "{year}-{month}-{day}-{primary}.md"
@@ -769,7 +769,7 @@ content:
       - name: ziyuan-quote
         label: 💬 每日一言
         type: collection
-        path: src/content/ziyuan
+        path: src/content/资源
         format: yaml-frontmatter
         filename:
           template: "{year}-{month}-{day}-{primary}.md"
@@ -808,7 +808,7 @@ content:
       - name: bills
         label: 💰 账单
         type: collection
-        path: src/content/bills
+        path: src/content/账单
         format: yaml-frontmatter
         filename:
           template: "{year}-{month}-{day}-{primary}.md"
@@ -863,7 +863,7 @@ content:
       - name: schedules
         label: 📅 日程
         type: collection
-        path: src/content/schedules
+        path: src/content/日程
         format: yaml-frontmatter
         filename:
           template: "{year}-{month}-{day}-{primary}.md"

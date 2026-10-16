@@ -12,7 +12,7 @@ const publicOrRemoteImage = z.string().refine((value) => {
 });
 
 const postsCollection = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/posts" }),
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/文章" }),
 	schema: z.object({
 		title: z.string(),
 		published: z.date(),
@@ -41,12 +41,12 @@ const postsCollection = defineCollection({
 });
 
 const specCollection = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/spec" }),
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/页面" }),
 	schema: z.object({}),
 });
 
 const momentsCollection = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/moments" }),
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/动态" }),
 	schema: ({ image }) =>
 		z.object({
 			id: z.string().optional().default(""),
@@ -68,7 +68,7 @@ const momentsCollection = defineCollection({
 const bangumiCollection = defineCollection({
 	loader: glob({
 		pattern: "**/*.{md,mdx,yaml,yml}",
-		base: "./src/content/bangumi",
+		base: "./src/content/追番",
 	}),
 	schema: ({ image }) =>
 		z.object({
@@ -94,8 +94,8 @@ const bangumiCollection = defineCollection({
 		}),
 });
 
-const lifeCollection = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/life" }),
+const placesCollection = defineCollection({
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/地点" }),
 	schema: z.object({
 		label: z.string().optional().default(""),
 		value: z.string().optional().default(""),
@@ -148,7 +148,7 @@ const lifeCollection = defineCollection({
 const notebooksCollection = defineCollection({
 	loader: glob({
 		pattern: "**/*.{md,json}",
-		base: "./src/content/life/notebooks",
+		base: "./src/content/笔记本",
 	}),
 	schema: z.object({
 		name: z.string().optional().default("未命名日记本"),
@@ -170,7 +170,7 @@ const notebooksCollection = defineCollection({
 });
 
 const albumCollection = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx,json}", base: "./src/content/album" }),
+	loader: glob({ pattern: "**/*.{md,mdx,json}", base: "./src/content/相册" }),
 	schema: ({ image }) => {
 		const albumImage = publicOrRemoteImage.or(image()).or(z.string());
 
@@ -201,7 +201,7 @@ const albumCollection = defineCollection({
 });
 
 const ziyuanCollection = defineCollection({
-	loader: glob({ pattern: "**/*.md", base: "./src/content/ziyuan" }),
+	loader: glob({ pattern: "**/*.md", base: "./src/content/资源" }),
 	schema: z.union([
 		z.object({
 			title: z.string(),
@@ -233,7 +233,7 @@ const ziyuanCollection = defineCollection({
 });
 
 const friendsCollection = defineCollection({
-	loader: glob({ pattern: "**/*.md", base: "./src/content/friends" }),
+	loader: glob({ pattern: "**/*.md", base: "./src/content/友链" }),
 	schema: z.object({
 		title: z.string(),
 		imgurl: z.string(),
@@ -248,7 +248,7 @@ const friendsCollection = defineCollection({
 });
 
 const appsCollection = defineCollection({
-	loader: glob({ pattern: "**/*.md", base: "./src/content/apps" }),
+	loader: glob({ pattern: "**/*.md", base: "./src/content/应用" }),
 	schema: z.object({
 		title: z.string(),
 		imgurl: z.string(),
@@ -261,7 +261,7 @@ const appsCollection = defineCollection({
 });
 
 const tombstonesCollection = defineCollection({
-	loader: glob({ pattern: "**/*.md", base: "./src/content/tombstones" }),
+	loader: glob({ pattern: "**/*.md", base: "./src/content/墓碑" }),
 	schema: z.object({
 		title: z.string(),
 		avatar: z.string().optional(),
@@ -270,7 +270,7 @@ const tombstonesCollection = defineCollection({
 });
 
 const daohangCollection = defineCollection({
-	loader: glob({ pattern: "**/*.md", base: "./src/content/daohang" }),
+	loader: glob({ pattern: "**/*.md", base: "./src/content/导航" }),
 	// 展示必需的四项：分类由文件夹决定，顺序按名称排（见 src/pages/projects.astro）
 	// tags 可选：填了就在导航页该分类的标题行里变成一排子标签（筛选该分类里的卡片）
 	schema: z.object({
@@ -283,7 +283,7 @@ const daohangCollection = defineCollection({
 });
 
 const billsCollection = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/bills" }),
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/账单" }),
 	schema: z.object({
 		title: z.string().optional().default(""),
 		amount: z.number(),
@@ -303,7 +303,7 @@ const billsCollection = defineCollection({
 });
 
 const schedulesCollection = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/schedules" }),
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/日程" }),
 	schema: z
 		.object({
 			title: z.string(),
@@ -343,7 +343,7 @@ const schedulesCollection = defineCollection({
 });
 
 const changelogCollection = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/changelog" }),
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/更新日志" }),
 	schema: z.object({
 		version: z.string(),
 		date: z.date(),
@@ -358,7 +358,7 @@ export const collections = {
 	spec: specCollection,
 	moments: momentsCollection,
 	bangumi: bangumiCollection,
-	life: lifeCollection,
+	places: placesCollection,
 	notebooks: notebooksCollection,
 	album: albumCollection,
 	daohang: daohangCollection,

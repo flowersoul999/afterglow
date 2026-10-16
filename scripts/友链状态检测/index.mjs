@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-const FRIENDS_DIR = path.join(import.meta.dirname, "../../src/content/friends");
+const FRIENDS_DIR = path.join(import.meta.dirname, "../../src/content/友链");
 
 // 解析 frontmatter 的 siteurl（不引入 gray-matter，简单正则即可）
 function readSiteurls() {

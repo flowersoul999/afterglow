@@ -11,7 +11,7 @@
  *   1. 输入网站地址
  *   2. 自动获取网站 ICO 图标
  *   3. 填写名称、描述、分类、标签等信息
- *   4. 生成 Markdown 文件到 src/content/daohang/
+ *   4. 生成 Markdown 文件到 src/content/导航/
  */
 
 import fs from "node:fs";
@@ -389,7 +389,7 @@ async function main() {
 	fs.writeFileSync(filepath, lines.join("\n"), "utf-8");
 
 	console.log(`\n════════════════════════════════════════`);
-	console.log(`✓ ${isEditMode ? "已更新" : "已创建"}: src/content/daohang/${filename}.md`);
+	console.log(`✓ ${isEditMode ? "已更新" : "已创建"}: src/content/导航/${filename}.md`);
 	console.log(`  名称: ${name}`);
 	console.log(`  地址: ${url}`);
 	const iconChanged = isEditMode && icon && icon !== existingEntry.icon;

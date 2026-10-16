@@ -11,7 +11,7 @@ interface Props {
 const { class: className, style } = Astro.props;
 
 // 获取生活相关 collection
-const lifeEntries = await getCollection("life");
+const lifeEntries = await getCollection("places");
 const notebookEntries = await getCollection("notebooks");
 // 辅助函数
 const isIn = (entryId: string, folder: string) =>
@@ -19,7 +19,6 @@ const isIn = (entryId: string, folder: string) =>
 
 // 统计地点
 const places = lifeEntries
-	.filter((entry) => isIn(entry.id, "places"))
 	.map((e) => e.data);
 const placesCount = places.length;
 const visitedCities = new Set(places.map((p) => p.city).filter(Boolean)).size;

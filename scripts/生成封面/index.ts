@@ -34,7 +34,7 @@ import sharp from "sharp";
 // 常量配置
 // ============================================================
 
-const POSTS_DIR = path.resolve("src/content/posts");
+const POSTS_DIR = path.resolve("src/content/文章");
 const OUT_DIR = path.resolve("public/assets/images/post-covers");
 /** 写回 frontmatter 的 URL 前缀（public 目录对外暴露在站点根路径下） */
 const PUBLIC_PREFIX = "/assets/images/post-covers";

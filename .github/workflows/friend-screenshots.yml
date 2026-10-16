@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ["src/content/friends/**"]
+    paths: ["src/content/友链/**"]
 
 permissions:
   contents: write

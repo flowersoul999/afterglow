@@ -28,7 +28,7 @@ tencent → kugou → netease 等平台，直到获取完整版音频。
     python fetch-lrc.py . --no-md --audio-base=https://xxx/music/ # 自定义 URL
 
 默认输出目录: ./downloads/
-默认 md 输出: src/content/bangumi/music/
+默认 md 输出: src/content/追番/music/
 默认音频 URL 前缀: https://img.tsh520.cn/file/music/
 
 依赖: 已部署的 Meting API, mutagen

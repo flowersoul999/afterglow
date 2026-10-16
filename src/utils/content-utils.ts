@@ -136,7 +136,7 @@ export async function getArchiveList(): Promise<ArchiveItem[]> {
 	});
 	const moments = await getCollection("moments");
 	const bangumi = await getCollection("bangumi");
-	const lifeEntries = await getCollection("life");
+	const lifeEntries = await getCollection("places");
 	const notebooksEntries = await getCollection("notebooks");
 	const postItems: ArchiveItem[] = posts.map((post) => ({
 		id: post.id,
@@ -203,7 +203,6 @@ export async function getArchiveList(): Promise<ArchiveItem[]> {
 
 	// 足迹记录
 	lifeEntries
-		.filter((entry) => isIn(entry.id, "places"))
 		.forEach((p) => {
 			const parts = [p.data.province, p.data.city].filter(Boolean);
 			lifeItems.push({

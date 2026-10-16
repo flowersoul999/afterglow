@@ -10,7 +10,7 @@ import { slug as githubSlug } from "github-slugger";
 import { chromium } from "playwright";
 import sharp from "sharp";
 
-const FRIENDS_DIR = path.join(import.meta.dirname, "../../src/content/friends");
+const FRIENDS_DIR = path.join(import.meta.dirname, "../../src/content/友链");
 const OUT_DIR = path.join(import.meta.dirname, "../../public/assets/friends-shots");
 
 // 默认无头 UA 带 "HeadlessChrome" 会被部分站点反爬识别，换成真实 Chrome UA

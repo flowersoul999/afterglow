@@ -28,7 +28,7 @@
 
 TMDB 搜不到时自动降级为手动模式，交互填写所有字段。
 
-默认 MD 输出目录: src/content/bangumi/anime/
+默认 MD 输出目录: src/content/追番/anime/
 默认封面输出目录: scripts/img-anime/
 封面 CDN 地址: https://img.tsh520.cn/file/anime/
 

@@ -23,7 +23,7 @@ const pinnedMoments = moments
 
 // 获取 moments 资产目录下的所有图片
 const momentAssets = import.meta.glob<{ default: ImageMetadata }>(
-	"../content/moments/assets/*.{jpeg,jpg,png,gif,webp,avif}",
+	"../content/动态/**/*.{jpeg,jpg,png,gif,webp,avif}",
 	{ eager: true },
 );
 

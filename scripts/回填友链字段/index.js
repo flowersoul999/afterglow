@@ -1,4 +1,4 @@
-/* 一次性脚本：为 src/content/friends/*.md 回填 added（git 首次添加日期）与 group: friend
+/* 一次性脚本：为 src/content/友链/*.md 回填 added（git 首次添加日期）与 group: friend
    已存在对应字段的文件自动跳过，幂等可重跑。
    注意：added 写裸日期（如 2026-08-12），Astro 解析为 Date 才能通过 z.date() 校验，
    因此用行级文本插入，不走 gray-matter 重序列化，避免格式噪音。 */
@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 
-const FRIENDS_DIR = path.join(import.meta.dirname, "../../src/content/friends");
+const FRIENDS_DIR = path.join(import.meta.dirname, "../../src/content/友链");
 
 // 取文件的首次添加日期（YYYY-MM-DD），失败返回 null
 function getFirstAddDate(filePath) {

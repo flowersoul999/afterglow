@@ -5,7 +5,7 @@ import Comment from "@/components/comment/index.astro";
 import PageTitle from "@/components/common/PageTitle.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 
-const lifeEntries = await getCollection("life");
+const lifeEntries = await getCollection("places");
 
 const isIn = (entryId: string, folder: string) =>
 	entryId.replace(/\\/g, "/").startsWith(`${folder}/`);
@@ -23,7 +23,6 @@ const isSameYear = (date?: Date | string) => {
 const sum = (arr: number[]) => arr.reduce((acc, num) => acc + num, 0);
 
 const visitedPlaces = lifeEntries
-	.filter((entry) => isIn(entry.id, "places"))
 	.filter((entry) => !entry.id.toLowerCase().includes("readme"))
 	.map((entry) => entry.data);
 
