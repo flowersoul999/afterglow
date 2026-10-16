@@ -46,7 +46,7 @@ if sys.platform == "win32":
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FETCH_LRC = os.path.join(SCRIPT_DIR, "fetch-lrc.py")
 DEFAULT_INPUT = os.path.join(SCRIPT_DIR, "playlist.txt")
-BLOG_CONTENT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "src", "content", "bangumi", "music"))
+BLOG_CONTENT_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "src", "content", "影视", "music"))
 DEFAULT_OUT = os.path.abspath(os.path.join(SCRIPT_DIR, "downloads"))
 
 

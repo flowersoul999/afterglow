@@ -63,10 +63,11 @@ src/
 │   └── widget/          # 侧栏 Widget (27)
 ├── config/              # 站点配置（27 个 .ts，index.ts barrel export）
 ├── constants/           # 常量：页面尺寸、主题模式、图标、链接预设
-├── content/             # Astro Content Collections（12 个集合：posts/spec/moments/bangumi/地点/笔记本/album/daohang/ziyuan/friends/tombstones/changelog）
-│   ├── album/ bangumi/ changelog/ daohang/
-│   ├── friends/ life/ moments/ posts/ spec/ ziyuan/  # spec/about.mdx 为组件化 Q&A；更新日志图谱组件（ChangelogGraph）用于 /changelog/ 页（2026-08-30 起不再嵌入关于页）
-│   └── 笔记本/  # notebooks 集合物理位置（life 的子目录，2026-09-27 起归档改 card 流，支持 images 多图 12字展开 + 年份下拉联动热力图与列表）
+├── content/             # Astro Content Collections（12 个集合；集合键名 posts/spec/moments/bangumi/places/notebooks/album/daohang/ziyuan/friends/tombstones/changelog —— **键名是英文，不随磁盘目录改名，getCollection() 一律用键名**）
+│   ├── 文章/ 页面/ 动态/ 影视/ 足迹/ 相册/ 导航/ 资源/ 更新日志/   # 对应集合键 posts/spec/moments/bangumi/places/album/daohang/ziyuan/changelog
+│   ├── 页面/            # spec 集合：about.mdx 为组件化 Q&A，friends.md / guestbook.md 分别渲染进 /friends/ 与 /life/guestbook/ 下方正文
+│   ├── 友链/            # friends 集合；子目录 友链/墓碑/ 为 tombstones 集合（friends 的 glob 已加 `!墓碑/**` 排除，否则墓碑文件会被 friends 集合收进去导致 zod 校验失败）
+│   └── 笔记本/          # notebooks 集合物理位置（2026-09-27 起归档改 card 流，支持 images 多图 12字展开 + 年份下拉联动热力图与列表）
 ├── i18n/                # 国际化（5 种语言，330 个翻译键）
 │   └── languages/       # en.ts, zh_CN.ts, zh_TW.ts, ja.ts, ru.ts
 ├── layouts/             # Layout.astro (591行), MainGridLayout.astro (305行)

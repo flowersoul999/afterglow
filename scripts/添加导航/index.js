@@ -21,7 +21,7 @@ import { createInterface } from "node:readline";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
-const TARGET_DIR = path.join(ROOT, "src", "content", "daohang");
+const TARGET_DIR = path.join(ROOT, "src", "content", "导航");
 
 // 常用分类
 const CATEGORIES = [

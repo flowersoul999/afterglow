@@ -71,7 +71,7 @@ pnpm cli build
 
 ### 下载影视/index.py — 影视封面下载
 
-从 TMDB 搜索影视并生成 bangumi md 文件。封面输出到 `下载影视/img-anime/`，md 输出到 `src/content/追番/anime/`。
+从 TMDB 搜索影视并生成 bangumi md 文件。封面输出到 `下载影视/img-anime/`，md 输出到 `src/content/影视/anime/`。
 
 ### 下载音乐/fetch-lrc.py — 音乐下载
 

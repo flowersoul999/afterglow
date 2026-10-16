@@ -335,7 +335,7 @@ content:
       - name: tombstones
         label: 🪦 友链墓碑
         type: collection
-        path: src/content/墓碑
+        path: src/content/友链/墓碑
         format: yaml-frontmatter
         filename:
           template: "{primary}.md"
@@ -370,7 +370,7 @@ content:
       - name: life-places
         label: 📍 足迹
         type: collection
-        path: src/content/地点
+        path: src/content/足迹
         format: yaml-frontmatter
         filename:
           template: "{year}-{month}-{day}.md"

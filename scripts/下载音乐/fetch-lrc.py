@@ -28,7 +28,7 @@ tencent → kugou → netease 等平台，直到获取完整版音频。
     python fetch-lrc.py . --no-md --audio-base=https://xxx/music/ # 自定义 URL
 
 默认输出目录: ./downloads/
-默认 md 输出: src/content/追番/music/
+默认 md 输出: src/content/影视/music/
 默认音频 URL 前缀: https://img.tsh520.cn/file/music/
 
 依赖: 已部署的 Meting API, mutagen
@@ -67,7 +67,7 @@ NETEASE_SEARCH_ONLY = {"https://meting.mikus.ink/api"}
 # 运行时自动探测后写入，按可用性排序
 API_BASE = API_ENDPOINTS[0]
 
-BLOG_CONTENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src", "content", "bangumi", "music"))
+BLOG_CONTENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "src", "content", "影视", "music"))
 AUDIO_BASE = "https://img.tsh520.cn/file/music/"
 DEFAULT_OUT = os.path.abspath(os.path.join(os.path.dirname(__file__), "downloads"))
 

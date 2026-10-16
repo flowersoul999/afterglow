@@ -28,7 +28,7 @@
 
 TMDB 搜不到时自动降级为手动模式，交互填写所有字段。
 
-默认 MD 输出目录: src/content/追番/anime/
+默认 MD 输出目录: src/content/影视/anime/
 默认封面输出目录: scripts/img-anime/
 封面 CDN 地址: https://img.tsh520.cn/file/anime/
 
@@ -49,7 +49,7 @@ if sys.platform == "win32":
 
 # ── 配置 ──────────────────────────────────────────────
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-BLOG_BANGUMI_DIR = os.path.join(BASE_DIR, "src", "content", "bangumi", "anime")
+BLOG_BANGUMI_DIR = os.path.join(BASE_DIR, "src", "content", "影视", "anime")
 COVER_DIR = os.path.join(os.path.dirname(__file__), "img-anime")
 CDN_BASE = "https://img.tsh520.cn/file/anime"
 TMDB_API_KEY = "8a9a0dd41f7b6fe6d4d20f6cc9bd26f2"
