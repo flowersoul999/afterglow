@@ -202,20 +202,19 @@ export async function getArchiveList(): Promise<ArchiveItem[]> {
 	const lifeItems: ArchiveItem[] = [];
 
 	// 足迹记录
-	lifeEntries
-		.forEach((p) => {
-			const parts = [p.data.province, p.data.city].filter(Boolean);
-			lifeItems.push({
-				id: p.id,
-				type: "life",
-				data: {
-					title: parts.length > 0 ? parts.join(" ") : "足迹记录",
-					published: p.data.date || new Date(),
-					tags: ["足迹"],
-					link: "/life/places/",
-				},
-			});
+	lifeEntries.forEach((p) => {
+		const parts = [p.data.province, p.data.city].filter(Boolean);
+		lifeItems.push({
+			id: p.id,
+			type: "life",
+			data: {
+				title: parts.length > 0 ? parts.join(" ") : "足迹记录",
+				published: p.data.date || new Date(),
+				tags: ["足迹"],
+				link: "/life/places/",
+			},
 		});
+	});
 
 	// 笔记本记录（排除 _index 元数据条目）
 	notebooksEntries

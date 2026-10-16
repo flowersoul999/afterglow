@@ -1,5 +1,7 @@
 # AstrBot 写入契约（bills / schedules）
 
+> ⚠️ **已废弃（2026-10-16）**：`bills` / `schedules` 两个集合连同 `/bills/`、`/schedules/`、`/apps/` 路由已彻底移除（`src/content/账单`、`src/content/日程`、`src/content/应用` 目录一并删除）。本文仅作历史存档，勿再按此实现。
+
 > Phase1 为静态契约：机器人往 `src/content/bills` 与 `src/content/schedules` 按本规范追加 Markdown，`pnpm build` 后即在 `/bills` 与 `/schedules` 可见。Phase2 再补增量刷新。
 
 ## bills

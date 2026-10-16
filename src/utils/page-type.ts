@@ -25,9 +25,6 @@ export type SidebarPageType =
 	| "places"
 	| "album-list"
 	| "album"
-	| "bills"
-	| "schedules"
-	| "apps"
 	| "books"
 	| "movies-games"
 	| "bangumi"
@@ -55,9 +52,6 @@ export const SIDEBAR_PAGE_TYPES: readonly SidebarPageType[] = [
 	"places",
 	"album-list",
 	"album",
-	"bills",
-	"schedules",
-	"apps",
 	"books",
 	"movies-games",
 	"bangumi",
@@ -108,9 +102,6 @@ export function getSidebarPageType(pathname: string): SidebarPageType {
 	if (path === "/life/places") return "places";
 	if (path === "/album") return "album-list";
 	if (path.startsWith("/album/")) return "album";
-	if (path === "/bills") return "bills";
-	if (path === "/schedules") return "schedules";
-	if (path === "/apps") return "apps";
 
 	// 收藏
 	if (path === "/books" || path.startsWith("/books/")) return "books";

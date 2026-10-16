@@ -28,7 +28,6 @@ const tags = await getTagList();
 const moments = await getCollection("moments");
 const bangumi = await getCollection("bangumi");
 const notebooks = await getCollection("notebooks");
-const bills = await getCollection("bills");
 
 // 统计生活记录子分类
 const animeCount = bangumi.filter(
@@ -99,14 +98,13 @@ function formatNumber(num: number): string {
 	return num.toLocaleString();
 }
 
-// 最近活动日期：取全部内容集合（文章/动态/书影音/足迹/笔记/账单）的最大日期，日程（未来事项）不计
+// 最近活动日期：取全部内容集合（文章/动态/书影音/足迹/笔记）的最大日期
 const latestActivity = [
 	...posts.map((p) => p.data.published),
 	...moments.map((m) => m.data.published),
 	...bangumi.map((b) => b.data.published),
 	...lifeEntries.map((l) => l.data.date),
 	...notebooks.map((n) => n.data.date),
-	...bills.map((b) => b.data.date),
 ]
 	.filter((d): d is Date => d instanceof Date)
 	.reduce<Date | null>(

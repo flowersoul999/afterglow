@@ -59,14 +59,12 @@ src/
 │   ├── layout/          # 布局组件：Navbar, Footer, SideBar, HomeHero... (19)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
 │   ├── moments/         # 动态卡片与评论弹窗
-│   ├── bills/         # 账单/资金（7：Balance 年度结余横幅卡 + MonthlyFlow 月度流水（按日分组/月份筛选/分页）+ BillCalendar 账单日历（农历+每日收支）+ DailyTrend/ExpenseRank/IncomeCategory/MonthlySummary/YearlyFlow，按图两栏等比缩小）
-│   ├── schedules/     # 日程（3：ScheduleCalendar/ScheduleList/SchedulesView 周视图默认 + 提醒 + 分页等高）
 │   ├── pages/           # 页面级组件：bangumi, books（Bookshelf/BookCard：3D 书本卡片 + 影视页同款胶囊筛选（分类+读过/在读/想读）+ ClientPagination 分页 8/6 本每页，SSR 隐藏非首页防闪烁）, movies-games, music (10)
 │   └── widget/          # 侧栏 Widget (27)
 ├── config/              # 站点配置（27 个 .ts，index.ts barrel export）
 ├── constants/           # 常量：页面尺寸、主题模式、图标、链接预设
-├── content/             # Astro Content Collections（15 个集合：posts/spec/moments/bangumi/笔记本/album/daohang/ziyuan/friends/apps/tombstones/changelog/bills/schedules）
-│   ├── album/ apps/ bangumi/ changelog/ daohang/
+├── content/             # Astro Content Collections（12 个集合：posts/spec/moments/bangumi/地点/笔记本/album/daohang/ziyuan/friends/tombstones/changelog）
+│   ├── album/ bangumi/ changelog/ daohang/
 │   ├── friends/ life/ moments/ posts/ spec/ ziyuan/  # spec/about.mdx 为组件化 Q&A；更新日志图谱组件（ChangelogGraph）用于 /changelog/ 页（2026-08-30 起不再嵌入关于页）
 │   └── 笔记本/  # notebooks 集合物理位置（life 的子目录，2026-09-27 起归档改 card 流，支持 images 多图 12字展开 + 年份下拉联动热力图与列表）
 ├── i18n/                # 国际化（5 种语言，330 个翻译键）
@@ -196,7 +194,6 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 | ziyuan | 资源/公告 |
 | friends | 友链（added 添加日期 + group 分组 friend\|other，2026-08 区块化改版：新朋友/我的朋友们/更多伙伴） |
 | tombstones | 友链墓碑（title/avatar/note，2026-08 新增，纪念下线友链） |
-| apps | 应用 |
 | changelog | 更新日志 |
 
 > 友链页支撑系统（2026-08）：`.github/workflows/friend-status.yml`（每天 5:17 检测友链延迟 → public/friends-status.json，四档 fast/ok/slow/down）与 `friend-screenshots.yml`（每周日 3:23 全量补漏 + push main 变更 `src/content/friends/**` 时自动触发，Playwright 截图 → public/assets/friends-shots/{contentId}.webp，伪装真实浏览器 + load 后等字体就绪、网络空闲（6s 超时兜底）与 2s 缓冲，失败 3 次尝试）。前端 fetch 状态 JSON 注入徽标，无 JSON/无截图时优雅降级（卡片退化为纯头像卡）。改 friends 集合结构时注意同步这两个脚本（正则读 frontmatter）。**截图文件名必须是全小写**（Astro glob loader 的 entry id 为全小写 slug，脚本已按 `md 文件名.toLowerCase()` 输出；含大写的 webp 在 Windows dev 误判存在导致 404，线上 Linux 则直接退化）。
@@ -908,7 +905,7 @@ return controller;
 | 改友链页 `friend-card` 卡片结构/友链 Card 组件，未同步 `hexo-circle-of-friends` 的 `css_rules.yaml` firefly 选择器 | 朋友圈（/circle/）数据停更（2026-08 曾停更 6 天） | 见 §3.4「朋友圈数据链路（强制提醒义务）」 |
 | CI 中 Biome 用 `version: latest` 或版本与 package.json 不一致 | 规则漂移导致"本地绿 CI 红"（2026-08 实测：2.3 vs 2.5 的 useAltText 升级为 error） | setup-biome action 不指定 version，自动读取 package.json 版本 |
 | 手写 `frontmatter.category` 或用 Obsidian 插件再写 category | 2026-08-20 后分类已改为文件夹即分类（`category-tree.ts`），frontmatter 再写会被忽略且 `.pages.yml` 未声明字段保存时丢弃 | 分类只靠 `src/content/文章/父/子/xxx.md` 建文件夹，勿写 frontmatter |
-| 修改博客各功能 frontmatter 字段（`src/content.config.ts` 的 zod schema / `.pages.yml` / 页面 `normalizeImages`/`getGridCols` 等展示逻辑）未同步 AstrBot 插件 `plug-in/AstrBot/AstrBot BlogWriter` 的 `build_*_md` 生成逻辑 | 插件写入的旧格式导致页面 `images` 为空、归档卡片/灯箱不显示或 zod 校验失败（如 2026-09-27 笔记从正文 `![](url)` 改为 `images` 数组，前端已用 `images` 宫格展示） | 凡改动 moments/bangumi/笔记本/album/daohang/bills/schedules 等集合的字段名、类型或渲染约定，必须立即检查并同步更新插件的 `blog_writer_core.py:build_*_md` 与 `tests/test_core.py`，并提醒站长同步发布插件新版本 |
+| 修改博客各功能 frontmatter 字段（`src/content.config.ts` 的 zod schema / `.pages.yml` / 页面 `normalizeImages`/`getGridCols` 等展示逻辑）未同步 AstrBot 插件 `plug-in/AstrBot/AstrBot BlogWriter` 的 `build_*_md` 生成逻辑 | 插件写入的旧格式导致页面 `images` 为空、归档卡片/灯箱不显示或 zod 校验失败（如 2026-09-27 笔记从正文 `![](url)` 改为 `images` 数组，前端已用 `images` 宫格展示） | 凡改动 moments/bangumi/笔记本/album/daohang 等集合的字段名、类型或渲染约定，必须立即检查并同步更新插件的 `blog_writer_core.py:build_*_md` 与 `tests/test_core.py`，并提醒站长同步发布插件新版本 |
 | 把 API Key / Token / 密码硬编码进任何被 git 跟踪的文件（scripts/、注释、markdown 都算），或轻信注释里"会被 .gitignore 保护"的声明而不实测 | 公开仓库全历史可读，GitGuardian 告警、密钥被扫描器批量收割滥用（2026-08-30 GitGuardian 事故：DashScope Key 硬编码在 `scripts/生成摘要/index.ts` 长期公开，声明受 .gitignore 保护但实际从未生效） | 密钥一律放 `.env`（已 gitignore）+ `process.env.XXX` 读取，脚本调用带 `--env-file=.env`，`.env.example` 只留空模板；新增任何疑似含密钥的文件，提交前必须实测 `git check-ignore <path>` 与 `git ls-files <path>` 确认未被跟踪；一旦泄露：**先去对应控制台吊销重发（唯一根治）**，再从代码清除，git 历史清理通常不必要且代价大 |
 | 用文件 mtime 做集合排序/展示的兜底依据 | CI（EdgeOne/GitHub Actions）每次全新 clone，所有文件 mtime 都等于构建时刻、比任何业务日期都新——缺字段的旧条目会永远霸占"最新"区块（2026-09 友链页"新朋友"事故） | 排序只认 frontmatter 业务字段（如 friends 的 `added`）；字段缺失时构建期 `console.warn` 并让条目落到最后 |
 | 拿 Astro content 集合的 `item.id` 拼磁盘路径 / 匹配 public 静态文件 | id 是 github-slugger 规则（小写 + 移除标点、空格转连字符），与磁盘文件名不一致（`39-胡超，作品集.md` → id `39-胡超作品集`、`33-RAGNote.md` → `33-ragnote`），Linux CI 大小写敏感必失配 | 文件名 ↔ id 换算必须走同一 slug 规则（截图脚本 `scripts/友链截图/index.mjs` 已内置 github-slugger）；新增含大写/标点文件名的友链后核对 `public/assets/friends-shots/` 截图命名 |

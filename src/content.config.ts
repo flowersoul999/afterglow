@@ -247,19 +247,6 @@ const friendsCollection = defineCollection({
 	}),
 });
 
-const appsCollection = defineCollection({
-	loader: glob({ pattern: "**/*.md", base: "./src/content/应用" }),
-	schema: z.object({
-		title: z.string(),
-		imgurl: z.string(),
-		desc: z.string(),
-		siteurl: z.string(),
-		tags: z.array(z.string()).optional().default([]),
-		weight: z.number().optional().default(0),
-		enabled: z.boolean().optional().default(true),
-	}),
-});
-
 const tombstonesCollection = defineCollection({
 	loader: glob({ pattern: "**/*.md", base: "./src/content/墓碑" }),
 	schema: z.object({
@@ -280,66 +267,6 @@ const daohangCollection = defineCollection({
 		description: z.string().optional().default(""),
 		tags: z.array(z.string()).optional().default([]),
 	}),
-});
-
-const billsCollection = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/账单" }),
-	schema: z.object({
-		title: z.string().optional().default(""),
-		amount: z.number(),
-		type: z.enum(["income", "expense"]).default("expense"),
-		category: z.string().default("其他"),
-		account: z.string().default("其他"),
-		date: z.coerce.date(),
-		time: z
-			.string()
-			.regex(/^\d{2}:\d{2}$/)
-			.or(z.literal(""))
-			.optional()
-			.default(""),
-		description: z.string().optional().default(""),
-		tags: z.array(z.string()).optional().default([]),
-	}),
-});
-
-const schedulesCollection = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/日程" }),
-	schema: z
-		.object({
-			title: z.string(),
-			date: z.coerce.date().optional(),
-			endDate: z.coerce.date().optional(),
-			allDay: z.boolean().optional().default(false),
-			priority: z.enum(["none", "low", "medium", "high"]).default("none"),
-			status: z.enum(["todo", "done", "cancelled"]).default("todo"),
-			location: z.string().optional().default(""),
-			repeat: z.string().optional().default(""),
-			category: z
-				.enum(["schedule", "birthday", "anniversary", "holiday"])
-				.optional()
-				.default("schedule"),
-			person: z.string().optional().default(""),
-			isLunar: z.boolean().optional().default(false),
-			lunarMonth: z.number().int().min(1).max(12).optional(),
-			lunarDay: z.number().int().min(1).max(30).optional(),
-			lunarLeap: z.boolean().optional().default(false),
-		})
-		.superRefine((data, ctx) => {
-			if (!data.isLunar && !data.date) {
-				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
-					message: "非农历需填 date",
-					path: ["date"],
-				});
-			}
-			if (data.isLunar && (!data.lunarMonth || !data.lunarDay)) {
-				ctx.addIssue({
-					code: z.ZodIssueCode.custom,
-					message: "农历需填 lunarMonth/lunarDay",
-					path: ["lunarMonth"],
-				});
-			}
-		}),
 });
 
 const changelogCollection = defineCollection({
@@ -364,9 +291,6 @@ export const collections = {
 	daohang: daohangCollection,
 	ziyuan: ziyuanCollection,
 	friends: friendsCollection,
-	apps: appsCollection,
 	changelog: changelogCollection,
 	tombstones: tombstonesCollection,
-	bills: billsCollection,
-	schedules: schedulesCollection,
 };
