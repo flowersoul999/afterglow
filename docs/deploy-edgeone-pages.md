@@ -64,7 +64,7 @@ EdgeOne Pages 托管（blog.tsh520.cn 直接绑定 Pages 项目）
 
 - 首页渲染、Swup 导航、主题切换
 - 文章页、分类页、归档页
-- 账单 `/bills/`、笔记本 `/life/notebooks/`、日程 `/schedules/`（内容直接展示）
+- 账单 `/bills/`、笔记本 `/笔记本/`、日程 `/schedules/`（内容直接展示）
 - `/search/`（pagefind）、`sitemap.xml`、`robots.txt`、RSS
 - 评论 / 首页统计 / 音乐 / 相册 / 朋友圈 /circle/ / 友链状态徽标
 - 404 页、`trailingSlash` 尾斜杠路由

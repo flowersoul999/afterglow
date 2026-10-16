@@ -65,10 +65,10 @@ src/
 │   └── widget/          # 侧栏 Widget (27)
 ├── config/              # 站点配置（27 个 .ts，index.ts barrel export）
 ├── constants/           # 常量：页面尺寸、主题模式、图标、链接预设
-├── content/             # Astro Content Collections（15 个集合：posts/spec/moments/bangumi/life/notebooks/album/daohang/ziyuan/friends/apps/tombstones/changelog/bills/schedules）
+├── content/             # Astro Content Collections（15 个集合：posts/spec/moments/bangumi/笔记本/album/daohang/ziyuan/friends/apps/tombstones/changelog/bills/schedules）
 │   ├── album/ apps/ bangumi/ changelog/ daohang/
 │   ├── friends/ life/ moments/ posts/ spec/ ziyuan/  # spec/about.mdx 为组件化 Q&A；更新日志图谱组件（ChangelogGraph）用于 /changelog/ 页（2026-08-30 起不再嵌入关于页）
-│   └── life/notebooks/  # notebooks 集合物理位置（life 的子目录，2026-09-27 起归档改 card 流，支持 images 多图 12字展开 + 年份下拉联动热力图与列表）
+│   └── 笔记本/  # notebooks 集合物理位置（life 的子目录，2026-09-27 起归档改 card 流，支持 images 多图 12字展开 + 年份下拉联动热力图与列表）
 ├── i18n/                # 国际化（5 种语言，330 个翻译键）
 │   └── languages/       # en.ts, zh_CN.ts, zh_TW.ts, ja.ts, ru.ts
 ├── layouts/             # Layout.astro (591行), MainGridLayout.astro (305行)
@@ -77,7 +77,7 @@ src/
 │   ├── api/             # JSON API (2)：calendar.json.ts, home-stats.json.ts
 │   ├── album/ bangumi/ books/ categories/ life/ moments/ posts/ // moments/[slug] 已删除
 │   └── 404, about, archive, apps, changelog, circle, debug-urls, friends,
-│       guestbook, life/notebooks, movies-games/, music, projects, search,
+│       guestbook, 笔记本, movies-games/, music, projects, search,
 │       sponsor, rss, robots.txt, og
 ├── plugins/             # 自定义 remark/rehype 插件 (10)
 ├── styles/              # CSS 样式（73 个文件，含 about 技术栈/时间线/更新日志图谱）
@@ -100,7 +100,7 @@ src/
 pagefind.yml              # Pagefind 索引排除配置（katex、搜索面板等）
 scripts/                  # 开发脚本：12 个中文命名脚本目录（生成图标/新建文章/生成摘要/生成封面/转WebP/添加导航/下载影视/下载音乐/回填友链字段/友链截图/友链状态检测/TTS服务）+ cli.js、vision.mjs（图片识别）、compress-images.mjs、rename-images.mjs、import-wallpapers.mjs、check-svelte-warnings.mjs（脚本清单见第 0 节；生成封面 见第 2 节「文章封面生成」；TTS服务 为 edge-tts 朗读服务，部署产物，教程见 docs/deploy-edge-tts.md）
 docs/                     # 部署文档（deploy-pagescms-vercel.md 等）+ superpowers/{specs,plans}（改版设计稿与实现计划，2026-09-30 起）
-write_places.cjs          # 一次性脚本：生成 life/places 足迹页
+write_places.cjs          # 一次性脚本：生成 地点 足迹页
 ```
 
 **禁止在 `components/` 根目录平铺组件文件，必须放入对应功能域子目录。**
@@ -178,7 +178,7 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 
 ### 3.4 页面加密（已移除，2026-09-16）
 
-`/bills/`、`/life/notebooks/`（列表+详情）、`/schedules/` 曾在构建时用 PBKDF2(250k)+AES-256-GCM 把敏感 HTML 加密成密文内联（EncryptGate / PasswordGate 毛玻璃密码门，密钥来自 `GATE_PASSWORD`）。**该功能已按站长要求彻底移除**：三个页面恢复明文直出，sitemap、pagefind 站内搜索、归档时间线（`content-utils.ts#getArchiveList`）与侧栏（`widget/RecentItems.astro`、`widget/LifeStats.astro`）重新收录/展示笔记本。如需恢复，见 git 历史中的 `src/components/security/`、`src/utils/encrypt-gate.ts`、`src/config/securityConfig.ts`、`src/styles/pages/encrypt-gate.css`，以及 changelog `2026-08-30-encrypt-gate.md`。
+`/bills/`、`/笔记本/`（列表+详情）、`/schedules/` 曾在构建时用 PBKDF2(250k)+AES-256-GCM 把敏感 HTML 加密成密文内联（EncryptGate / PasswordGate 毛玻璃密码门，密钥来自 `GATE_PASSWORD`）。**该功能已按站长要求彻底移除**：三个页面恢复明文直出，sitemap、pagefind 站内搜索、归档时间线（`content-utils.ts#getArchiveList`）与侧栏（`widget/RecentItems.astro`、`widget/LifeStats.astro`）重新收录/展示笔记本。如需恢复，见 git 历史中的 `src/components/security/`、`src/utils/encrypt-gate.ts`、`src/config/securityConfig.ts`、`src/styles/pages/encrypt-gate.css`，以及 changelog `2026-08-30-encrypt-gate.md`。
 
 ### 3.5 Content Collections
 
@@ -908,8 +908,8 @@ return controller;
 | 验收通过后仍过度验证（`pnpm check`/`pnpm build` 通过且浏览器实测关键路径正常后，还继续用多种方式重复验证同一数据链路，如抓网络日志逐请求对比第三方 API） | 大量时间产出零新增价值（2026-08 笔记本评论回复验证教训：UI 已正确显示回复关系即证明 Waline 数据正确，无需再深挖服务端返回结构） | 验收标准达成即停；仅当出现新的错误证据（新报错、行为异常）时才继续排查 |
 | 改友链页 `friend-card` 卡片结构/友链 Card 组件，未同步 `hexo-circle-of-friends` 的 `css_rules.yaml` firefly 选择器 | 朋友圈（/circle/）数据停更（2026-08 曾停更 6 天） | 见 §3.4「朋友圈数据链路（强制提醒义务）」 |
 | CI 中 Biome 用 `version: latest` 或版本与 package.json 不一致 | 规则漂移导致"本地绿 CI 红"（2026-08 实测：2.3 vs 2.5 的 useAltText 升级为 error） | setup-biome action 不指定 version，自动读取 package.json 版本 |
-| 手写 `frontmatter.category` 或用 Obsidian 插件再写 category | 2026-08-20 后分类已改为文件夹即分类（`category-tree.ts`），frontmatter 再写会被忽略且 `.pages.yml` 未声明字段保存时丢弃 | 分类只靠 `src/content/posts/父/子/xxx.md` 建文件夹，勿写 frontmatter |
-| 修改博客各功能 frontmatter 字段（`src/content.config.ts` 的 zod schema / `.pages.yml` / 页面 `normalizeImages`/`getGridCols` 等展示逻辑）未同步 AstrBot 插件 `plug-in/AstrBot/AstrBot BlogWriter` 的 `build_*_md` 生成逻辑 | 插件写入的旧格式导致页面 `images` 为空、归档卡片/灯箱不显示或 zod 校验失败（如 2026-09-27 笔记从正文 `![](url)` 改为 `images` 数组，前端已用 `images` 宫格展示） | 凡改动 moments/bangumi/life/notebooks/album/daohang/bills/schedules 等集合的字段名、类型或渲染约定，必须立即检查并同步更新插件的 `blog_writer_core.py:build_*_md` 与 `tests/test_core.py`，并提醒站长同步发布插件新版本 |
+| 手写 `frontmatter.category` 或用 Obsidian 插件再写 category | 2026-08-20 后分类已改为文件夹即分类（`category-tree.ts`），frontmatter 再写会被忽略且 `.pages.yml` 未声明字段保存时丢弃 | 分类只靠 `src/content/文章/父/子/xxx.md` 建文件夹，勿写 frontmatter |
+| 修改博客各功能 frontmatter 字段（`src/content.config.ts` 的 zod schema / `.pages.yml` / 页面 `normalizeImages`/`getGridCols` 等展示逻辑）未同步 AstrBot 插件 `plug-in/AstrBot/AstrBot BlogWriter` 的 `build_*_md` 生成逻辑 | 插件写入的旧格式导致页面 `images` 为空、归档卡片/灯箱不显示或 zod 校验失败（如 2026-09-27 笔记从正文 `![](url)` 改为 `images` 数组，前端已用 `images` 宫格展示） | 凡改动 moments/bangumi/笔记本/album/daohang/bills/schedules 等集合的字段名、类型或渲染约定，必须立即检查并同步更新插件的 `blog_writer_core.py:build_*_md` 与 `tests/test_core.py`，并提醒站长同步发布插件新版本 |
 | 把 API Key / Token / 密码硬编码进任何被 git 跟踪的文件（scripts/、注释、markdown 都算），或轻信注释里"会被 .gitignore 保护"的声明而不实测 | 公开仓库全历史可读，GitGuardian 告警、密钥被扫描器批量收割滥用（2026-08-30 GitGuardian 事故：DashScope Key 硬编码在 `scripts/生成摘要/index.ts` 长期公开，声明受 .gitignore 保护但实际从未生效） | 密钥一律放 `.env`（已 gitignore）+ `process.env.XXX` 读取，脚本调用带 `--env-file=.env`，`.env.example` 只留空模板；新增任何疑似含密钥的文件，提交前必须实测 `git check-ignore <path>` 与 `git ls-files <path>` 确认未被跟踪；一旦泄露：**先去对应控制台吊销重发（唯一根治）**，再从代码清除，git 历史清理通常不必要且代价大 |
 | 用文件 mtime 做集合排序/展示的兜底依据 | CI（EdgeOne/GitHub Actions）每次全新 clone，所有文件 mtime 都等于构建时刻、比任何业务日期都新——缺字段的旧条目会永远霸占"最新"区块（2026-09 友链页"新朋友"事故） | 排序只认 frontmatter 业务字段（如 friends 的 `added`）；字段缺失时构建期 `console.warn` 并让条目落到最后 |
 | 拿 Astro content 集合的 `item.id` 拼磁盘路径 / 匹配 public 静态文件 | id 是 github-slugger 规则（小写 + 移除标点、空格转连字符），与磁盘文件名不一致（`39-胡超，作品集.md` → id `39-胡超作品集`、`33-RAGNote.md` → `33-ragnote`），Linux CI 大小写敏感必失配 | 文件名 ↔ id 换算必须走同一 slug 规则（截图脚本 `scripts/友链截图/index.mjs` 已内置 github-slugger）；新增含大写/标点文件名的友链后核对 `public/assets/friends-shots/` 截图命名 |
@@ -1012,7 +1012,7 @@ EdgeOne Pages（GitHub 集成自动构建：pnpm build → dist/，需配 13 个
    - 升级/降级依赖 → 更新第 16 节技术栈版本
    - 发现新的坑/规范/反模式 → 写入对应章节（或第 15 节反模式清单）
    - 完成模块/功能 → 按第 21 节更新 `changelog`，按第 22 节做收尾
-   - **Obsidian 插件 `plug-in/Obsidian/obsidian-image-manager/` 功能变更 → 必须同步更新博客文章 `src/content/posts/技术分享/Obsidian插件系列-ImageManager图床上传管理指南.md`（功能说明/设置项/操作步骤），并在文末"版本历史"加一行；同时升插件 manifest.json 版本号并重新 `pnpm build`**
+   - **Obsidian 插件 `plug-in/Obsidian/obsidian-image-manager/` 功能变更 → 必须同步更新博客文章 `src/content/文章/技术分享/Obsidian插件系列-ImageManager图床上传管理指南.md`（功能说明/设置项/操作步骤），并在文末"版本历史"加一行；同时升插件 manifest.json 版本号并重新 `pnpm build`**
 3. **新增规范**（本次添加）：文档不准确时（数字过时、功能删除等），及时修正，禁止"文档写的和实际不一致还照着做"
 4. **验证**：提交前跑 `pnpm build`；文档修改与代码修改在同一提交或相邻提交
 
