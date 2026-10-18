@@ -1,129 +1,129 @@
 {
-  "timestamp": "2026-10-17T09:24:50.354Z",
+  "timestamp": "2026-10-18T09:39:29.417Z",
   "sites": {
     "https://blog.tsh520.cn": {
       "status": "ok",
-      "ms": 1388
+      "ms": 1474
     },
     "https://docs-firefly.cuteleaf.cn": {
       "status": "ok",
-      "ms": 2118
+      "ms": 1020
     },
     "https://blog.ayeez.cn": {
       "status": "ok",
-      "ms": 1088
+      "ms": 1027
     },
     "https://090909.top/": {
       "status": "fast",
-      "ms": 183
+      "ms": 131
     },
     "https://blog.minecraftglz.top/": {
       "status": "ok",
-      "ms": 1215
+      "ms": 1197
     },
     "https://blog.ztyukino.com/": {
       "status": "ok",
-      "ms": 908
+      "ms": 831
     },
     "https://tblog.mmzhiku.xyz/": {
       "status": "fast",
-      "ms": 705
+      "ms": 604
     },
     "https://qwq.sigrika.cc/": {
       "status": "fast",
-      "ms": 183
+      "ms": 238
     },
     "https://wcowin.work/": {
       "status": "fast",
-      "ms": 577
+      "ms": 533
     },
     "https://seasir.top/": {
-      "status": "fast",
-      "ms": 692
+      "status": "ok",
+      "ms": 861
     },
     "https://yfblog.asia/": {
       "status": "ok",
-      "ms": 895
+      "ms": 854
     },
     "https://ysdyblog.ccwu.cc": {
       "status": "ok",
-      "ms": 1422
+      "ms": 978
     },
     "https://blog.seln.cn": {
       "status": "ok",
-      "ms": 1488
+      "ms": 2138
     },
     "https://upxuu.com": {
-      "status": "ok",
-      "ms": 1070
+      "status": "fast",
+      "ms": 663
     },
     "https://fqzlr.com/": {
       "status": "fast",
-      "ms": 374
+      "ms": 603
     },
     "https://www.nannax.top": {
       "status": "ok",
-      "ms": 1930
+      "ms": 1831
     },
     "https://xfcnl.github.io": {
       "status": "fast",
-      "ms": 361
+      "ms": 334
     },
     "https://blog.520781.xyz/": {
-      "status": "fast",
-      "ms": 737
+      "status": "ok",
+      "ms": 853
     },
     "https://blog.lqay.cn": {
       "status": "ok",
-      "ms": 950
+      "ms": 1081
     },
     "https://blog.liushen.fun/": {
       "status": "fast",
-      "ms": 597
+      "ms": 382
     },
     "https://blog.june-pj.cn/": {
-      "status": "fast",
-      "ms": 623
+      "status": "ok",
+      "ms": 838
     },
     "https://blog.anheyu.com/": {
-      "status": "slow",
-      "ms": 4165
+      "status": "ok",
+      "ms": 1905
     },
     "https://fuqikilroy.github.io/HEXO/": {
       "status": "fast",
-      "ms": 283
+      "ms": 131
     },
     "https://www.huiui.net/": {
       "status": "ok",
-      "ms": 1432
+      "ms": 2212
     },
     "https://wiki.xxdevops.cn/": {
       "status": "ok",
-      "ms": 2312
+      "ms": 2373
     },
     "https://shijiucode.cn": {
-      "status": "ok",
-      "ms": 922
+      "status": "slow",
+      "ms": 3232
     },
     "https://mingcy.cn": {
       "status": "ok",
-      "ms": 928
+      "ms": 1271
     },
     "https://jerry-nis.top": {
-      "status": "fast",
-      "ms": 795
+      "status": "ok",
+      "ms": 973
     },
     "https://blog.xuioo.com/": {
-      "status": "fast",
-      "ms": 730
+      "status": "ok",
+      "ms": 1577
     },
     "https://blog.tianhw.top": {
       "status": "ok",
-      "ms": 933
+      "ms": 1112
     },
     "https://sakura-hu.top/": {
-      "status": "fast",
-      "ms": 666
+      "status": "ok",
+      "ms": 951
     },
     "https://ragnote.top/": {
       "status": "down",
@@ -131,7 +131,7 @@
     },
     "https://x1anyu.cn/": {
       "status": "ok",
-      "ms": 1262
+      "ms": 959
     },
     "https://blog.rainyunrgs.cn/": {
       "status": "down",
@@ -139,51 +139,51 @@
     },
     "https://secretblog.my.id": {
       "status": "fast",
-      "ms": 652
+      "ms": 792
     },
     "https://博客.何意味.ink": {
-      "status": "fast",
-      "ms": 334
+      "status": "ok",
+      "ms": 1279
     },
     "https://xixmu.top": {
       "status": "ok",
-      "ms": 2014
+      "ms": 956
     },
     "https://blog.huchao.vip/": {
-      "status": "fast",
-      "ms": 663
+      "status": "ok",
+      "ms": 809
     },
     "https://linlog.top": {
       "status": "ok",
-      "ms": 1161
+      "ms": 1387
     },
     "https://qiguai.net": {
       "status": "ok",
-      "ms": 853
+      "ms": 906
     },
     "https://bk.zhaozhiqiang.pw": {
-      "status": "ok",
-      "ms": 1509
+      "status": "slow",
+      "ms": 6655
     },
     "https://azuma.mstzuomu.space": {
       "status": "ok",
-      "ms": 1047
+      "ms": 1660
     },
     "https://blog.nw177.cn": {
       "status": "ok",
-      "ms": 1103
+      "ms": 1182
     },
     "https://xane.eu.cc": {
       "status": "fast",
-      "ms": 392
+      "ms": 683
     },
     "https://clannad.top": {
       "status": "fast",
-      "ms": 183
+      "ms": 360
     },
     "https://www.yujingblog.top/": {
       "status": "fast",
-      "ms": 194
+      "ms": 245
     },
     "https://yorutubasa.top/": {
       "status": "down",
@@ -191,15 +191,15 @@
     },
     "https://blog.z2m.store/": {
       "status": "fast",
-      "ms": 146
+      "ms": 221
     },
     "https://devcoding.me/": {
-      "status": "ok",
-      "ms": 814
+      "status": "slow",
+      "ms": 4593
     },
     "https://blog.astrvow.com/": {
-      "status": "fast",
-      "ms": 707
+      "status": "ok",
+      "ms": 897
     }
   }
 }
