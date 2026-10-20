@@ -25,7 +25,10 @@ const SITE_ROWS = [
 ] as const;
 
 const NOTES = [
-	{ strong: "互换原则", text: "请先将本站添加到您的友链页面，确认后会添加您的友链" },
+	{
+		strong: "互换原则",
+		text: "请先将本站添加到您的友链页面，确认后会添加您的友链",
+	},
 	{ strong: "链接维护", text: "友链网站长期无法访问或内容违规，将会被移除" },
 	{
 		strong: "内容要求",
@@ -41,11 +44,31 @@ const NOTES = [
 // 布局照参考站：title 与 email 并排一行，其余通栏（full: true 占满两列）。
 // email 不进申请文本，只填进评论区昵称邮箱栏。
 const FORM_FIELDS = [
-	{ key: "title", label: "站点名称", icon: "material-symbols:person-outline", full: false },
-	{ key: "email", label: "邮箱（必填）", icon: "material-symbols:mail-outline", full: false },
-	{ key: "desc", label: "站点描述", icon: "material-symbols:edit-note", full: true },
+	{
+		key: "title",
+		label: "站点名称",
+		icon: "material-symbols:person-outline",
+		full: false,
+	},
+	{
+		key: "email",
+		label: "邮箱（必填）",
+		icon: "material-symbols:mail-outline",
+		full: false,
+	},
+	{
+		key: "desc",
+		label: "站点描述",
+		icon: "material-symbols:edit-note",
+		full: true,
+	},
 	{ key: "url", label: "站点链接", icon: "material-symbols:link", full: true },
-	{ key: "avatar", label: "头像链接", icon: "material-symbols:image-outline", full: true },
+	{
+		key: "avatar",
+		label: "头像链接",
+		icon: "material-symbols:image-outline",
+		full: true,
+	},
 ] as const;
 ---
 
