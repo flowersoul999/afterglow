@@ -64,12 +64,6 @@ const announcementLink =
       )}
 
 
-      <!-- 笔记本 -->
-      <button class="dock-btn" id="dock-notebook-btn" aria-label="Notebook" type="button">
-        <span class="dock-btn-icon"><Icon name="material-symbols:book-outline-rounded" is:inline class="text-2xl" /></span>
-        <span class="dock-btn-label">笔记</span>
-      </button>
-
       <!-- 亮暗色切换 -->
       <button class="dock-btn" id="dock-theme-btn" aria-label="Theme" type="button">
         <span class="dock-btn-icon dock-theme-icon-light"><Icon name="material-symbols:wb-sunny-outline-rounded" is:inline class="text-2xl" /></span>
@@ -276,12 +270,6 @@ const announcementLink =
     }, { signal });
 
     // 主题切换已移至事件委托（见脚本底部）
-
-    // 笔记本
-    document.getElementById("dock-notebook-btn")?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      window.location.href = "/life/notebooks/";
-    });
 
     // 亮暗色切换
     function updateDockThemeIcon() {

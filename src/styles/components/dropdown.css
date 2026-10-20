@@ -5,8 +5,10 @@
     @apply relative;
   }
 
+  /* pt-5（1.25rem）= 气泡与导航胶囊之间的距离，对齐参考站。
+     这段留白同时充当悬停过渡区：太窄时鼠标从胶囊移向卡片会掉出 hover 区导致面板闪收 */
   .dropdown-menu {
-    @apply absolute top-full left-0 pt-2 opacity-0 invisible pointer-events-none
+    @apply absolute top-full left-0 pt-5 opacity-0 invisible pointer-events-none
       transition-all duration-200 ease-out transform translate-y-[-8px] z-50;
   }
 

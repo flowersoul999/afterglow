@@ -211,14 +211,22 @@ const rainConfig = {
 						{homeConfig.occupation && (
 							<p class="home-hero__occupation">{homeConfig.occupation}</p>
 						)}
-						{homeConfig.displayName && (
-							<h1 class="home-hero__name home-hero__name--rainbow">
-								{nameLetters.map((letter, i) => (
-									<span class="home-hero__name-letter" data-letter-index={i}>{letter}</span>
-								))}
-							</h1>
-						)}
-						<div class="home-hero__name-badge" role="button" tabindex="0">{homeConfig.nameBadge || ""}</div>
+					<!-- is-hatch-pending 写死在标记里：首帧就不渲染彩虹字，等 Hatching 画布
+					     画好第一帧由 initHeroHatch 揭示；减动效 / WebGL 失败路径会摘掉它，
+					     noscript 兜底保证任何情况下标题都不会永远空白 -->
+					{homeConfig.displayName && (
+						<h1 class="home-hero__name home-hero__name--rainbow is-hatch-pending">
+							{nameLetters.map((letter, i) => (
+								<span class="home-hero__name-letter" data-letter-index={i}>{letter}</span>
+							))}
+						</h1>
+					)}
+					<noscript>
+						<style is:inline>
+							.home-hero__name.is-hatch-pending { opacity: 1 !important; }
+						</style>
+					</noscript>
+					<div class="home-hero__name-badge" role="button" tabindex="0">{homeConfig.nameBadge || ""}</div>
 					</div>
 				</div>
 
@@ -699,13 +707,49 @@ const rainConfig = {
 	async function initHeroHatch(heroTitleReady: Promise<void>, token: number) {
 		const nameEl = document.querySelector<HTMLElement>(".home-hero__name");
 		if (!nameEl) return;
-		// 移动端大标题同样呈现铅笔（Hatching）动效，仅在明确减弱动效时跳过
-		if (prefersReducedMotion()) return;
+		// 移动端大标题同样呈现铅笔（Hatching）动效，仅在明确减弱动效时跳过。
+		// 跳过时必须把标记里写死的 is-hatch-pending 摘掉，否则标题永远隐藏。
+		if (prefersReducedMotion()) {
+			nameEl.classList.remove("is-hatch-pending");
+			return;
+		}
+
+		// 标记里已带 is-hatch-pending（首帧不渲染彩虹字），这里只负责收尾。
+		// ⚠️ vfx.add 成功后 vfx-js 会给元素设内联 opacity:0 藏住 DOM 文字、只显示画布；
+		// 此时绝不能加 is-hatch-reveal 之类的淡入——动画的 forwards 填充会覆盖内联样式，
+		// 把平滑彩虹字放回来叠在纹理上（2026-10-21 站长截图里的"白色密纹"就是它）。
+		let settled = false;
+		const revealStatic = () => {
+			nameEl.classList.remove("is-hatch-pending");
+		};
+		const revealAnimated = () => {
+			nameEl.classList.remove("is-hatch-pending");
+			nameEl.classList.add("is-hatch-reveal");
+		};
+		// 兜底：vfx 迟迟不就绪（着色器极慢等）就把静态彩虹字放出来，别让标题一直空白
+		const revealFallback = window.setTimeout(() => {
+			if (settled) return;
+			settled = true;
+			revealAnimated();
+		}, 3000);
+		// vfx 已接管：摘掉所有状态类，DOM 文字交给 vfx 的内联 opacity 隐藏。
+		// 直接remove 而不走 revealAnimated，避免动画填充覆盖 vfx 的隐藏。
+		const settledByVfx = () => {
+			if (settled) return;
+			settled = true;
+			window.clearTimeout(revealFallback);
+			nameEl.classList.remove("is-hatch-pending", "is-hatch-reveal");
+		};
 
 		await heroTitleReady;
 
 		// 再次检查元素是否仍在 DOM（Swup 可能已切走页面）
-		if (token !== initToken || !document.contains(nameEl)) return;
+		if (token !== initToken || !document.contains(nameEl)) {
+			window.clearTimeout(revealFallback);
+			settled = true;
+			revealStatic();
+			return;
+		}
 
 		destroyHeroHatch();
 
@@ -717,7 +761,12 @@ const rainConfig = {
 			zIndex: 10,
 			wrapper: heroEl,
 		});
-		if (!vfx) return;
+		if (!vfx) {
+			window.clearTimeout(revealFallback);
+			settled = true;
+			revealAnimated();
+			return;
+		}
 		vfxInstance = vfx;
 
 		heroHatchEffect = new HatchEffect({
@@ -738,7 +787,17 @@ const rainConfig = {
 
 		try {
 			await vfx.add(nameEl, { effect: heroHatchEffect });
-		} catch { /* ignore */ }
+			// 再等两帧，确认渲染循环真的把纹理画上去了
+			await new Promise<void>((resolve) => {
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+			});
+			if (token !== initToken || !document.contains(nameEl)) return;
+			settledByVfx();
+		} catch {
+			window.clearTimeout(revealFallback);
+			settled = true;
+			revealAnimated();
+		}
 	}
 
 	function destroyHeroHatch() {

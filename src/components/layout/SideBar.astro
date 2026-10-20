@@ -13,7 +13,6 @@ import Profile from "@/components/widget/Profile.astro";
 import QuoteOfTheDay from "@/components/widget/QuoteOfTheDay.astro";
 import RecentItems from "@/components/widget/RecentItems.astro";
 import RelationshipTimer from "@/components/widget/RelationshipTimer.astro";
-import SidebarTOC from "@/components/widget/SidebarTOC.astro";
 import SiteHeatmap from "@/components/widget/SiteHeatmap.astro";
 import SiteStats from "@/components/widget/SiteStats.astro";
 import Tags from "@/components/widget/Tags.astro";
@@ -55,7 +54,6 @@ const componentMap = {
 	categories: Categories,
 	tags: Tags,
 	postDirectory: PostDirectory,
-	sidebarToc: SidebarTOC,
 	advertisement: Advertisement,
 	stats: SiteStats,
 	calendar: Calendar,
@@ -164,11 +162,6 @@ const getComponentProps = (
 				baseProps.class = `${baseProps.class} hidden`;
 			}
 		}
-	}
-
-	// 特殊处理 SidebarTOC 组件
-	if (config.type === "sidebarToc") {
-		return { ...baseProps, headings: Astro.props.headings || [] };
 	}
 
 	// 特殊处理 Advertisement 组件

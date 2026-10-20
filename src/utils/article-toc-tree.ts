@@ -1,6 +1,6 @@
 /**
  * 文章 TOC 树：标题采集 + 层级归一化，纯数据模块。
- * 右侧大纲面板与思维导图弹窗共用这一份结构（控制器见 utils/article-toc.ts）。
+ * 右侧大纲面板（article-toc-panel-controller）与思维导图弹窗共用这一份结构。
  *
  * 归一化规则：正文里出现的最浅标题层级视为一级；每个节点的父节点是
  * 它前面最近的更浅层级标题，找不到就挂到文章标题（根）下——
@@ -9,17 +9,6 @@
 
 /** 面板与导图关注的标题层级上限 */
 export const TOC_HEADING_SELECTOR = "h1, h2, h3";
-
-/** 正文容器候选：本项目的 markdown 容器优先，其余兼容上游主题结构 */
-const CONTENT_SELECTORS = [
-	"#post-container .markdown-content",
-	".markdown-content",
-	".custom-md",
-	".prose",
-];
-
-/** 文章标题元素（树的根节点文案） */
-const TITLE_SELECTOR = ".post-hero__title";
 
 export interface TocNode {
 	/** 文档顺序的扁平下标，与 DOM 上的 data-toc-index 一致 */
@@ -51,8 +40,8 @@ export interface TocTree {
 	maxLevel: number;
 }
 
-/** 标题纯文本：剔除锚点图标、脚本等渲染噪声 */
-export function getHeadingText(heading: HTMLElement): string {
+/** 标题纯文本：剔除锚点图标、脚本等渲染噪声（沿用旧 TOC 的清理范围） */
+function getHeadingText(heading: HTMLElement): string {
 	const clone = heading.cloneNode(true) as HTMLElement;
 	clone
 		.querySelectorAll(
@@ -66,27 +55,24 @@ export function getHeadingText(heading: HTMLElement): string {
 	return text || heading.getAttribute("aria-label") || heading.id || "Heading";
 }
 
-/** 当前页面正文容器；没有正文（非文章页）时返回 null */
-export function resolveArticle(): HTMLElement | null {
-	for (const selector of CONTENT_SELECTORS) {
-		const element = document.querySelector<HTMLElement>(selector);
-		if (element) return element;
-	}
-	return null;
-}
-
 /**
- * 从正文容器采集标题并建树。
- * 返回 null 表示没有可用标题，调用方应隐藏整个面板。
+ * 从当前文档采集正文标题并建树。
+ * 返回 null 表示没有可用的正文容器或标题，调用方应隐藏整个面板。
  */
-export function collectTocTree(article: HTMLElement): TocTree | null {
+export function collectTocTree(): TocTree | null {
+	const content =
+		document.querySelector(".custom-md") ??
+		document.querySelector(".prose") ??
+		document.querySelector(".markdown-content");
+	if (!content) return null;
+
 	const elements = Array.from(
-		article.querySelectorAll<HTMLElement>(TOC_HEADING_SELECTOR),
+		content.querySelectorAll<HTMLElement>(TOC_HEADING_SELECTOR),
 	);
 	if (elements.length === 0) return null;
 
-	const titleElement = document.querySelector<HTMLElement>(TITLE_SELECTOR);
-	const title = titleElement?.textContent?.trim() || document.title.trim();
+	const titleElement = document.querySelector<HTMLElement>(".post-hero__title");
+	const title = titleElement?.textContent?.trim() || "";
 
 	const nodes: TocNode[] = [];
 	/** 当前祖先链（各层级最近一个未闭合节点的下标） */

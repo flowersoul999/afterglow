@@ -12,7 +12,9 @@ export type SiteConfig = {
 	description?: string; // 网站描述，用于生成 <meta name="description">
 	keywords?: string[]; // 站点关键词，用于生成 <meta name="keywords">
 
-	lang: "en" | "zh_CN" | "zh_TW" | "ja" | "ru";
+	// 站点语言。2026-10-20 起只保留简体中文：i18n 只有 zh_CN 一份翻译表，
+	// 写别的值不会报错但界面仍是中文（日期格式会跟着 lang 变），所以类型直接收窄
+	lang: "zh_CN";
 
 	themeColor: {
 		hue: number;
@@ -105,10 +107,16 @@ export type SiteConfig = {
 		moviesGames: boolean; // 影视与游戏页面开关
 		musicPage: boolean; // 音乐页面开关
 		changelog: boolean; // 更新日志页面开关
+		categories: boolean; // 分类图谱页面开关（/categories/）
 	};
 
 	// 分类导航栏开关
 	categoryBar?: boolean;
+
+	// 归档页统计配置
+	archiveStats?: {
+		annualPostGoal: number; // 年度文章目标
+	};
 
 	// 文章列表布局配置
 	postListLayout: {
@@ -239,65 +247,12 @@ export type NavBarConfig = {
 	links: (NavBarLink | LinkPreset)[];
 };
 
-export type HomePortfolioShutterPanel = {
-	title: string;
-	english: string;
-	description: string;
-	image: string;
-	alt?: string;
-};
-
-export type HomePortfolioShutterInterlude = {
-	/** 前景大图（仅显示上半部分） */
-	foreground: string;
-	/** 背景左侧滑入长条（从左向右） */
-	stripLeft: string;
-	/** 背景右侧滑入长条（从右向左） */
-	stripRight: string;
-	/** 中景左侧文字（人物左侧） */
-	copyLeft: string;
-	/** 中景右侧文字（人物右侧） */
-	copyRight: string;
-};
-
-export type HomePortfolioShutterFinalImage = {
-	/** 中景图（首层渐入） */
-	midgroundImage: string;
-	/** 后景视频（中景完全显现后渐入，最底层，静音循环） */
-	backgroundVideo: string;
-	/** 前景人物图（与后景同时渐入，最前层，不裁剪） */
-	foregroundImage: string;
-	alt: string;
-};
-
-export type HomePortfolioShutterConfig = {
-	enabled: boolean;
-	kicker: string;
-	title: string;
-	description: string;
-	scrollDistance: number;
-	finalImage: HomePortfolioShutterFinalImage;
-	panels: HomePortfolioShutterPanel[];
-	/** 5 张长条图之后的插入动画段：三层布局（背景长条 / 中景文字 / 前景大图） */
-	interlude: HomePortfolioShutterInterlude;
-};
-
-export type HomeDisplayLayerConfig = {
-	/** 是否启用展示层（移动端与 prefers-reduced-motion 下始终隐藏） */
-	enabled: boolean;
-	/** 左侧垂直大字 */
-	kicker: string;
-	/** 中间垂直主标题（建议英文，纵向显示） */
-	title: string;
-	/** 右侧英文长句，作为副释义 */
-	description: string;
-	/** pin 滚动距离（px），最终值取该值与「最小视口倍数」中的较大者 */
-	scrollDistance: number;
-	/** 柱子最终宽度（初始垂直线水平扩展到该宽度后停留） */
-	pillarFinalWidth: string;
-	/** 底部发射图（水平居中、垂直底部），线条从其上方往上延展，柱子扩展后覆盖它 */
-	emitterImage?: string;
-};
+// HomePortfolioShutterPanel / HomePortfolioShutterInterlude /
+// HomePortfolioShutterFinalImage / HomePortfolioShutterConfig /
+// HomeDisplayLayerConfig 已于 2026-10-20 删除：
+// 首页的全屏滚动展示层（HomeDisplayLayer：柱子展开 + 百叶窗 + 结尾大图/视频）
+// 已下线，相关的百叶窗动画配置一并移除。
+// 注意：「地图指南」数据层（HomeDataLayer）仍在，homeConfig.dataLayer 保留。
 
 export type HeroDialogueLine = {
 	/** 说话者：host=站长 / visitor=访客，默认 host。左上角名牌随之切换 */
@@ -387,8 +342,7 @@ export type HomeConfig = {
 		contactImage: string;
 		skillsImage: string;
 	};
-	displayLayer: HomeDisplayLayerConfig;
-	portfolioShutter: HomePortfolioShutterConfig;
+	// displayLayer / portfolioShutter 已于 2026-10-20 随首页展示层组件删除
 	skills?: {
 		name: string;
 		icon?: string;
@@ -568,7 +522,6 @@ export type WidgetComponentType =
 	| "categories"
 	| "tags"
 	| "postDirectory"
-	| "sidebarToc"
 	| "advertisement"
 	| "stats"
 	| "calendar"

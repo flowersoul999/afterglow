@@ -169,183 +169,18 @@ const fallbackStatsApiUrl = url("/api/home-stats.json");
 <script>
 	import { gsap } from "gsap";
 	import { formatCompactNumber } from "@/utils/home-data-layer.js";
-	import { waitForPageLoaderHidden } from "@/utils/page-loader-controller.js";
 
-	interface GuideOpeningBlock {
-		element: HTMLElement;
-		collapseX: number;
-		collapseY: number;
-		entryX: number;
-		entryY: number;
-		rotation: number;
-	}
+	// 入场动画已于 2026-10-20 移除（站长要求「直接摆上去」）：
+	// 原先这里用 gsap 把「地图指南」标题做 clip-path 擦出、把 7 张卡片从舞台中心
+	// 收拢再散开（initGuideOpening + data-guide-opening 状态机），现在内容静态呈现，
+	// 首屏即为最终布局。别再恢复，需要动画请先问站长。
 
 	type Cleanup = () => void;
 	let cleanups: Cleanup[] = [];
-	let guideOpeningToken = 0;
 
 	function cleanupHomeDataLayer() {
-		guideOpeningToken += 1;
 		cleanups.forEach((cleanup) => cleanup());
 		cleanups = [];
-	}
-
-	function prefersReducedMotion() {
-		return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-	}
-
-	function isDesktopGuideOpening() {
-		return window.matchMedia("(min-width: 769px)").matches;
-	}
-
-	function getGuideOpeningBlocks(layer: HTMLElement): GuideOpeningBlock[] {
-		const cards = Array.from(layer.querySelectorAll<HTMLElement>(
-			".home-data-layer__top-grid > .data-card, .home-guide-grid > .guide-card",
-		));
-		if (cards.length === 0) return [];
-
-		const topGrid = layer.querySelector<HTMLElement>(".home-data-layer__top-grid");
-		const guideGrid = layer.querySelector<HTMLElement>(".home-guide-grid");
-		if (!topGrid || !guideGrid) return [];
-
-		const topRect = topGrid.getBoundingClientRect();
-		const guideRect = guideGrid.getBoundingClientRect();
-		const stageCenterX = (topRect.left + topRect.right) / 2;
-		const stageCenterY = (topRect.top + guideRect.bottom) / 2;
-
-		return cards.map((element, index) => {
-			const rect = element.getBoundingClientRect();
-			const cardCenterX = (rect.left + rect.right) / 2;
-			const cardCenterY = (rect.top + rect.bottom) / 2;
-			const deltaX = cardCenterX - stageCenterX;
-			const deltaY = cardCenterY - stageCenterY;
-			const distance = Math.max(Math.hypot(deltaX, deltaY), 1);
-			const outwardDistance = Math.min(window.innerWidth * 0.2, 280);
-			const rotation = [-7, 6, -5, 5, -4, 4, 7][index] ?? 0;
-
-			return {
-				element,
-				collapseX: stageCenterX - cardCenterX,
-				collapseY: stageCenterY - cardCenterY,
-				entryX: stageCenterX - cardCenterX + (deltaX / distance) * outwardDistance,
-				entryY: stageCenterY - cardCenterY + (deltaY / distance) * outwardDistance,
-				rotation,
-			};
-		});
-	}
-
-	async function initGuideOpening(layer: HTMLElement, token: number) {
-		if (prefersReducedMotion() || !isDesktopGuideOpening()) return;
-
-		await waitForPageLoaderHidden();
-		if (token !== guideOpeningToken || !document.contains(layer)) return;
-
-		const title = layer.querySelector<HTMLElement>(".home-data-layer__title-matrix");
-		const kicker = layer.querySelector<HTMLElement>(".home-data-layer__kicker");
-		const titleMain = layer.querySelector<HTMLElement>(".home-data-layer__title-main");
-		const blocks = getGuideOpeningBlocks(layer);
-		if (!title || !kicker || !titleMain || blocks.length === 0) return;
-
-		const release = () => {
-			layer.dataset.guideOpening = "complete";
-			gsap.set([kicker, titleMain, title], {
-				clearProps: "opacity,visibility,transform,clipPath,filter",
-			});
-			gsap.set(blocks.map(({ element }) => element), {
-				clearProps: "opacity,visibility,transform,clipPath,filter,pointerEvents",
-			});
-		};
-
-		let released = false;
-		const finish = () => {
-			if (released) return;
-			released = true;
-			release();
-		};
-		let timeline: ReturnType<typeof gsap.timeline> | null = null;
-		let started = false;
-		const start = () => {
-			if (started) return;
-			started = true;
-			layer.dataset.guideOpening = "playing";
-			gsap.set([kicker, titleMain], { autoAlpha: 0, y: 18 });
-			gsap.set(title, {
-				autoAlpha: 0,
-				x: -96,
-				scaleX: 0.72,
-				transformOrigin: "0% 50%",
-				clipPath: "inset(0 100% 0 0)",
-			});
-			blocks.forEach(({ element, entryX, entryY, rotation }) => {
-				gsap.set(element, {
-					autoAlpha: 0,
-					x: entryX,
-					y: entryY,
-					scale: 0.56,
-					rotation,
-					pointerEvents: "none",
-					transformOrigin: "50% 50%",
-				});
-			});
-
-			timeline = gsap.timeline({
-				defaults: { ease: "expo.inOut" },
-				onComplete: finish,
-			});
-			timeline
-				.to([kicker, titleMain], {
-					autoAlpha: 1,
-					y: 0,
-					duration: 0.5,
-					stagger: 0.08,
-					ease: "power3.out",
-				}, 0.12)
-				.to(title, {
-					autoAlpha: 1,
-					x: 0,
-					scaleX: 1,
-					clipPath: "inset(0 0% 0 0)",
-					duration: 1.2,
-					ease: "expo.out",
-				}, 0)
-				.to(blocks.map(({ element }) => element), {
-					autoAlpha: 1,
-					duration: 0.2,
-					stagger: 0.055,
-					ease: "none",
-				}, 0.48)
-				.to(blocks.map(({ element }) => element), {
-					x: (index) => blocks[index]?.collapseX ?? 0,
-					y: (index) => blocks[index]?.collapseY ?? 0,
-					scale: 0.82,
-					rotation: 0,
-					duration: 0.34,
-					stagger: 0.027,
-					ease: "expo.inOut",
-				}, 0.5)
-				.to(blocks.map(({ element }) => element), {
-					x: 0,
-					y: 0,
-					scale: 1,
-					duration: 0.8,
-					stagger: 0.05,
-					ease: "expo.out",
-				}, "+=0.18");
-		};
-		const preloadObserver = new IntersectionObserver((entries) => {
-			if (!entries.some((entry) => entry.isIntersecting)) return;
-			preloadObserver.disconnect();
-			start();
-		}, { rootMargin: "0px 0px -30% 0px" });
-		preloadObserver.observe(layer);
-
-		cleanups.push(() => {
-			preloadObserver.disconnect();
-			timeline?.kill();
-			gsap.set([kicker, titleMain, title, ...blocks.map(({ element }) => element)], {
-				clearProps: "opacity,visibility,transform,clipPath,filter,pointerEvents",
-			});
-		});
 	}
 
 function renderVisitStats(
@@ -571,6 +406,13 @@ function initVisitStats(layer: HTMLElement) {
 		const contact = layer.querySelector<HTMLElement>("[data-guide-contact]");
 		const toggle = contact?.querySelector<HTMLButtonElement>(".guide-contact__toggle");
 		if (!contact || !toggle) return;
+		// 记录触发 click 的指针类型：触摸屏 tap 会先模拟 hover/focus，把还没显示的
+		// 展开图标瞬间点亮，同一发 click 就落在隐形图标上直接跳转（站长踩到的 bug）。
+		// 所以「未展开时」的触摸点击一律只展开、绝不放行链接。
+		let lastPointerType = "";
+		const onPointerDown = (event: PointerEvent) => {
+			lastPointerType = event.pointerType;
+		};
 		const close = () => {
 			contact.classList.remove("is-open");
 			toggle.setAttribute("aria-expanded", "false");
@@ -587,16 +429,30 @@ function initVisitStats(layer: HTMLElement) {
 			}
 		};
 		const onCardClick = (event: MouseEvent) => {
-			if (!window.matchMedia("(hover: none)").matches) return;
-			if ((event.target as Element).closest("a, button")) return;
-			toggleContact();
+			const isTouch = lastPointerType === "touch";
+			const target = event.target as Element;
+			// 加号按钮自己有 click 监听，这里放行，避免双重切换
+			if (target.closest("button")) return;
+			if (target.closest("a")) {
+				if (isTouch && !contact.classList.contains("is-open")) {
+					// 还没展开就「点到了图标」＝ hover 模拟造成的误触，拦下改成展开
+					event.preventDefault();
+					toggleContact();
+				}
+				return;
+			}
+			if (isTouch || window.matchMedia("(hover: none)").matches) {
+				toggleContact();
+			}
 		};
 
 		toggle.addEventListener("click", toggleContact);
+		contact.addEventListener("pointerdown", onPointerDown);
 		contact.addEventListener("keydown", onKeyDown);
 		contact.addEventListener("click", onCardClick);
 		cleanups.push(() => {
 			toggle.removeEventListener("click", toggleContact);
+			contact.removeEventListener("pointerdown", onPointerDown);
 			contact.removeEventListener("keydown", onKeyDown);
 			contact.removeEventListener("click", onCardClick);
 		});
@@ -606,12 +462,10 @@ function initVisitStats(layer: HTMLElement) {
 		cleanupHomeDataLayer();
 		const layer = document.getElementById("home-data-layer");
 		if (!layer) return;
-		const token = ++guideOpeningToken;
 		initVisitStats(layer);
 		initMetricCards(layer);
 		initGuideRotators(layer);
 		initGuideContact(layer);
-		void initGuideOpening(layer, token);
 	}
 
 	initHomeDataLayer();

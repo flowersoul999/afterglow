@@ -27,7 +27,6 @@ const categories = await getCategoryList();
 const tags = await getTagList();
 const moments = await getCollection("moments");
 const bangumi = await getCollection("bangumi");
-const notebooks = await getCollection("notebooks");
 
 // 统计生活记录子分类
 const animeCount = bangumi.filter(
@@ -51,7 +50,7 @@ const lifeEntries = await getCollection("places");
 const placesCount = lifeEntries.length;
 
 // 记录次数 = 影视 + 书籍 + 游戏 + 音乐 + 现实 + 足迹
-// （笔记本相关数量按加密口径不计入，与 LifeStats 一致）
+// （笔记本已于 2026-10-20 随 notebooks 集合摘除，不再计入字数与记录次数）
 const recordCount =
 	animeCount + bookCount + gameCount + musicCount + realCount + placesCount;
 
@@ -76,15 +75,8 @@ for (const post of posts) {
 for (const moment of moments) {
 	totalWords += countWords(moment.body);
 }
-// 笔记本正文字数（排除 _index 元数据条目）
-for (const note of notebooks) {
-	if (/\/(_index|_index\.md|_index\.json)$/.test(note.id.replace(/\\/g, "/")))
-		continue;
-	totalWords += countWords(note.body);
-}
-// 足迹等 life 记录字数（排除 notebooks/ 前缀，避免与 notebooks 集合重复计数）
+// 足迹等 life 记录字数
 for (const lifeEntry of lifeEntries) {
-	if (lifeEntry.id.replace(/\\/g, "/").startsWith("notebooks/")) continue;
 	totalWords += countWords(lifeEntry.body);
 }
 
@@ -93,13 +85,12 @@ function formatNumber(num: number): string {
 	return num.toLocaleString();
 }
 
-// 最近活动日期：取全部内容集合（文章/动态/书影音/足迹/笔记）的最大日期
+// 最近活动日期：取全部内容集合（文章/动态/书影音/足迹）的最大日期
 const latestActivity = [
 	...posts.map((p) => p.data.published),
 	...moments.map((m) => m.data.published),
 	...bangumi.map((b) => b.data.published),
 	...lifeEntries.map((l) => l.data.date),
-	...notebooks.map((n) => n.data.date),
 ]
 	.filter((d): d is Date => d instanceof Date)
 	.reduce<Date | null>(

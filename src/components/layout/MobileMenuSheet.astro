@@ -36,11 +36,16 @@ const groups = [
 				label: "文章列表",
 				url: "/posts/",
 			},
-			{
-				icon: "material-symbols:folder-open",
-				label: "分类",
-				url: "/categories/",
-			},
+			// 知识图谱（原「分类」三视图页已被 /categories/ 的四层图谱取代）
+			...(siteConfig.pages.categories
+				? [
+						{
+							icon: "material-symbols:hub-outline",
+							label: "图谱",
+							url: "/categories/",
+						},
+					]
+				: []),
 			{ icon: "material-symbols:archive", label: "归档", url: "/archive/" },
 		],
 	},
@@ -59,11 +64,6 @@ const groups = [
 				url: "/album/",
 			},
 			{ icon: "material-symbols:chat", label: "留言板", url: "/guestbook/" },
-			{
-				icon: "material-symbols:menu-book-outline",
-				label: "笔记本",
-				url: "/life/notebooks/",
-			},
 			{ icon: "material-symbols:public", label: "朋友圈", url: "/circle/" },
 		],
 	},
@@ -92,12 +92,6 @@ const groups = [
 			{ icon: "material-symbols:person", label: "关于", url: "/about/" },
 			{ icon: "material-symbols:group", label: "友链", url: "/friends/" },
 			{ icon: "material-symbols:favorite", label: "赞助", url: "/sponsor/" },
-			{
-				icon: "simple-icons:tencentqq",
-				label: "QQ群",
-				url: "https://qm.qq.com/q/FjkXxV9Hmo",
-				external: true,
-			},
 		],
 	},
 ];

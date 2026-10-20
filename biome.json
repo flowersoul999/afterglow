@@ -16,7 +16,10 @@
       "!**/src/constants/icons.ts",
       "!**/.obsidian/**/*",
       "!**/.opencode/**/*",
-      "!**/.copilot/**/*"
+      "!**/.copilot/**/*",
+      "!**/src/content/笔记本归档/**/*",
+      "!**/src/content/notes/**/*",
+      "!**/src/content/临时收集/**/*"
     ]
   },
   "formatter": {

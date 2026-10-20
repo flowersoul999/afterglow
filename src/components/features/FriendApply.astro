@@ -1,0 +1,835 @@
+---
+/**
+ * 友链申请区块（/friends/ 评论区上方）。
+ * 照参考站样式：上排「注意事项」+「本站信息」（只读展示、可复制），
+ * 下排申请表单（左实时预览 + 右填写），评论区（Waline）保持原样不动。
+ * 站点信息只存在于本组件与预览回退逻辑里，friends.md 正文已清空。
+ * 全部元素为静态模板（无动态创建节点），Astro scoped 样式可直接命中；
+ * 脚本用 document 级事件委托 + window 守卫，Swup 换页后无需重新绑定。
+ */
+import { Icon } from "astro-icon/components";
+
+const SITE = {
+	title: "团子和蛋糕",
+	desc: "如果你喜欢，那么欢迎来到我的世界！",
+	url: "https://blog.tsh520.cn",
+	// 必须是完整 URL：访客要把它贴回自己站点的友链里，相对路径在别人域名下取不到图
+	avatar: "https://blog.tsh520.cn/assets/ziyuan/tx.webp",
+} as const;
+
+const SITE_ROWS = [
+	{ key: "title", label: "站点名称" },
+	{ key: "desc", label: "站点描述" },
+	{ key: "url", label: "站点链接" },
+	{ key: "avatar", label: "头像链接" },
+] as const;
+
+const NOTES = [
+	{ strong: "互换原则", text: "请先将本站添加到您的友链页面，确认后会添加您的友链" },
+	{ strong: "链接维护", text: "友链网站长期无法访问或内容违规，将会被移除" },
+	{
+		strong: "内容要求",
+		text: "内容积极向上，不含有任何色情/反动/暴力等违法违规内容",
+	},
+	{
+		strong: "站点要求",
+		text: "支持 HTTPS，以原创内容为主，能够正常访问且有持续更新",
+	},
+] as const;
+
+// 申请表单：中文 label；输入框不放 placeholder（label 已说明字段，避免灰字重复）。
+// 布局照参考站：title 与 email 并排一行，其余通栏（full: true 占满两列）。
+// email 不进申请文本，只填进评论区昵称邮箱栏。
+const FORM_FIELDS = [
+	{ key: "title", label: "站点名称", icon: "material-symbols:person-outline", full: false },
+	{ key: "email", label: "邮箱（必填）", icon: "material-symbols:mail-outline", full: false },
+	{ key: "desc", label: "站点描述", icon: "material-symbols:edit-note", full: true },
+	{ key: "url", label: "站点链接", icon: "material-symbols:link", full: true },
+	{ key: "avatar", label: "头像链接", icon: "material-symbols:image-outline", full: true },
+] as const;
+---
+
+<div id="friend-apply" class="friend-apply">
+  <!-- 上排：注意事项 + 本站信息 -->
+  <div class="friend-apply__top">
+    <section class="fa-card fa-card--notes">
+      <h3 class="fa-card__title">
+        <Icon name="material-symbols:info-outline" class="fa-card__title-icon" />
+        注意事项
+      </h3>
+      <ul class="fa-notes__list">
+        {
+          NOTES.map((note) => (
+            <li class="fa-notes__item">
+              <span class="fa-notes__dot" aria-hidden="true" />
+              <p class="fa-notes__text">
+                <strong>{note.strong}：</strong>
+                {note.text}
+              </p>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="fa-notes__cta">
+        <button type="button" class="fa-notes__cta-btn" id="friend-notes-cta">
+          <Icon name="material-symbols:edit-outline" class="text-base" />
+          已了解，申请友链
+        </button>
+      </div>
+    </section>
+
+    <section class="fa-card fa-card--siteinfo">
+      <div class="fa-card__head">
+        <h3 class="fa-card__title">
+          <Icon name="material-symbols:content-copy-outline" class="fa-card__title-icon" />
+          本站信息
+        </h3>
+        <button
+          type="button"
+          class="fa-siteinfo__copy-all"
+          id="fsi-copy-all"
+          aria-label="复制本站全部信息"
+        >
+          <Icon name="material-symbols:content-copy-rounded" class="text-sm" />
+          全部复制
+        </button>
+      </div>
+      <div class="fa-siteinfo__rows">
+        {
+          SITE_ROWS.map((row) => (
+            <div class="fa-row">
+              <div class="fa-row__body">
+                <span class="fa-row__label">{row.label}</span>
+                <span class="fa-row__value">{SITE[row.key]}</span>
+              </div>
+              <button
+                type="button"
+                class="fa-row__copy"
+                data-fsi-copy={row.key}
+                aria-label={`复制${row.label}`}
+                title={`复制${row.label}`}
+              >
+                <Icon name="material-symbols:content-copy-rounded" class="text-sm" />
+              </button>
+            </div>
+          ))
+        }
+      </div>
+      <p class="fa-hint" id="fsi-hint" role="status" hidden></p>
+    </section>
+  </div>
+
+  <!-- 下排：申请表单（左实时预览 + 右填写） -->
+  <section class="fa-card fa-editor" id="friend-apply-form">
+    <h3 class="fa-card__title">
+      <Icon name="material-symbols:edit-square-outline-rounded" class="fa-card__title-icon" />
+      填写你的站点信息
+    </h3>
+    <p class="fa-editor__subtitle">请在右侧填写你的站点信息，然后点击添加友链按钮</p>
+
+    <div class="fa-editor__body">
+      <!-- 左侧：实时预览 -->
+      <div class="friend-apply__preview">
+        <span class="friend-apply__avatar">
+          <img
+            id="fa-avatar-img"
+            class="friend-apply__avatar-img"
+            src={SITE.avatar}
+            alt="站点头像预览"
+          />
+          <span class="friend-apply__avatar-fallback" id="fa-avatar-fallback" aria-hidden="true" hidden>IMG</span>
+        </span>
+        <p class="friend-apply__name" id="fa-name" data-empty="false">{SITE.title}</p>
+        <p class="friend-apply__desc">
+          <i class="friend-apply__dot" aria-hidden="true"></i>
+          <span id="fa-desc" data-empty="false">{SITE.desc}</span>
+          <i class="friend-apply__dot" aria-hidden="true"></i>
+        </p>
+      </div>
+
+      <!-- 右侧：信息填写（参考站行式布局：图标方块 + 标签在上、内容在下） -->
+      <div class="friend-apply__form">
+        <div class="fa-fields">
+          {
+            FORM_FIELDS.map((field) => (
+              <label class:list={["fa-field", { "fa-field--full": field.full }]}>
+                <span class="fa-field__icon">
+                  <Icon name={field.icon} />
+                </span>
+                <span class="fa-field__body">
+                  <span class="fa-field__label">{field.label}</span>
+                  <input
+                    class="fa-field__input"
+                    type={field.key === "email" ? "email" : "text"}
+                    data-fa-input={field.key}
+                    autocomplete="off"
+                    spellcheck="false"
+                  />
+                </span>
+              </label>
+            ))
+          }
+        </div>
+
+        <p class="fa-hint" id="fa-hint" role="status" hidden></p>
+
+        <div class="friend-apply__actions">
+          <button type="button" class="friend-apply__submit" id="fa-copy-all">
+            <Icon name="material-symbols:check" class="text-base" />
+            添加友链
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script is:inline>
+  (function () {
+    if (window.__friendApplyReady) return;
+    window.__friendApplyReady = true;
+
+    var FIELDS = ["title", "email", "desc", "url", "avatar"];
+    var LABELS = {
+      title: "站点名称",
+      email: "邮箱",
+      desc: "站点描述",
+      url: "站点链接",
+      avatar: "头像链接",
+    };
+    var SITE = {
+      title: "团子和蛋糕",
+      desc: "如果你喜欢，那么欢迎来到我的世界！",
+      url: "https://blog.tsh520.cn",
+      avatar: "https://blog.tsh520.cn/assets/ziyuan/tx.webp",
+    };
+
+    function getInput(key) {
+      return document.querySelector('[data-fa-input="' + key + '"]');
+    }
+
+    function setText(el, value, emptyText) {
+      if (!el) return;
+      var text = (value || "").trim();
+      el.textContent = text || emptyText;
+      el.setAttribute("data-empty", text ? "false" : "true");
+    }
+
+    /* 申请信息 = 四行键值对（顺序：名称 / 描述 / 链接 / 头像），
+       写进评论区后由站长自己点发送 */
+    function siteText(values) {
+      var v = values || SITE;
+      return (
+        "站点名称: " + v.title + "\n" +
+        "站点描述: " + v.desc + "\n" +
+        "站点链接: " + v.url + "\n" +
+        "头像链接: " + v.avatar
+      );
+    }
+
+    function legacyCopy(text) {
+      // 非 https / 无剪贴板权限兜底：隐藏 textarea + execCommand
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+      return ok;
+    }
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        // 权限被拒时降级 execCommand，避免 unhandled rejection
+        return navigator.clipboard.writeText(text).catch(function () {
+          return legacyCopy(text);
+        });
+      }
+      return Promise.resolve(legacyCopy(text));
+    }
+
+    var hintTimers = {};
+    function showHint(id, text, isError) {
+      var hint = document.getElementById(id);
+      if (!hint) return;
+      hint.textContent = text;
+      hint.setAttribute("data-tone", isError ? "error" : "ok");
+      hint.hidden = false;
+      if (hintTimers[id]) clearTimeout(hintTimers[id]);
+      hintTimers[id] = setTimeout(function () { hint.hidden = true; }, 3200);
+    }
+
+    /* --- 实时预览（空值回退站长信息，不出现空白） --- */
+    document.addEventListener("input", function (e) {
+      var input = e.target.closest && e.target.closest("[data-fa-input]");
+      if (!input) return;
+      var key = input.getAttribute("data-fa-input");
+      var value = input.value.trim();
+      if (key === "title") {
+        setText(document.getElementById("fa-name"), value, SITE.title);
+      } else if (key === "desc") {
+        setText(document.getElementById("fa-desc"), value, SITE.desc);
+      } else if (key === "avatar") {
+        var img = document.getElementById("fa-avatar-img");
+        var fallback = document.getElementById("fa-avatar-fallback");
+        if (!img || !fallback) return;
+        if (!value) {
+          // 清空 → 回到站长默认头像
+          img.hidden = false;
+          img.src = SITE.avatar;
+          fallback.hidden = true;
+          return;
+        }
+        // 先显示占位，加载成功再切换；onerror 统一在下面的 error 委托里处理
+        fallback.hidden = false;
+        img.hidden = true;
+        img.setAttribute("data-pending", "1");
+        img.src = value;
+      }
+    });
+
+    /* --- 头像加载：成功显示图片，失败回退占位（error 不冒泡，用捕获委托） --- */
+    document.addEventListener(
+      "load",
+      function (e) {
+        var img = e.target;
+        if (!img || img.id !== "fa-avatar-img") return;
+        img.removeAttribute("data-pending");
+        img.hidden = false;
+        var fallback = document.getElementById("fa-avatar-fallback");
+        if (fallback) fallback.hidden = true;
+      },
+      true
+    );
+    document.addEventListener(
+      "error",
+      function (e) {
+        var img = e.target;
+        if (!img || img.id !== "fa-avatar-img") return;
+        img.hidden = true;
+        img.removeAttribute("data-pending");
+        var fallback = document.getElementById("fa-avatar-fallback");
+        if (fallback) fallback.hidden = false;
+        if (img.getAttribute("src")) showHint("fa-hint", "头像链接加载失败，检查一下 URL 是否可用", true);
+      },
+      true
+    );
+
+    /* --- 写入下方评论区对应位置（Waline v3），由访客自己点发送 ---
+       Waline 走 CDN 异步 init，可能还没渲染出输入框：轮询最多 6s 等它出现；
+       拿不到就退回复制到剪贴板，至少内容不丢。
+       写入后要派发 input 事件 —— Waline 是 Vue 应用，只改 .value 不会同步到它的 state。 */
+    /* 重复点击时整块替换上一份申请信息，避免堆积多份 */
+    var APPLY_RE = /站点名称:[^\n]*\n站点描述:[^\n]*\n站点链接:[^\n]*\n头像链接:[^\n]*/;
+
+    function findCommentInput() {
+      var root = document.getElementById("waline");
+      if (!root) return null;
+      return root.querySelector("textarea") || null;
+    }
+
+    function waitCommentInput(done, tries) {
+      var ta = findCommentInput();
+      if (ta) { done(ta); return; }
+      if (tries <= 0) { done(null); return; }
+      setTimeout(function () { waitCommentInput(done, tries - 1); }, 300);
+    }
+
+    function setWalineField(root, selector, value) {
+      if (!root || !value) return;
+      var el = root.querySelector(selector);
+      if (!el) return;
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    function writeToComment(ta, text) {
+      var current = ta.value || "";
+      ta.value = APPLY_RE.test(current)
+        ? current.replace(APPLY_RE, text)
+        : current.trim()
+          ? current + "\n" + text
+          : text;
+      ta.dispatchEvent(new Event("input", { bubbles: true }));
+      try { ta.setSelectionRange(ta.value.length, ta.value.length); } catch (e) {}
+    }
+
+    /* 只填充，不代发：昵称 / 邮箱 / 网站 / 正文各就各位，剩余交给访客点「提交」 */
+    function fillComment(values, text) {
+      showHint("fa-hint", "正在写入下方评论区…", false);
+      waitCommentInput(function (ta) {
+        if (!ta) {
+          copyText(text).then(function () {
+            showHint("fa-hint", "评论区还没加载好，已复制到剪贴板，粘贴发送即可", true);
+          });
+          return;
+        }
+        var root = document.getElementById("waline");
+        setWalineField(root, 'input[name="nick"]', values.title);
+        setWalineField(root, 'input[name="mail"]', values.email);
+        setWalineField(root, 'input[name="link"]', values.url);
+        writeToComment(ta, text);
+        ta.focus({ preventScroll: true });
+        ta.scrollIntoView({ behavior: "smooth", block: "center" });
+        showHint("fa-hint", "已填入下方评论区，确认无误后点「提交」发送即可", false);
+      }, 20);
+    }
+
+    /* --- 点击分发：本站信息复制 / 全部复制 / CTA / 添加友链 --- */
+    document.addEventListener("click", function (e) {
+      if (!e.target || !e.target.closest) return;
+
+      /* 本站信息单行复制 */
+      var rowCopy = e.target.closest("[data-fsi-copy]");
+      if (rowCopy) {
+        var key = rowCopy.getAttribute("data-fsi-copy");
+        copyText(SITE[key]).then(function () {
+          showHint("fsi-hint", "已复制" + LABELS[key], false);
+        });
+        return;
+      }
+
+      /* 本站信息全部复制 */
+      if (e.target.closest("#fsi-copy-all")) {
+        copyText(siteText()).then(function () {
+          showHint("fsi-hint", "已复制本站信息", false);
+        });
+        return;
+      }
+
+      /* 「已了解，申请友链」→ 滚到表单并聚焦 */
+      if (e.target.closest("#friend-notes-cta")) {
+        var editor = document.getElementById("friend-apply-form");
+        if (editor) editor.scrollIntoView({ behavior: "smooth", block: "start" });
+        var first = getInput("title");
+        if (first) setTimeout(function () { first.focus(); }, 500);
+        return;
+      }
+
+      /* 添加友链：五项必须一起填（邮箱只做格式校验），然后自动发送到下方评论区 */
+      if (!e.target.closest("#fa-copy-all")) return;
+      var values = {};
+      var missing = [];
+      FIELDS.forEach(function (key2) {
+        var input = getInput(key2);
+        var value = input ? input.value.trim() : "";
+        values[key2] = value;
+        if (!value) missing.push(LABELS[key2]);
+      });
+      if (missing.length > 0) {
+        showHint("fa-hint", "还差：" + missing.join("、"), true);
+        var first2 = getInput(FIELDS.filter(function (k) { return !values[k]; })[0]);
+        if (first2) first2.focus();
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+        showHint("fa-hint", "邮箱格式看起来不对，检查一下再提交", true);
+        var mailInput = getInput("email");
+        if (mailInput) mailInput.focus();
+        return;
+      }
+      fillComment(values, siteText(values));
+    });
+  })();
+</script>
+
+<style>
+  .friend-apply {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    /* 「添加友链」按钮/注意事项 CTA 滚动定位时让开悬浮导航栏 */
+    scroll-margin-top: 4.75rem;
+  }
+
+  /* ===== 卡片通用 ===== */
+  /* 参考图：左卡浅灰底无边框，右卡白底深色描边 */
+  .fa-card {
+    padding: 1.25rem;
+    border-radius: 1rem;
+    min-width: 0;
+  }
+  .fa-card--notes {
+    background: var(--btn-plain-bg-hover);
+  }
+  .fa-card--siteinfo {
+    background: var(--card-bg);
+    border: 1.5px solid var(--deep-text);
+  }
+  /* 表单卡照参考站：整卡浅色底无边框，输入行是卡上的白色小卡 */
+  .fa-editor {
+    background: var(--btn-plain-bg-hover);
+  }
+  .fa-card__title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    color: var(--deep-text);
+    font-size: 1.0625rem;
+    font-weight: 800;
+  }
+  .fa-card__title-icon {
+    flex: 0 0 auto;
+    width: 1.125em;
+    height: 1.125em;
+    color: var(--article-title-marker, var(--primary));
+  }
+  .fa-card__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .fa-card__head .fa-card__title { margin: 0; }
+
+  .friend-apply__top {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 1rem;
+    /* 两卡等高：左卡内容少，靠 CTA 沉底撑满（参考图两卡底边齐平） */
+    align-items: stretch;
+  }
+  @media (max-width: 768px) {
+    .friend-apply__top { grid-template-columns: 1fr; }
+  }
+  .fa-card--notes {
+    display: flex;
+    flex-direction: column;
+  }
+  .fa-card--notes .fa-notes__cta {
+    margin-top: auto;
+    padding-top: 1rem;
+  }
+
+  /* ===== 注意事项 ===== */
+  .fa-notes__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .fa-notes__item {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .fa-notes__dot {
+    flex: 0 0 auto;
+    width: 6px;
+    height: 6px;
+    margin-top: 0.5em;
+    border-radius: 50%;
+    /* 参考图的青色圆点：复用本站标题竖杠的青色 token */
+    background: var(--article-title-marker, var(--primary));
+  }
+  .fa-notes__text {
+    margin: 0;
+    color: var(--content-meta);
+    font-size: 0.8125rem;
+    line-height: 1.65;
+  }
+  .fa-notes__text strong {
+    color: var(--deep-text);
+    font-weight: 700;
+  }
+  .fa-notes__cta {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+  }
+  .fa-notes__cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.25rem;
+    border: none;
+    background: transparent;
+    color: var(--deep-text);
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+  .fa-notes__cta-btn:hover { opacity: 0.75; }
+  .fa-notes__cta-btn svg {
+    width: 1em;
+    height: 1em;
+    flex: 0 0 auto;
+  }
+
+  /* ===== 字段行（本站信息展示 & 表单输入共用骨架） ===== */
+  .fa-row {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: 0.625rem;
+    background: var(--btn-plain-bg-hover);
+    min-width: 0;
+  }
+  .fa-siteinfo__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .fa-row__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+  }
+  .fa-row__label {
+    color: var(--deep-text);
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .fa-row__value {
+    overflow: hidden;
+    color: var(--content-meta);
+    font-size: 0.8125rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .fa-row__copy {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    padding: 0.375rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--content-meta);
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .fa-row__copy:hover { color: var(--primary); }
+
+  .fa-siteinfo__copy-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--content-meta);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .fa-siteinfo__copy-all:hover { color: var(--primary); }
+  .fa-siteinfo__copy-all svg {
+    width: 1em;
+    height: 1em;
+    flex: 0 0 auto;
+  }
+
+  .fa-hint {
+    margin: 0.5rem 0 0;
+    min-height: 1.1em;
+    color: var(--primary);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+  .fa-hint[data-tone="error"] { color: var(--admonitions-color-caution, #d9534f); }
+
+  /* ===== 申请表单 ===== */
+  .fa-editor__subtitle {
+    margin: -0.5rem 0 0.75rem;
+    color: var(--content-meta);
+    font-size: 0.8125rem;
+  }
+  .fa-editor__body {
+    display: grid;
+    grid-template-columns: minmax(11rem, 0.55fr) 1.45fr;
+    gap: 1.25rem;
+    align-items: center;
+  }
+  @media (max-width: 768px) {
+    .fa-editor__body { grid-template-columns: 1fr; }
+  }
+
+  /* 左侧预览 */
+  .friend-apply__preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+  }
+  .friend-apply__avatar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 6.25rem;
+    height: 6.25rem;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 50%, transparent 62%, var(--primary) 63%, var(--primary) 66%, transparent 67%),
+      var(--btn-plain-bg-hover);
+    box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 0.08);
+    overflow: hidden;
+  }
+  .friend-apply__avatar-img {
+    width: calc(100% - 1rem);
+    height: calc(100% - 1.125rem);
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .friend-apply__avatar-fallback {
+    color: var(--content-meta);
+    font-size: 0.875rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+  }
+  .friend-apply__name {
+    margin: 0;
+    color: var(--primary);
+    font-size: 1.125rem;
+    font-weight: 800;
+  }
+  .friend-apply__name[data-empty="true"] { opacity: 0.45; }
+  .friend-apply__desc {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    max-width: 100%;
+    color: var(--deep-text);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+  .friend-apply__desc > span {
+    display: inline-block;
+    max-width: 15rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .friend-apply__desc > span[data-empty="true"] { opacity: 0.45; }
+  .friend-apply__dot {
+    flex: 0 0 auto;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--primary);
+    opacity: 0.85;
+  }
+
+  /* 右侧表单：参考站行式布局（图标方块 + 标签在上、内容在下） */
+  .friend-apply__form {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .fa-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+  }
+  @media (max-width: 480px) {
+    .fa-fields { grid-template-columns: 1fr; }
+    .fa-field--full { grid-column: auto; }
+  }
+  .fa-field {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.625rem 0.875rem;
+    border-radius: 0.75rem;
+    background: var(--card-bg);
+    border: 1px solid color-mix(in srgb, var(--deep-text) 10%, transparent);
+    min-width: 0;
+    cursor: text;
+    transition: border-color 0.15s ease;
+  }
+  .fa-field--full { grid-column: 1 / -1; }
+  .fa-field:focus-within {
+    border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+  }
+  .fa-field__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 2.375rem;
+    height: 2.375rem;
+    border-radius: 0.625rem;
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+  }
+  .fa-field__icon svg {
+    width: 1.25em;
+    height: 1.25em;
+  }
+  .fa-field__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+  .fa-field__label {
+    color: var(--content-meta);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .fa-field__input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--deep-text);
+    font-size: 0.875rem;
+    font-weight: 600;
+    outline: none;
+    padding: 0;
+  }
+
+  .friend-apply__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.75rem;
+  }
+  .friend-apply__submit {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1.25rem;
+    border: none;
+    border-radius: 999px;
+    /* 本站 --primary 是黑白反转 token（浅色近黑/暗色近白），文字用 --page-bg
+       做反转（黑底白字/白底黑字），与页面顶部「添加友链」按钮同一套 */
+    background: var(--primary);
+    color: var(--page-bg);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.5;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+  .friend-apply__submit:hover { opacity: 0.85; }
+  .friend-apply__submit svg {
+    flex: 0 0 auto;
+    width: 1em;
+    height: 1em;
+  }
+</style>

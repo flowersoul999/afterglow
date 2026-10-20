@@ -2,7 +2,8 @@ import type { SiteConfig } from "@/types/config";
 import { fontConfig } from "./fontConfig";
 
 // 定义站点语言
-// 语言代码，例如：'zh_CN', 'zh_TW', 'en', 'ja', 'ru'。
+// 2026-10-20 起只支持 'zh_CN'：i18n 只保留简体中文一份翻译表（见 src/i18n/translation.ts），
+// 类型也已经收窄成 "zh_CN"，填别的值会在 astro check 阶段报错。
 const SITE_LANG = "zh_CN";
 
 export const siteConfig: SiteConfig = {
@@ -173,6 +174,8 @@ export const siteConfig: SiteConfig = {
 		musicPage: true,
 		// 更新日志页面开关
 		changelog: true,
+		// 分类图谱页面开关（/categories/ 的四层知识图谱）
+		categories: true,
 	},
 
 	// 说说页面封面配置（微信朋友圈风格）
@@ -183,6 +186,13 @@ export const siteConfig: SiteConfig = {
 
 	// 分类导航栏开关，在首页和归档页顶部显示分类快捷导航
 	categoryBar: true,
+
+	// 归档页统计配置
+	archiveStats: {
+		// 年度文章目标，用于计算归档页的年度完成率
+		// （本站 2026 年约 325 篇，取 400 作目标；数字只影响「年进度」这一格与节奏评语）
+		annualPostGoal: 400,
+	},
 
 	// 文章列表布局配置
 	postListLayout: {

@@ -1,4 +1,4 @@
-import { type CollectionEntry, getCollection } from "astro:content";
+import { type CollectionEntry, getCollection, render } from "astro:content";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import {
@@ -6,7 +6,13 @@ import {
 	type CategoryNode,
 	getCategoryFromId,
 } from "@utils/category-tree";
-import { getCategoryUrl, getTagUrl } from "@utils/url-utils";
+import {
+	buildKnowledgeGraphData,
+	type KGData,
+} from "@utils/knowledge-graph-data";
+import { getCategoryUrl, getPostUrlBySlug, getTagUrl } from "@utils/url-utils";
+import type { MarkdownHeading } from "astro";
+import { siteConfig } from "@/config";
 
 type SortableEntry = {
 	id: string;
@@ -133,7 +139,6 @@ export async function getArchiveList(): Promise<ArchiveItem[]> {
 	const moments = await getCollection("moments");
 	const bangumi = await getCollection("bangumi");
 	const lifeEntries = await getCollection("places");
-	const notebooksEntries = await getCollection("notebooks");
 	const postItems: ArchiveItem[] = posts.map((post) => ({
 		id: post.id,
 		type: "post",
@@ -211,22 +216,6 @@ export async function getArchiveList(): Promise<ArchiveItem[]> {
 			},
 		});
 	});
-
-	// 笔记本记录（排除 _index 元数据条目）
-	notebooksEntries
-		.filter((n) => !n.id.includes("_index"))
-		.forEach((n) => {
-			lifeItems.push({
-				id: n.id,
-				type: "life",
-				data: {
-					title: n.data.name || "笔记本",
-					published: n.data.date || new Date(),
-					tags: ["笔记本"],
-					link: "/life/notebooks/",
-				},
-			});
-		});
 
 	return [...postItems, ...momentItems, ...bangumiItems, ...lifeItems].sort(
 		(a, b) => {
@@ -395,4 +384,77 @@ export async function getCategoryTagGroups(): Promise<CategoryTagGroup[]> {
 				b.count - a.count ||
 				a.name.toLowerCase().localeCompare(b.name.toLowerCase()),
 		);
+}
+
+/* ========== 知识图谱（/categories/ 图谱页） ========== */
+
+let cachedHeadings: Map<string, MarkdownHeading[]> | null = null;
+
+/**
+ * 提取全部文章的标题，按 collection id 索引。
+ *
+ * 必须走 `render(entry)` 而不是正则扫正文：slug 由 rehype-slug 在同一条 rehype 链上
+ * 生成，只有这样锚点才和文章页 DOM 里的 id 逐字一致。自己用 github-slugger 复算会在
+ * 去重后缀（`-1`/`-2`）、标题内 inline code、KaTeX 上漂移，产出跳不到位置的深链。
+ *
+ * 串行而非 Promise.all —— render 会跑完整 markdown 链（KaTeX / mermaid /
+ * expressive-code），并发会把子进程打满。
+ */
+export async function getAllPostHeadings(): Promise<
+	Map<string, MarkdownHeading[]>
+> {
+	if (cachedHeadings) return cachedHeadings;
+
+	const posts = await getRawSortedPosts();
+	const startedAt = performance.now();
+	const headingMap = new Map<string, MarkdownHeading[]>();
+
+	for (const post of posts) {
+		const { headings } = await render(post);
+		headingMap.set(post.id, headings);
+	}
+
+	// 构建期一次性日志：render() 走全 markdown 链，耗时需要可观测
+	console.info(
+		`[knowledge-graph] 提取 ${posts.length} 篇文章标题耗时 ${Math.round(
+			performance.now() - startedAt,
+		)}ms`,
+	);
+
+	cachedHeadings = headingMap;
+	return headingMap;
+}
+
+/**
+ * 四层知识图谱数据：分类 → 标签 → 文章 → H2 小标题。
+ *
+ * 与参考站的区别：本项目的分类不是 frontmatter 字段，而是文章所在的目录路径
+ * （可能多级，如「编程学习/JavaWeb学习笔记」），一律用 getCategoryFromId 推导；
+ * 标签没有独立归档页，链接统一走 getTagUrl 的 /archive/?tag= 形式。
+ */
+export async function getKnowledgeGraphData(): Promise<KGData> {
+	const posts = await getRawSortedPosts();
+	const headingMap = await getAllPostHeadings();
+
+	return buildKnowledgeGraphData(
+		posts.map((post) => ({
+			id: post.id,
+			title: post.data.title,
+			url: getPostUrlBySlug(post.id),
+			published: post.data.published,
+			category: getCategoryFromId(post.id) || null,
+			tags: post.data.tags ?? [],
+			headings: (headingMap.get(post.id) ?? []).map((heading) => ({
+				depth: heading.depth,
+				slug: heading.slug,
+				text: heading.text,
+			})),
+		})),
+		{
+			uncategorizedName: i18n(I18nKey.uncategorized),
+			categoryUrl: getCategoryUrl,
+			tagUrl: getTagUrl,
+			siteStartDate: siteConfig.siteStartDate,
+		},
+	);
 }

@@ -226,13 +226,14 @@ if (isLocalSrcLogo) {
 		var SCROLL_OUT = 40;
 		var COMPACT_GAP = 8;
 		var ticking = false;
-		var resizeTicking = false;
+		var layoutRaf = null;
+
+		var segments = document.querySelector('.navbar-segments');
+		var center = document.querySelector('.navbar-seg--center');
+		var left = document.querySelector('.navbar-seg--left');
+		var right = document.querySelector('.navbar-seg--right');
 
 		function updateCompactLayout() {
-			var segments = document.querySelector('.navbar-segments');
-			var center = document.querySelector('.navbar-seg--center');
-			var left = document.querySelector('.navbar-seg--left');
-			var right = document.querySelector('.navbar-seg--right');
 			if (!segments || !center || !left || !right) return;
 
 			var isScrolled = navbar.classList.contains('scrolled');
@@ -252,25 +253,41 @@ if (isLocalSrcLogo) {
 			var leftRect = left.getBoundingClientRect();
 			var rightRect = right.getBoundingClientRect();
 
+			var isFirstRightPosition = right.style.right === '';
+			if (isFirstRightPosition) { right.style.transition = 'none'; }
+
+			left.style.transform = 'translateY(-50%)';
+			right.style.transform = 'translateY(-50%)';
+
 			if (isScrolled) {
-				left.style.left = (centerRect.left - segmentsRect.left - COMPACT_GAP - leftRect.width) + 'px';
-				left.style.transform = 'translateY(-50%)';
-				right.style.left = (centerRect.right - segmentsRect.left + COMPACT_GAP) + 'px';
-				right.style.right = 'auto';
-				right.style.transform = 'translateY(-50%)';
+				// 收缩态：左右段贴到中间椭圆两侧。右段用 right 定位，算出来再大也只是往左偏，
+				// 不会被推出容器（用 left 定位时算错就直接溢出屏幕）。
+				// right 是「右段右边缘到容器右边缘」的距离，所以要减掉右段自身宽度。
+				var maxRight = Math.max(0, segmentsRect.width - rightRect.width);
+				var desiredRight = segmentsRect.right - centerRect.right - COMPACT_GAP - rightRect.width;
+				right.style.right = Math.min(Math.max(desiredRight, 0), maxRight) + 'px';
+				left.style.left = Math.max(0, centerRect.left - segmentsRect.left - COMPACT_GAP - leftRect.width) + 'px';
 			} else {
+				// 展开态：右段贴住容器右边缘。这里用纯 right: 0，不再按 px 换算，
+				// 于是滚动条出现、字体加载、换页导致的宽度变化都不会让它跑到页面外。
 				left.style.left = '0px';
-				left.style.transform = 'translateY(-50%)';
-				var isFirstRightPosition = right.style.left === '';
-				if (isFirstRightPosition) { right.style.transition = 'none'; }
-				right.style.left = (segmentsRect.width - rightRect.width) + 'px';
-				right.style.right = 'auto';
-				right.style.transform = 'translateY(-50%)';
-				if (isFirstRightPosition) {
-					right.offsetHeight;
-					right.style.transition = '';
-				}
+				right.style.right = '0px';
 			}
+
+			if (isFirstRightPosition) {
+				right.offsetHeight;
+				right.style.transition = '';
+			}
+		}
+
+		// 收缩态的位置是 JS 按 px 算的，容器可用宽度变了（滚动条出现/消失、
+		// Swup 换页后内容变高）就得重算；window.resize 抓不到这一类变化。
+		function scheduleLayoutUpdate() {
+			if (layoutRaf !== null) return;
+			layoutRaf = requestAnimationFrame(function() {
+				layoutRaf = null;
+				updateCompactLayout();
+			});
 		}
 
 		function handleScroll() {
@@ -299,15 +316,20 @@ if (isLocalSrcLogo) {
 			}
 		}, { passive: true });
 
-		window.addEventListener('resize', function() {
-			if (!resizeTicking) {
-				requestAnimationFrame(function() {
-					updateCompactLayout();
-					resizeTicking = false;
-				});
-				resizeTicking = true;
-			}
-		}, { passive: true });
+		window.addEventListener('resize', scheduleLayoutUpdate, { passive: true });
+
+		// 只盯「容器宽度」：滚动条出现/消失、窗口变化都会让它变。
+		// 不监听左右段自身 —— 收缩动画进行中它们的尺寸每帧都在变，
+		// 那时重算反而会打断 right / left 的过渡动画。
+		if (typeof ResizeObserver !== 'undefined') {
+			var layoutObserver = new ResizeObserver(scheduleLayoutUpdate);
+			[segments, navbar, navbarWrapper].forEach(function(el) {
+				if (el) layoutObserver.observe(el);
+			});
+		}
+
+		window.addEventListener('load', scheduleLayoutUpdate);
+		document.addEventListener('astro:page-load', scheduleLayoutUpdate);
 
 		handleScroll();
 		requestAnimationFrame(updateCompactLayout);

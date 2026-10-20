@@ -385,6 +385,27 @@ html:has(.home-hero) #top-row {
 	will-change: transform, opacity;
 }
 
+/* 大标题在 Hatching 画布就绪前先藏住：不藏的话 WebGL 初始化的几百毫秒里
+   会闪出无纹理的彩虹字（2026-10-21 站长反馈「刚进来那个状态太丑」）。
+   画布第一帧画好后由 JS 摘掉 is-hatch-pending、用 is-hatch-reveal 快速淡入；
+   WebGL 失败 / 减弱动效等兜底路径也必须摘掉，否则标题永远空白。 */
+.home-hero__name.is-hatch-pending {
+	opacity: 0;
+}
+
+.home-hero__name.is-hatch-reveal {
+	animation: hero-name-reveal 280ms ease both;
+}
+
+@keyframes hero-name-reveal {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
 /* 联系徽章 — Rainbow Button 实体表面 + 虹彩边框 */
 .home-hero__name-badge {
 	--name-badge-surface: oklch(1 0 0);

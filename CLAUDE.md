@@ -9,9 +9,9 @@
 | 命令 | 说明 |
 |------|------|
 | `pnpm dev` / `pnpm start` | 本地开发（astro dev） |
-| `pnpm build` | 生产构建：生成图标 → astro build → pagefind 索引（**提交前必跑**，见第 18 节） |
+| `pnpm build` | 生产构建：生成图标 → astro build → pagefind 索引（**推送线上 / 大改动前必跑，日常小改不必**，见第 18 节验证分级） |
 | `pnpm preview` | 预览构建产物 |
-| `pnpm check` | astro check（类型 + 诊断） |
+| `pnpm check` | astro check（类型 + 诊断）；比重跑 build 快，大改动时先用它兜底 |
 | `pnpm type-check` | tsc --noEmit 类型检查 |
 | `pnpm lint` / `pnpm format` | Biome 检查自动修复 / 格式化（针对 ./src） |
 | `pnpm new-post` | 交互式新建文章（scripts/新建文章） |
@@ -24,7 +24,7 @@
 | `node scripts/友链状态检测/index.mjs` | 友链延迟检测（产物 public/friends-status.json；Action 每天自动跑） |
 | `bash "scripts/TTS服务/自测.sh"` | 服务器上自测朗读服务（见 `docs/deploy-edge-tts.md`） |
 
-> 包管理器仅限 pnpm（preinstall 强制 `only-allow`）。本项目无测试框架，验证手段 = `pnpm build` + `pnpm check`。
+> 包管理器仅限 pnpm（preinstall 强制 `only-allow`）。本项目无测试框架，验证手段 = `pnpm dev` 浏览器实测 +（推送线上 / 大改动时）`pnpm build` + `pnpm check`。**日常小改不必每次构建**，分级规则见第 18 节。
 
 ---
 
@@ -50,11 +50,11 @@
 ```
 src/
 ├── assets/images/       # 头像、封面等构建时图片
-├── components/          # 按功能域组织的组件（147 个文件）
+├── components/          # 按功能域组织的组件（133 个文件）
 │   ├── analytics/       # GA, Clarity, Umami (3)
-│   ├── comment/         # 评论系统：index + 5 种后端 + 3 个弹窗组件 + NotebookComment 笔记本列表页自研评论区（笔记引用 >>QUOTE>> 编码 + Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (10)
+│   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
-│   ├── controls/        # 交互控件：搜索、归档（类型 Tab 筛选）、主题、Dock (8)
+│   ├── controls/        # 交互控件：搜索、归档三视图树（ArchivePanel/ArchiveTree）、主题、Dock (8)
 │   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器)
 │   ├── layout/          # 布局组件：Navbar, Footer, SideBar, HomeHero... (19)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
@@ -63,20 +63,20 @@ src/
 │   └── widget/          # 侧栏 Widget (27)
 ├── config/              # 站点配置（27 个 .ts，index.ts barrel export）
 ├── constants/           # 常量：页面尺寸、主题模式、图标、链接预设
-├── content/             # Astro Content Collections（12 个集合；集合键名 posts/spec/moments/bangumi/places/notebooks/album/daohang/ziyuan/friends/tombstones/changelog —— **键名是英文，不随磁盘目录改名，getCollection() 一律用键名**）
+├── content/             # Astro Content Collections（11 个集合；集合键名 posts/spec/moments/bangumi/places/album/daohang/ziyuan/friends/tombstones/changelog —— **键名是英文，不随磁盘目录改名，getCollection() 一律用键名**）
 │   ├── 文章/ 页面/ 动态/ 影视/ 足迹/ 相册/ 导航/ 资源/ 更新日志/   # 对应集合键 posts/spec/moments/bangumi/places/album/daohang/ziyuan/changelog
 │   ├── 页面/            # spec 集合：about.mdx 为组件化 Q&A，friends.md / guestbook.md 分别渲染进 /friends/ 与 /life/guestbook/ 下方正文
 │   ├── 友链/            # friends 集合；子目录 友链/墓碑/ 为 tombstones 集合（friends 的 glob 已加 `!墓碑/**` 排除，否则墓碑文件会被 friends 集合收进去导致 zod 校验失败）
-│   └── 笔记本/          # notebooks 集合物理位置（2026-09-27 起归档改 card 流，支持 images 多图 12字展开 + 年份下拉联动热力图与列表）
-├── i18n/                # 国际化（5 种语言，330 个翻译键）
-│   └── languages/       # en.ts, zh_CN.ts, zh_TW.ts, ja.ts, ru.ts
+│   └── 笔记本归档/      # ⚠️ 不在任何集合内（2026-10-20 笔记功能下线）：私人笔记 78 篇 + 7 个 _index.json，已写入 .gitignore，只留在本地 Obsidian 库，**不进 git、不参与构建**
+├── i18n/                # 界面文案（2026-10-20 起单语言：只有 zh_CN，369 个翻译键）
+│   └── languages/       # zh_CN.ts
 ├── layouts/             # Layout.astro (591行), MainGridLayout.astro (305行)
 ├── content/notes/       # Obsidian 笔记（不发布；2026-10-08 从 src/notes 并入，Obsidian 库根 = src/content）
-├── pages/               # 路由（38 个文件；admin 后台已删除，勿重建）
+├── pages/               # 路由（34 个文件；admin 后台已删除，勿重建）
 │   ├── api/             # JSON API (2)：calendar.json.ts, home-stats.json.ts
 │   ├── album/ bangumi/ books/ categories/ life/ moments/ posts/ // moments/[slug] 已删除
 │   └── 404, about, archive, apps, changelog, circle, debug-urls, friends,
-│       guestbook, 笔记本, movies-games/, music, projects, search,
+│       guestbook, movies-games/, music, projects, search,
 │       sponsor, rss, robots.txt, og
 ├── plugins/             # 自定义 remark/rehype 插件 (10)
 ├── styles/              # CSS 样式（73 个文件，含 about 技术栈/时间线/更新日志图谱）
@@ -94,11 +94,11 @@ src/
     └── 33 个业务工具    # content-utils, category-tree（文件夹即分类，多级 `a/b` 推导 + CategoryNode 树）, date-utils, image-utils, url-utils, tts-text（朗读正文提取）...
 
 # 根目录其他重要文件
-.pages.yml                # PagesCMS 后台配置（11 集合声明，见第 19 节）
+.pages.yml                # PagesCMS 后台配置（9 集合声明，见第 19 节）
 .claude/settings.json     # 命令白名单（分类器不可用时不卡 Bash）
 pagefind.yml              # Pagefind 索引排除配置（katex、搜索面板等）
 scripts/                  # 开发脚本：12 个中文命名脚本目录（生成图标/新建文章/生成摘要/生成封面/转WebP/添加导航/下载影视/下载音乐/回填友链字段/友链截图/友链状态检测/TTS服务）+ cli.js、vision.mjs（图片识别）、compress-images.mjs、rename-images.mjs、import-wallpapers.mjs、check-svelte-warnings.mjs（脚本清单见第 0 节；生成封面 见第 2 节「文章封面生成」；TTS服务 为 edge-tts 朗读服务，部署产物，教程见 docs/deploy-edge-tts.md）
-docs/                     # 部署文档（deploy-pagescms-vercel.md 等）+ superpowers/{specs,plans}（改版设计稿与实现计划，2026-09-30 起）
+docs/                     # 部署文档（deploy-pagescms-vercel.md 等）+ ssh-hardening.md（服务器 SSH 加固操作手册，2026-10-20）+ superpowers/{specs,plans}（改版设计稿与实现计划，2026-09-30 起）
 ```
 
 **禁止在 `components/` 根目录平铺组件文件，必须放入对应功能域子目录。**
@@ -114,7 +114,7 @@ docs/                     # 部署文档（deploy-pagescms-vercel.md 等）+ sup
 | `home/main/`、`home/portrait/` | 首页套图（hero 数据图 / 竖版背景） |
 | `emoji/` | 表情与小图标（openai-dark/light.png 等） |
 | `icons/` | 组件图标（profile.png 等） |
-| `notebooks/` | 笔记本照片（编号 webp） |
+| `notebooks/` | 笔记封面（编号 webp，2026-10-20 笔记功能下线后已无引用，保留未删） |
 | `sponsors/` | 赞助二维码 |
 | `loading/` | 页面加载图 |
 | `moments-cover.jpg` | 说说页封面 |
@@ -180,7 +180,7 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 
 ### 3.5 Content Collections
 
-13 个集合定义在 `src/content.config.ts`，使用 Zod schema 校验：
+11 个集合定义在 `src/content.config.ts`，使用 Zod schema 校验：
 
 | 集合 | 用途 |
 |------|------|
@@ -188,8 +188,7 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 | spec | 特殊页面（about, friends, guestbook, privacy, user-agreement） |
 | moments | 说说/动态 |
 | bangumi | 番组/书籍/音乐/游戏追踪 |
-| life | 生活记录 |
-| notebooks | 笔记本（life 的子集） |
+| places | 生活记录（足迹） |
 | album | 相册（2026-08 全量图床化：统一 `imgbedFolder: "blog/album/<相册名>"` 动态加载，photos 静态列表已废弃） |
 | daohang | 导航链接 |
 | ziyuan | 资源/公告 |
@@ -240,7 +239,7 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
   hideOnPages: ["posts-list"] },          // 黑名单：这些页面不显示
 ```
 
-- **页面类型（27 个）** 由 `src/utils/page-type.ts#getSidebarPageType(pathname)` 判定：`home` `posts-list` `post` `categories-list` `category` `archive` `moments` `projects` `friends` `about` `guestbook` `circle` `notebooks-list` `notebook` `places` `album-list` `album` `bills` `schedules` `apps` `books` `movies-games` `bangumi` `search` `changelog` `sponsor` `other`。
+- **页面类型（25 个）** 由 `src/utils/page-type.ts#getSidebarPageType(pathname)` 判定：`home` `posts-list` `post` `categories-list` `category` `archive` `moments` `projects` `friends` `about` `guestbook` `circle` `places` `album-list` `album` `books` `movies-games` `bangumi` `search` `changelog` `sponsor` `other`。
 - **两个字段互斥**，同时配以 `showOnPages` 为准；都不写则回落到旧的 `showOnPostPage` / `showOnNonPostPage`。
 - **为什么必须"服务端渲染全部 + 运行期切 class"**：侧栏渲染在 Swup 容器之外（`#left-sidebar-wrapper` / `#right-sidebar-static`），客户端导航时不重新渲染。实现链路：`SideBar.astro` 输出 `data-show-pages` / `data-hide-pages` 并按当前页给出初始 `hidden`（防闪烁）→ `src/utils/sidebar-utils.ts#updateSidebarComponentsVisibility` 在首屏与 `swup:content:replaced` / `page:view` 后重算。**不要改成构建期过滤**——那样导航后侧栏不会更新。
 - **`/posts/` 列表页与 `/posts/<slug>/` 详情页是不同类型**：`isCurrentPagePost()`（`grid-layout-utils.ts`）已修正为严格匹配详情页（旧实现 `includes("/posts/")` 会把列表页误判成文章页）。所以 `showOnPostPage: false` 的组件现在**在文章列表页会显示**（原先被误隐藏）。
@@ -296,7 +295,8 @@ CSS 包，别处不再加载；同一文件多处 import 只算一次）。
 
 已按此规则搬走的 16 个：`pages/{moments-filter,categories,article-list,notebooks,music-visualizer}.css`、
 `features/{movies-games,article-toc-panel}.css`、`components/{home-hero,home-hero-dialogue,home-section,home-ticker,
-home-data-layer,home-display-layer,home-portfolio-shutter,post-hero,about-changelog,guestbook-chat}.css`。
+home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
+（`home-display-layer` / `home-portfolio-shutter` 已随组件于 2026-10-20 删除，不在其中）。
 
 坑与套路：
 - ⚠️ **插 import 要躲开多行 import**：`import {` 这种开头行后面插样式 import 会把语句切断（本次踩到
@@ -462,6 +462,15 @@ home-data-layer,home-display-layer,home-portfolio-shutter,post-hero,about-change
 - ⚠️ **手机底部那条浮岛（`MobileDock` + `src/styles/components/mobile-dock.css`）不在这次统一范围内，保持原样**（透明按钮 + 中间凸出的黑色圆钮 + 胶囊圆角）—— 站长 2026-09-30 明确要求改回来，别再顺手「统一规格」。它的总高 `4.25rem`（按钮 3.25rem + 上下留白 0.5rem）被 `dock-drawer`、动态页那 3 个按钮的 `bottom` 偏移按写死的值引用，**改它高度要同步改那两处**。
 - ⚠️ **图标空白 = sprite 丢符号**（本次踩到）：页面里的 `<Icon>` 默认走 astro-icon 的 sprite（`<use href="#ai:…">`），这份 sprite 有已知的丢符号问题（`src/components/common/Icon.astro` 就是为绕开它而写的包装组件）。症状是图标**整块空白**而不报错，`document.querySelector("symbol#ai:…")` 能确认缺没缺。判断/修复：给那个 `<Icon>` 加 `is:inline`（路径直接内联），或改用 `@/components/common/Icon.astro`。
 
+### 5.18 归档页（2026-10-20 整页照参考站重做）
+
+- **结构**：`src/pages/archive.astro` = PageTitle（stacked，eyebrow `Archive` + 座右铭 `archiveMotto`）→ `ArchiveStats.svelte`（四格：全部文章 / 创作跨度天数 / 本月文章 / 年进度 + 一句节奏评语）→ `ArchivePanel.astro`。
+- **三视图归档树**：`ArchivePanel.astro` 只负责 toolbar（面包屑 + 筛选胶囊 + 全部收起）和三个 `data-archive-view` 容器；树节点由 `ArchiveTree.astro` 递归渲染，分组在**构建期**由 `src/utils/archive-data.ts#buildArchiveViews()` 算好（时间=年/月，分类，标签），浏览器只切视图、开合分支。
+- **交互全在** `src/utils/archive-panel-controller.ts`：整棵面板一个 `AbortController`，`registerArchivePanel()` 里挂 **`window.addEventListener("swup:content:replaced", …)`** 重新 mount（旧面板监听器随节点一起销；⚠️ 这里必须是 `window` 不是 `document`，见 §11.4）。⚠️ 面板没被脚本标记 `data-enhanced` 之前 toolbar 是 `visibility: hidden`（避免退化态闪一下），所以**脚本没重挂上页面就看不到筛选胶囊** —— 2026-10-20 就因为写成 `document` 踩过一次。
+- **筛选靠 URL**：`?tag=` / `?category=` / `?uncategorized` 由控制器读取，命中词并进面包屑；`ArchiveStats` 也读同一组参数改口径（本标签文章 / 本分类文章）。
+- **文章分类不在 frontmatter 里**：本站分类 = 文件目录，`archive-data.ts` 用 `getCategoryFromId(entry.id)` 取，别去读 `entry.data.category`（posts 集合没这个字段）。
+- 已删除的旧实现（年份下拉 + 活动热力图 + 类型 Tab 筛选的 `ArchivePanel.svelte` / `ArchiveHeatmap.astro`）不再存在于仓库，需要时从 git 历史取。
+
 ### 5.17 笔记同步范围约定（2026-10-08，Syncthing）
 
 - **手机↔电脑的笔记同步只覆盖三个目录**：`src/content`（`notes` 已于 2026-10-08 并入其中）、`src/临时收集`（实测合计 42.5MB / 1157 个笔记 + 546 张图）。
@@ -492,6 +501,16 @@ home-data-layer,home-display-layer,home-portfolio-shutter,post-hero,about-change
 - **/schedules/ 日历、/bills/ 账单、/apps/ 应用展示、/music/ 音乐页面**的路由文件与导航入口（导航栏 + 移动菜单的「我的」分组）已删除；navBarConfig「记录」分组的默认跳转已从 /music/ 改为 /archive/。
 - ⚠️ **不要顺手删这几个集合与内容**：bills(117) / schedules(7) / apps(1) 的 schema 与 md 都还在（页面先下线、数据保留），SiteStats 仍在用 bills 统计。想彻底清掉要站长确认。
 - ⚠️ **音乐功能与音乐页面无关**：右下角悬浮坞的音乐按钮/抽屉 + musicConfig + bangumi 的 music 条目是另一条链路，删页面时不要动它们。
+
+### 5.15 笔记（notebooks）功能已整体下线（2026-10-20）
+
+站长要求私人笔记不再公开，`/life/notebooks/` 列表页与全部详情页已删除，现在返回 404。
+
+- **删掉的东西**：`src/pages/life/notebooks/`（2 个路由）、`notebooks` 集合定义与注册、`.pages.yml` 两条集合、导航「笔记本」/ 移动抽屉 / 悬浮坞「笔记」按钮、`LifeStats`/`RecentItems`/`SiteStats` 三处统计、`page-type` 的 `notebooks-list`/`notebook`、`styles/pages/notebooks.css`、`NotebookCommentModal.svelte`、`NotebookComment.svelte`（早已无 import 的死组件）、`utils/notebook-chat.ts`、`types/notebook-chat.ts`
+- **内容去向**：`src/content/笔记本/` 的 78 篇 md + 7 个 `_index.json` 已整体移到 `src/content/笔记本归档/`，并写进 `.gitignore`（**仓库是 PUBLIC，之前 md 原文在 GitHub 上所有人可读**）。该目录不在任何集合内，不进 git、不参与构建，但仍在 Obsidian 库根下可继续写
+- ⚠️ **不要随手恢复**：恢复要同时补回集合 + 路由 + 导航入口 + `.pages.yml`；只恢复前半套会出现 `getCollection("notebooks")` 报错或死链
+- ⚠️ **AstrBot BlogWriter 插件的 `/笔记` 命令已同步摘除**（2026-10-20）：它会把笔记 commit 进这个公开仓库，比页面 404 更危险。以后要发布笔记，先想清楚是不是真的要公开
+- ⚠️ **git 历史里仍有这些笔记**：删除工作副本不等于从历史消失，彻底清除需要重写历史（`git filter-repo`），属站长决策
 
 ### 5.13 自用系列笔记：不进文章列表与 RSS（2026-10-03）
 
@@ -581,15 +600,21 @@ home-data-layer,home-display-layer,home-portfolio-shutter,post-hero,about-change
 
 ---
 
-## 7. i18n 国际化
+## 7. i18n 界面文案
+
+> **2026-10-20 起只有一种语言（简体中文）**。主题原本带 en / zh_CN / zh_TW / ja / ru 五份，
+> 但本站 `SITE_LANG` 写死 zh_CN、也没有语言切换入口，另外 4 份从来没显示过，却整份打进客户端包
+> （`dist/_astro/translation.*.js` 从 104KB 降到约 20KB）。四份已被删除，需要时从 git 历史取回。
+> `siteConfig.lang` 的类型也收窄成 `"zh_CN"`（填别的值 `astro check` 会报错）。
 
 ### 结构
 
 ```
 src/i18n/
-├── i18nKey.ts       # 330 个翻译键枚举
-├── translation.ts   # 翻译加载器（回退链：当前语言 → zh_CN → en）
-└── languages/       # en.ts, zh_CN.ts, zh_TW.ts, ja.ts, ru.ts
+├── i18nKey.ts       # 369 个翻译键枚举
+├── translation.ts   # 唯一的文案入口：i18n(key) 直接查 zh_CN 表
+└── languages/
+    └── zh_CN.ts     # 全部中文文案
 ```
 
 ### 使用
@@ -603,7 +628,11 @@ import { i18n } from "@/i18n/translation";
 
 ### 硬性规则
 
-添加新 i18n 键时，**必须在所有 5 个语言文件中添加翻译**。缺失翻译会回退到中文，对非中文用户是 bug。
+- 新增文案：**在 `i18nKey.ts` 加枚举 + 在 `zh_CN.ts` 加一条**，两处都要有（`Translation` 类型会强制）。
+  取不到翻译时 `i18n()` 退回键名本身，方便定位漏翻。
+- **语言不止影响按钮文字**：`siteConfig.lang` 还决定日期/月份格式（`date-utils.ts` 的 locale 映射）、
+  `<html lang>`、结构化数据 `inLanguage`、日历组件。改语言要连着看这几处。
+- 别再往 `languages/` 里加别的语言文件 —— 除非同时重建 `translation.ts` 的 `map` 与回退链。
 
 ---
 
@@ -776,12 +805,17 @@ window.swup.hooks.on("content:replace", () => {
 ```typescript
 // src/utils/my-feature.ts
 export function initMyFeature() {
-    document.addEventListener("swup:content:replaced", () => {
+    // ⚠️ 必须用 window，不能用 document（见下方说明）
+    window.addEventListener("swup:content:replaced", () => {
         // Swup 导航后重新初始化
     });
 }
 // Layout.astro DOMContentLoaded 中调用一次即可
 ```
+
+- ⚠️ **必须监听 `window`**（2026-10-20 归档页踩到）：事件由 `swup-lifecycle-controller.ts` 里的 `window.dispatchEvent(new CustomEvent("swup:content:replaced"))` 派发，**派发目标是 window**，事件传播路径里不包含 `document` —— 写成 `document.addEventListener` 会**永远收不到**（不报错、无告警）。
+  症状是「首次进入正常、切到别的页再回来就坏了」：只有首屏 SSR 或完整刷新才会初始化。归档页的表现是面包屑/筛选胶囊/全部收起整块消失。
+- 现存若干组件（`Bookshelf`、`bangumi/FilterControls`、`TabNav`、`ChangelogGraph`、`PostDirectoryList` 等）里仍写着 `document.addEventListener("swup:content:replaced")`，如果发现这些页面「换页回来功能失效」，先怀疑这一处，改成 `window` 即可。
 
 ### 11.5 切页性能：进度条与样式预取（2026-09-29）
 
@@ -843,7 +877,7 @@ return controller;
 1. 创建 `src/pages/myPage.astro`，继承 `MainGridLayout`
 2. 可选：`src/styles/pages/myPage.css` + **在该页面前言里 import**（不要加到 `main.css`，见 §4.3）
 3. 可选：`src/config/navBarConfig.ts` 添加导航链接
-4. 可选：`src/i18n/i18nKey.ts` + 5 个语言文件添加翻译
+4. 可选：`src/i18n/i18nKey.ts` 加枚举 + `languages/zh_CN.ts` 加文案（只有中文一份）
 
 ### 14.2 添加新侧栏组件
 
@@ -864,9 +898,9 @@ return controller;
 2. 删除组件文件
 3. 移除样式导入（全局的从 `main.css`，页面/组件专属的从引用它的组件前言）
 4. 从 `config/index.ts` 移除配置导出
-5. 从 5 个语言文件移除 i18n 键
+5. 从 `i18nKey.ts` 与 `languages/zh_CN.ts` 移除 i18n 键
 6. 从 `types/config.ts` 移除类型
-7. `pnpm build` 验证
+7. 验证：`pnpm dev` 看页面；删功能属大改动，**推送前**跑 `pnpm build` + `pnpm check`（见第 18 节）
 
 ### 14.5 万能原则：先参考，后编写（禁止盲猜）
 
@@ -877,7 +911,7 @@ return controller;
    - 组件交互 → 看 `src/components/*` 里已正常工作的 Svelte 组件怎么组织
 2. 仓库没有时，**参考官方文档 / 官方示例 / 网上成熟开源项目**，照其写法落地，不要凭印象自由发挥
 3. 如果实现过程中反复卡壳排查不出，**回到参考源逐行对照**，找出差异——不要靠猜验证
-4. 改完跑 `pnpm check` / `pnpm build` 确认无编译错误，并浏览器实测功能
+4. 改完在 `pnpm dev` 下浏览器实测功能；涉及类型/配置/集合等结构性改动时跑 `pnpm check`，**推送前**再跑 `pnpm build`（见第 18 节验证分级）
 
 ---
 
@@ -910,6 +944,7 @@ return controller;
 | 把 API Key / Token / 密码硬编码进任何被 git 跟踪的文件（scripts/、注释、markdown 都算），或轻信注释里"会被 .gitignore 保护"的声明而不实测 | 公开仓库全历史可读，GitGuardian 告警、密钥被扫描器批量收割滥用（2026-08-30 GitGuardian 事故：DashScope Key 硬编码在 `scripts/生成摘要/index.ts` 长期公开，声明受 .gitignore 保护但实际从未生效） | 密钥一律放 `.env`（已 gitignore）+ `process.env.XXX` 读取，脚本调用带 `--env-file=.env`，`.env.example` 只留空模板；新增任何疑似含密钥的文件，提交前必须实测 `git check-ignore <path>` 与 `git ls-files <path>` 确认未被跟踪；一旦泄露：**先去对应控制台吊销重发（唯一根治）**，再从代码清除，git 历史清理通常不必要且代价大 |
 | 用文件 mtime 做集合排序/展示的兜底依据 | CI（EdgeOne/GitHub Actions）每次全新 clone，所有文件 mtime 都等于构建时刻、比任何业务日期都新——缺字段的旧条目会永远霸占"最新"区块（2026-09 友链页"新朋友"事故） | 排序只认 frontmatter 业务字段（如 friends 的 `added`）；字段缺失时构建期 `console.warn` 并让条目落到最后 |
 | 拿 Astro content 集合的 `item.id` 拼磁盘路径 / 匹配 public 静态文件 | id 是 github-slugger 规则（小写 + 移除标点、空格转连字符），与磁盘文件名不一致（`39-胡超，作品集.md` → id `39-胡超作品集`、`33-RAGNote.md` → `33-ragnote`），Linux CI 大小写敏感必失配 | 文件名 ↔ id 换算必须走同一 slug 规则（截图脚本 `scripts/友链截图/index.mjs` 已内置 github-slugger）；新增含大写/标点文件名的友链后核对 `public/assets/friends-shots/` 截图命名 |
+| dev server 开着同时跑 `pnpm build` | 两者抢 `node_modules/.astro/data-store.json` 锁，报 `EPERM ... data-store.json.tmp -> data-store.json`，易被误判为代码错误 | 先关 dev（或杀掉残留 node/astro 进程）再构建，见 §18.1 |
 
 ---
 
@@ -963,9 +998,34 @@ type: feat | fix | refactor | style | docs | chore | perf
 scope: layout | config | i18n | styles | utils | components | content
 ```
 
-**每次修改后必须 `pnpm build` + `pnpm check` + `pnpm exec biome ci ./src` 全绿再提交**（`--reporter=github` 与 CI 完全一致，2026-02 CI 曾因 `useTemplate` 与 `.superpowers` 误跟踪红过）**。**
+### 18.1 验证分级（2026-10-20 修订：不再「改一点就构建一次」）
 
-> 本仓库 `biome ci` 仅覆盖 `./src`（package.json 固定 `2.5.7`），但 **任何修改后都必须跑**；新增目录（非 `src`）需提前加入 `.gitignore`。
+`pnpm build` 是**全量生产构建**（生成图标 → astro build → pagefind 索引），耗时远高于日常改动的需要。**日常小改不必构建**，按下面三档执行：
+
+| 档位 | 适用场景 | 必跑 |
+|---|---|---|
+| **A. 日常小改** | 少量 content md、文案、单个组件/样式微调、配置项改值、注释 | `pnpm dev` 浏览器看一眼即可，**不 build** |
+| **B. 较大改动** | 跨 ≥3 个文件或多模块、改 `src/config/`｜`src/content.config.ts`｜`src/utils/`｜`src/styles/main.css`、动 Astro/Svelte 结构、新增/删除组件·页面·i18n 键、依赖升级、重构 | `pnpm check`（astro check，抓类型/诊断）+ 涉及 `src/` 代码时 `pnpm exec biome ci ./src --reporter=github` |
+| **C. 推送线上前 / 模块完成** | 准备 `git push` 到 main（EdgeOne 自动构建部署），或完成一个功能模块 | `pnpm build` + `pnpm check` + `pnpm exec biome ci ./src --reporter=github` **全绿**（`--reporter=github` 与 CI 完全一致，2026-02 CI 曾因 `useTemplate` 与 `.superpowers` 误跟踪红过） |
+
+**C 档是唯一硬门槛**：只要要 push main，就必须全绿；A/B 档的改动可以攒到推送时一次性验证。
+
+**哪些问题只有 build 才暴露（dev 下看不见，别指望 dev 兜住）**：
+- pagefind 搜索索引、构建期 CSS 按页拆包等产物；
+- KaTeX / lightningcss / glob-loader 告警（空集合 warn、Shiki 语言别名缺失如 `mysql`→`sql` 导致代码块降级成纯文本）；
+- `getCollection()` 键名写错、集合目录与 zod schema 不匹配（dev 可能只 warn，build 直接失败）；
+- `.pages.yml` 字段与 zod 对齐问题（靠构建验证）。
+
+→ 所以：**只要改到上述相关区域（集合/配置/collection schema/内容目录/样式构建），即便自认为「小改」也按 C 档跑 build**，别为省几分钟把构建期故障带上线。
+
+**不受分级限制的例外 / 补充**：
+- **Obsidian 插件改动**（`plug-in/Obsidian/*`）：`pnpm build` 同时负责把插件拷贝进本地 Obsidian 库，**改插件必须跑**，否则库里还是旧版；
+  - **活跃库是 `src/content`，不是 `src`**（`src/content/.obsidian/` 有 app.json / workspace.json / data.json）。`obsidian-image-manager` 的 `esbuild.config.mjs` 已同时拷 `src/content` 与 `src` 两个库根；其它插件脚本仍只拷 `src`，改了别的插件要顺手确认目标库对不对，别只看「已拷贝」日志；
+  - 拷贝只覆盖 `main.js` / `manifest.json` / `styles.css` / wasm，**不动 `data.json`**（里面是插件设置与图床管理员密码）；
+- **`biome ci` 很便宜**（几秒）：改了 `src/` 下代码随手跑一次即可，不必等推送；
+- **build 前先关 dev server**：两者抢 `node_modules/.astro/data-store.json` 锁，同时开会报 `EPERM ... data-store.json.tmp -> data-store.json`（不是代码问题，杀掉残留 node 进程再跑）。
+
+> 本仓库 `biome ci` 仅覆盖 `./src`（package.json 固定 `2.5.7`），但 **C 档必须跑**；新增目录（非 `src`）需提前加入 `.gitignore`。
 
 > ⚠️ **本地 `biome ci` 报的 "File content differs from formatting output" 要逐个判断，别一律当 CRLF 误报**（2026-10-16 CI 红过）：Windows + `core.autocrlf=true` 会让工作副本是 CRLF，Biome 期望 LF → 报错，但**仓库里存的是 LF，CI（Linux）不会报**。区分方法：
 > 1. `pnpm exec biome ci ./src --reporter=github 2>&1 | grep "::error" | grep -oE 'file=[^,]+'` 取出全部文件（**别只看 `tail`，会被截断**——这次就是漏看了 4 个真问题）；
@@ -995,7 +1055,7 @@ EdgeOne Pages（GitHub 集成自动构建：pnpm build → dist/，需配 13 个
 ```
 
 - **源站域名分离**：Vercel 绑定 `cms-origin.tsh520.cn`（DNS → vercel.app），用户域名 `cms.tsh520.cn` 走 EdgeOne（回源 Host = cms-origin）——Vercel 的域名验证机制要求 DNS 持续指向它，不能直接套 CDN
-- **配置声明**：仓库根目录 `.pages.yml` 声明 12 个内容集合（posts 按分类拆 13 个集合、moments/friends/apps/daohang/album/ziyuan 拆 2/life 拆 3、tombstones 2026-08 新增），字段与 `src/content.config.ts` 的 zod 对齐
+- **配置声明**：仓库根目录 `.pages.yml` 声明 9 个内容集合（posts 按分类拆 13 个集合、moments/friends/daohang/album/ziyuan 拆 2/places 1、tombstones 2026-08 新增；notebooks 2026-10-20 随笔记功能下线一并删除），字段与 `src/content.config.ts` 的 zod 对齐
 - **自定义字段**：imgbed（图床上传，走服务端代理）+ amap-geocode（高德坐标，保存时展开为 lat/lng）——在 pagescms 仓库（`E:\GithubProgect\MyRunProject\pagescms`）的 `fields/custom/` 定义，注册在 `fields/registry.ts`
 - **凭证**：Vercel 环境变量（GITHUB_APP_*、IMAGEBED_*、AMAP_KEY 等）；图床/高德代理路由在 pagescms 的 `app/api/` 下（凭证服务端持有）
 - **朗读服务**：EdgeOne Pages 构建环境变量新增 `PUBLIC_TTS_SERVER`（第 13 个，指向自建 edge-tts 服务，部署见 `docs/deploy-edge-tts.md`）；留空时文章朗读自动降级浏览器系统语音
@@ -1017,8 +1077,9 @@ EdgeOne Pages（GitHub 集成自动构建：pnpm build → dist/，需配 13 个
    - 发现新的坑/规范/反模式 → 写入对应章节（或第 15 节反模式清单）
    - 完成模块/功能 → 按第 21 节更新 `changelog`，按第 22 节做收尾
    - **Obsidian 插件 `plug-in/Obsidian/obsidian-image-manager/` 功能变更 → 必须同步更新博客文章 `src/content/文章/技术分享/Obsidian插件系列-ImageManager图床上传管理指南.md`（功能说明/设置项/操作步骤），并在文末"版本历史"加一行；同时升插件 manifest.json 版本号并重新 `pnpm build`**
+   - **image-manager 已独立开源**：`tianshihao2003/obsidian-image-manager`（该目录自己就是独立 git 仓库，与本站 git 无关）。发版 = `pnpm build` + `gh release create vX.Y.Z main.js manifest.json styles.css`（manifest 与 package 的 version 一起升，BRAT 靠它判断更新）；**绝不提交 `data.json`**（图床管理员密码明文）。
 3. **新增规范**（本次添加）：文档不准确时（数字过时、功能删除等），及时修正，禁止"文档写的和实际不一致还照着做"
-4. **验证**：提交前跑 `pnpm build`；文档修改与代码修改在同一提交或相邻提交
+4. **验证**：按第 18 节分级——日常小改不必 build，**推送线上前**跑 `pnpm build`；文档修改与代码修改在同一提交或相邻提交
 
 ---
 
@@ -1041,7 +1102,7 @@ description: 一句话概括（显示在列表页）
 
 **正文**：`## 标题` + bullet 列表，按“用户视角”写改了什么、怎么用，关联关键文件 `路径:行号`（如 `src/utils/category-tree.ts:17`）。
 
-**流程**：功能验证通过（`pnpm build` + `pnpm check`）→ 立即写 changelog → 与代码同提交或紧后提交 → `changelog` 页自动按 `date` 倒序展示。
+**流程**：功能验证通过（dev 实测；**推送线上前**按第 18 节 C 档跑 `pnpm build` + `pnpm check`）→ 立即写 changelog → 与代码同提交或紧后提交 → `changelog` 页自动按 `date` 倒序展示。
 
 **反例**：功能已上线数周但 `changelog` 仍停留在旧版本（本次 audit 发现 2026-08-13 后无更新）。
 
@@ -1056,6 +1117,6 @@ description: 一句话概括（显示在列表页）
 2. **该保留的保留**：保留可复用工具（如 `src/utils/category-tree.ts`）、保留 `docs/superpowers/plans/*.md` 计划文档、保留 `plug-in/` 插件的独立 git 历史
 3. **该问的就问**：删/留边界模糊时（如 `plug-in/Obsidian` 是否彻底废弃还是保留 no-op）、是否需要数据迁移二次校验、是否需要提醒用户 `Obsidian Ctrl+P 重载` / `FlClash 代理` 等，**不知道就问，不要猜**
 4. **文档同步**：同步 `CLAUDE.md` 第 2/16/18/21 节、`.pages.yml` 与 `src/content.config.ts` 对齐校验、`README` 涉及变动的
-5. **验证**：`pnpm build` + `pnpm check` + `pnpm exec biome ci ./src --reporter=github` 全绿（与 CI 完全一致，勿仅跑本地默认 reporter），浏览器实测关键路径（分类页展开/叶子跳转、文章页面包屑、归档过滤）
+5. **验证**：模块/功能完成属第 18 节 C 档，`pnpm build` + `pnpm check` + `pnpm exec biome ci ./src --reporter=github` 全绿（与 CI 完全一致，勿仅跑本地默认 reporter），浏览器实测关键路径（分类页展开/叶子跳转、文章页面包屑、归档过滤）
 
 **禁止**：做完功能不写 changelog、不清临时文件、静默推断用户意图。

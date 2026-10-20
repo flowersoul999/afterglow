@@ -198,15 +198,20 @@
 }
 
 /* ===== 文章列表 / 置顶轮播 ===== */
+/* 数值照抄参考站 variables.styl:47-52 —— 浅色用深值（0.62/0.42），
+   暗色才用浅值（0.78/0.75）。此前两站弄反，浅色下竖杠与分类文字过亮 */
 :root {
 	--article-pinned-accent: oklch(0.52 0.2 25);
-	--article-title-marker: oklch(0.78 0.15 190);
-	--article-category-lightness: 0.75;
+	--article-title-marker: oklch(0.62 0.16 190);
+	--article-category-lightness: 0.42;
 	--article-category-chroma: 0.13;
 }
 
 :root.dark {
 	--article-pinned-accent: oklch(0.72 0.16 25);
+	--article-title-marker: oklch(0.78 0.15 190);
+	--article-category-lightness: 0.75;
+	--article-category-chroma: 0.13;
 }
 
 /* ===== 标签关系图谱 ===== */
@@ -242,4 +247,19 @@
 	--tag-graph-node-6: #d17a4e;
 	--tag-graph-node-7: #7bac54;
 	--tag-graph-node-8: #ad9189;
+}
+
+/* ===== 知识图谱（/categories/ 图谱页） ===== */
+:root {
+	/* 选中态强调色：dock 图标点亮、详情面板里的标签描边都用它，
+	   刻意不用 --primary，避免和全站主色抢视觉 */
+	--graph-chip-checked: oklch(0.55 0.12 190);
+	/* 移动端 dock 的实色底：图谱页那条竖条要和 mobile-dock 同底色，
+	   局部变量继承不出去，所以提到 token 层 */
+	--mobile-dock-surface: #e7e7e7;
+}
+
+:root.dark {
+	--graph-chip-checked: oklch(0.75 0.12 190);
+	--mobile-dock-surface: #181818;
 }

@@ -16,14 +16,14 @@
 
 ## 快速上手
 
-- 包管理器仅限 pnpm 9.14（preinstall 强制）；Node >= 22；主仓库无测试框架（验证 = build + check；Obsidian 插件子仓库例外）
+- 包管理器仅限 pnpm 9.14（preinstall 强制）；Node >= 22；主仓库无测试框架（验证 = dev 实测 + build/check，分级见 CLAUDE.md §18.1；Obsidian 插件子仓库例外）
 - 本地 dev/build 前先备 `.env`（照抄 `.env.example`）：缺失 `PUBLIC_*` 变量不会报错，但对应功能静默降级（评论无后端、统计空白）
-- `pnpm dev` 开发；提交前必跑 `pnpm build`（生成图标 → astro build → pagefind 索引）
+- `pnpm dev` 开发；**日常小改不必构建**，只有**推送线上前**或**大改动完成**时才跑 `pnpm build`（生成图标 → astro build → pagefind 索引），分级规则见 CLAUDE.md §18.1
 - 提交信息格式 `<type>(<scope>): <描述>`（feat|fix|refactor|style|docs|chore|perf，见 CLAUDE.md §18）
-- 验证手段 = `pnpm build` + `pnpm check`（astro check）+ `pnpm type-check`（tsc --noEmit --isolatedDeclarations）
+- 验证手段 = `pnpm dev` 实测 +（推送线上 / 大改动时）`pnpm build` + `pnpm check`（astro check）+ `pnpm type-check`（tsc --noEmit --isolatedDeclarations）
 - GitHub Actions：build.yml（main/PR）跑 `astro check`（Node 22+23）+ `pnpm build`（Node 22）；biome.yml 跑 `biome ci ./src --reporter=github`；CI 若红优先看 astro check 类型错误
 - `pnpm lint` / `pnpm format` = Biome（唯一 linter/formatter，作用域 ./src；CI 自动读 package.json 固定版本 2.5.7，勿在 workflow 里写 `latest`）
-- 每完成一个模块/功能：立即写 `src/content/changelog/` 条目（§21，feature→minor、fix→patch 递增 version，勿攒批）+ 按 §22 收尾（清临时脚本、`pnpm exec biome ci ./src --reporter=github` 全绿、浏览器实测关键路径，边界不清就问站长）
+- 每完成一个模块/功能（属 §18.1 C 档）：立即写 `src/content/changelog/` 条目（§21，feature→minor、fix→patch 递增 version，勿攒批）+ 按 §22 收尾（清临时脚本、`pnpm build` + `pnpm check` + `pnpm exec biome ci ./src --reporter=github` 全绿、浏览器实测关键路径，边界不清就问站长）
 
 ## 最易踩坑（详见 CLAUDE.md §15）
 
@@ -31,7 +31,7 @@
 - 样式必须经 `src/styles/main.css` 导入；禁止新建 `!important`、硬编码 `#000/#fff`、Stylus 文件；暗色选择器统一 `:root.dark`
 - Svelte 5 runes：响应式变量（含 DOM ref）必须 `$state`；非 void 标签禁止自闭合
 - Swup SPA 导航：容器内组件避免 `client:load`；监听器用 AbortController 清理；跨导航单例用 `window.__xxx` guard（§8-9）
-- 新 i18n 键必须同时加进全部 5 个语言文件（§7）
+- 新 i18n 键要同时加进 `i18nKey.ts` 与 `languages/zh_CN.ts`（2026-10-20 起只有中文一份，§7）
 - 新增 Swup 功能禁止改 `swup-lifecycle-controller.ts`，用 `swup:content:replaced` 事件自注册（§11.4）
 - 页面交互脚本必须放在 Swup 容器内（MainGridLayout slot 里），否则 SPA 导航进入页面时不执行（§15）
 - dev 下组件卡初始状态（"加载中…"、按钮无反应）先查浏览器控制台是否报 `504 Outdated Optimize Dep`：删 `node_modules/.vite` 重启 dev（§15）

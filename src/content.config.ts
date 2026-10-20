@@ -145,29 +145,9 @@ const placesCollection = defineCollection({
 	}),
 });
 
-const notebooksCollection = defineCollection({
-	loader: glob({
-		pattern: "**/*.{md,json}",
-		base: "./src/content/笔记本",
-	}),
-	schema: z.object({
-		name: z.string().optional().default("未命名日记本"),
-		cover: z.string().optional().default(""),
-		summary: z.string().optional().default(""),
-		// 新字段：对齐动态 images，支持 string|string[]（逗号/分号分隔的字符串也会在页面层归一为数组）
-		images: z
-			.union([z.string(), z.array(z.string())])
-			.optional()
-			.default(""),
-		// 兼容旧 image 字段：存量数据未迁移时仍可读取
-		image: z
-			.union([z.string(), z.array(z.string())])
-			.optional()
-			.default(""),
-		tags: z.array(z.string()).optional().default([]),
-		date: z.coerce.date().optional(),
-	}),
-});
+// notebooks 集合已于 2026-10-20 整体摘除（站长要求笔记不再公开：https://blog.tsh520.cn/life/notebooks/）
+// 内容已移至 src/content/笔记本归档/（.gitignore 内，仅留在本地 Obsidian 库）
+// 若要恢复，先恢复本集合定义 + src/pages/life/notebooks/ 路由 + navBarConfig 入口
 
 const albumCollection = defineCollection({
 	loader: glob({ pattern: "**/*.{md,mdx,json}", base: "./src/content/相册" }),
@@ -291,7 +271,6 @@ export const collections = {
 	moments: momentsCollection,
 	bangumi: bangumiCollection,
 	places: placesCollection,
-	notebooks: notebooksCollection,
 	album: albumCollection,
 	daohang: daohangCollection,
 	ziyuan: ziyuanCollection,

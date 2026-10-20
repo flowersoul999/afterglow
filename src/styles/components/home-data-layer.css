@@ -7,7 +7,10 @@
 	--guide-fg: oklch(0 0 0);
 	--guide-muted: color-mix(in srgb, var(--guide-fg) 62%, transparent);
 	--guide-accent: #b8ff1f;
-	--guide-row-height: clamp(12rem, 14vw, 14rem);
+	/* 行高下限 13.75rem（原 12rem）：置顶文章卡「meta + 标题行(44px 触控按钮) + 两行描述」
+	   合计约 112px，12rem 只给到 96px，差额会被 flex 从描述文字上扣掉 → 第二行被拦腰切。
+	   13.75rem 在 1024~1600 全区间都容得下（1600 以上仍是 14vw→14rem 的成长上限）。 */
+	--guide-row-height: clamp(13.75rem, 14vw, 14rem);
 	--data-card-radius: clamp(1rem, 1.45vw, 1.35rem);
 	--data-card-border: var(--guide-border);
 	--data-card-bg: var(--guide-bg);
@@ -67,11 +70,8 @@
 	letter-spacing: 0;
 }
 
-.home-data-layer[data-guide-opening="playing"] .home-data-layer__title-matrix,
-.home-data-layer[data-guide-opening="playing"] .data-card,
-.home-data-layer[data-guide-opening="playing"] .guide-card {
-	will-change: transform, opacity, clip-path, filter;
-}
+/* 入场动画已于 2026-10-20 移除，data-guide-opening 状态机不再存在，
+   对应 will-change 规则一并删除（见 HomeDataLayer.astro 的同日注释）。 */
 
 .home-guide-grid {
 	display: grid;
@@ -407,6 +407,11 @@
 	-webkit-box-orient: vertical;
 	-webkit-line-clamp: 2;
 	overflow: hidden;
+	/* 必须禁止被压缩：slide 是定高绝对定位的 column flex，父级空间不够时
+	   flex-shrink 会把这段 clamp 文字压到不足两行，第二行下半截直接被切掉
+	   （2026-10-20 站长的「字的下半部分被挡住」就是它）。固定成两行高度，
+	   超出交给 -webkit-line-clamp 打省略号。 */
+	flex-shrink: 0;
 }
 
 .guide-rotator__meta {
@@ -802,9 +807,13 @@
 	grid-template-columns: repeat(5, minmax(0, 1fr));
 	margin: 0;
 	opacity: 0;
+	/* visibility 随 opacity 一起过渡：收起时彻底不可交互（也移出 Tab 焦点序），
+	   展开时立即恢复、收起时等淡出完再隐藏。仅靠 opacity + pointer-events
+	   挡不住触屏 tap 的 hover 模拟（图标会在可见前就接到 click 直接跳转） */
+	visibility: hidden;
 	transform: translateY(0.8rem);
 	pointer-events: none;
-	transition: opacity 180ms ease, transform 180ms ease;
+	transition: opacity 180ms ease, transform 180ms ease, visibility 180ms ease;
 }
 
 .guide-contact__all a {
@@ -835,20 +844,37 @@
 	transform: translateY(-2px);
 }
 
-.guide-card--contact:hover .guide-contact__primary,
-.guide-card--contact:focus-within .guide-contact__primary,
+/* 展开态：.is-open（点击卡片 / 加号按钮 / 键盘）无条件生效；
+   hover 与 focus-within 只给真正能悬停的设备 —— 纯触屏上 tap 会先模拟 hover，
+   还没显示的图标会在同一发 click 里被直接点到（2026-10-20 站长踩到的跳转 bug） */
 .guide-card--contact.is-open .guide-contact__primary {
 	opacity: 0;
 	transform: translateY(-0.6rem);
 	pointer-events: none;
 }
 
-.guide-card--contact:hover .guide-contact__all,
-.guide-card--contact:focus-within .guide-contact__all,
 .guide-card--contact.is-open .guide-contact__all {
 	opacity: 1;
+	visibility: visible;
 	transform: translateY(0);
 	pointer-events: auto;
+}
+
+@media (hover: hover) {
+	.guide-card--contact:hover .guide-contact__primary,
+	.guide-card--contact:focus-within .guide-contact__primary {
+		opacity: 0;
+		transform: translateY(-0.6rem);
+		pointer-events: none;
+	}
+
+	.guide-card--contact:hover .guide-contact__all,
+	.guide-card--contact:focus-within .guide-contact__all {
+		opacity: 1;
+		visibility: visible;
+		transform: translateY(0);
+		pointer-events: auto;
+	}
 }
 
 @keyframes guide-slide-in {

@@ -29,6 +29,10 @@ import { sponsorConfig } from "@/config/sponsorConfig";
 import { getCategoryFromId } from "@/utils/category-tree";
 import { formatDateI18n, formatDateToYYYYMMDD } from "@/utils/date-utils";
 import { processCoverImageSync } from "@/utils/image-utils";
+import {
+	getRelatedPostCards,
+	type RelatedPostCard,
+} from "@/utils/related-posts";
 import { getCategoryUrl, getTagUrl, url } from "@/utils/url-utils";
 import "../../styles/components/post-hero.css";
 
@@ -100,6 +104,15 @@ if (posterAvatarUrl) {
 
 dayjs.extend(utc);
 
+// 相关文章卡片：右侧目录面板（ArticleTocPanel）与底部 RelatedPosts 共用同一份数据，只算一次。
+// （参考站这里对加密文章跳过计算；本站 posts 集合没有 password 字段，故一律计算。）
+const relatedPostCards: RelatedPostCard[] = await getRelatedPostCards({
+	currentId: entry.id,
+	tags: entry.data.tags,
+	category: getCategoryFromId(entry.id) || undefined,
+	limit: 3,
+});
+
 const jsonLd = {
 	"@context": "https://schema.org",
 	"@type": "BlogPosting",
@@ -131,6 +144,7 @@ const jsonLd = {
   prevTitle={entry.data.prevTitle}
   nextSlug={entry.data.nextSlug}
   nextTitle={entry.data.nextTitle}
+  relatedCards={relatedPostCards}
 >
   <!-- KaTeX 按需加载 - 仅在文章页面 -->
   <KatexManager slot="head" />
@@ -422,12 +436,12 @@ const jsonLd = {
     </a>
   </div>
 
-  <!-- 相关阅读 -->
+  <!-- 相关阅读（宽屏由右侧面板接管，这里整体隐藏，见 related-post-cards.css） -->
   <RelatedPosts
-    currentSlug={entry.id}
-    currentTags={entry.data.tags || []}
-    currentCategory={getCategoryFromId(entry.id) || undefined}
-    maxCount={5}
+    cards={relatedPostCards}
+    currentId={entry.id}
+    tags={entry.data.tags || []}
+    category={getCategoryFromId(entry.id) || undefined}
   />
 
   <!-- 评论 -->

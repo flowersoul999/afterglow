@@ -1,7 +1,7 @@
 ---
 title: Obsidian插件系列-ImageManager图床上传管理指南
 published: 2026-09-19
-updated: 2026-09-23
+updated: 2026-10-20
 tags:
   - Obsidian
   - ImageManager
@@ -29,7 +29,8 @@ description: 自制 Obsidian 插件 Image Manager 的完整使用文档——笔
 | 批量上传文件夹 | 命令面板：`批量上传文件夹图片到图床`，或文件树右键文件夹 | 递归处理文件夹（含子文件夹）下所有笔记 |
 | 上传文章封面图 | 命令面板：`上传文章封面图到图床`，或文件树右键文件夹 | 封面转 WebP 压缩后上传独立目录，改写 frontmatter `image` 字段 |
 | 下载网络图片到本地 | 命令面板：`下载网络图片到本地` | 反向操作：网图下载到笔记同目录 `assets/` |
-| 上传后自动删除本地图 | 设置开关（默认开启） | 只删本次成功上传的，移入系统回收站 |
+| 上传后自动删除本地图 | 设置开关（默认开启） | 只删本次成功上传的，移入系统回收站；**移动端不生效** |
+| 移动端使用（v2.4.0） | 左侧栏图标 / 长按笔记 / 命令面板 | 手机上可上传当前笔记图片、下载网图、批量传文件夹；封面图仅桌面端 |
 
 ## 一、设置项说明
 
@@ -45,9 +46,11 @@ description: 自制 Obsidian 插件 Image Manager 的完整使用文档——笔
 | 上传目录 | `blog/article` | 图片在图床内存放的相对路径，和博客文章现有图片的目录保持一致 |
 | 文件命名方式 | 保留原文件名 | 传上去还是 `p001_1.webp` 这种原名；重名时图床自动加 `(1)` 后缀 |
 | 上传渠道 | 留空 | 留空使用图床后台配置的默认存储渠道；也可指定 telegram / cfr2 / s3 等 |
-| 上传成功后删除本地图片 | 开启 | 详见第四节，有一整套防误删机制 |
+| 上传成功后删除本地图片 | 开启 | 详见第四节，有一整套防误删机制；**移动端没有系统回收站，该开关在手机上不生效** |
 
 ### 封面图上传设置（仅桌面端）
+
+> 移动端的设置页不会显示这一组设置项（相关命令在手机上也不注册）。
 
 | 设置项 | 我的配置 | 说明 |
 | --- | --- | --- |
@@ -162,7 +165,44 @@ description: 自制 Obsidian 插件 Image Manager 的完整使用文档——笔
 - 批量开始时会扫描全库引用，若**其他文章**仍引用该封面则跳过删除
 - 删除走系统回收站（`shell.trashItem`），失败则跳过并提示，**绝不永久删除**
 
-## 八、常见问题排查
+## 八、在手机上使用（iOS / Android）
+
+v2.4.0 起插件可以在手机上加载运行了。**手机上能用的**：上传当前笔记的图片、下载网络图片到本地、批量上传文件夹。
+
+### 怎么装到手机上
+
+手机 Obsidian 没有「从文件安装插件」的入口，最省事的是 BRAT（Beta Reviewers Auto-update Tool，能从 GitHub 仓库直接装插件并自动更新）：
+
+1. 手机 Obsidian → 社区插件市场 → 搜 `BRAT` 安装并启用
+2. 命令面板 → **`BRAT: Add a beta plugin for testing`** → 填 `tianshihao2003/obsidian-image-manager` → Add Plugin
+3. 设置 → 第三方插件 → 启用 **Image Manager**
+4. 以后更新：命令面板 → **`BRAT: Check for updates to all beta plugins`**
+
+不想装 BRAT 就手动：把 [Release](https://github.com/tianshihao2003/obsidian-image-manager/releases) 里的 `main.js` / `manifest.json` / `styles.css` 三个文件放进库的 `.obsidian/plugins/obsidian-image-manager/`。`.obsidian` 是隐藏目录，iOS 上系统文件 App 看不到，需要用能显示隐藏目录的文件管理器（Documents、FileBrowser 之类），或者在电脑上通过 iCloud Drive 操作。
+
+> v2.4.0 起 WebP 编码器的 wasm 已经内嵌进 `main.js`，**不用再单独拷 `webp_enc*.wasm`**，所以三个文件就是全部。
+
+### 三个入口
+
+| 入口 | 怎么操作 |
+| --- | --- |
+| 左侧栏图标 | 打开左侧抽屉 → 点「上传当前笔记图片到图床」/「下载当前笔记网络图片到本地」（只在移动端显示，不占桌面端位置） |
+| 长按文件 | 长按笔记 → 「上传此笔记图片到图床」/「下载此笔记网络图片到本地」；长按文件夹 → 批量上传 |
+| 命令面板 | 左侧栏 → 命令 → 搜 `Image Manager` |
+
+### 手机上的限制
+
+- **不能上传文章封面图**：该功能要读库外文件、调系统回收站、读插件目录里的 WebP wasm，移动端没有 Node 运行时。所以这条命令在手机上不注册，设置页也不显示封面图那组项
+- **不会删除本地图片**：即使「上传成功后删除本地图片」开着。手机上没有系统回收站，Obsidian 的删除会按你的「删除文件」设置走（可能直接永久删除），为了不误删，移动端一律保留；汇总里会写 `📱 N 张本地图片保留（移动端不支持回收站）`
+- **链接替换照常生效**：上传成功后的图床 URL 正常写回笔记
+
+### 手机上排查
+
+- 插件列表里能装但一启用就报错 → 先确认是 v2.4.0 及以上。旧版打包产物顶层有 `require("fs")`，移动端没有 Node 运行时，会直接 `Failed to load plugin`
+- 手机上传报 401 而桌面正常 → 账号密码没问题的话，检查图床是否开了 Cloudflare 的 Cookie 保护 / WAF，手机走的是原生 HTTP 请求
+- 进度弹窗文字被截断是正常的：手机屏幕窄，路径和网址会缩短显示，完整信息在控制台
+
+## 九、常见问题排查
 
 | 现象 | 原因与处理 |
 | --- | --- |
@@ -174,15 +214,19 @@ description: 自制 Obsidian 插件 Image Manager 的完整使用文档——笔
 | 封面图"本地文件不存在" | `image` 指向的文件不在设置的封面图本地目录里，检查设置或文件是否被移动 |
 | 怎么看详细日志 | `Ctrl + Shift + I` 打开控制台 → Console → 过滤框输入 `Image Manager` |
 
-## 九、给未来的自己：源码与更新
+## 十、给未来的自己：源码与更新
 
 - **源码工程**：`plug-in/Obsidian/obsidian-image-manager/`（main.ts + esbuild）
-- **构建**：在该目录跑 `pnpm build`（自动类型检查 + 打包 + 拷贝进 `src/.obsidian/plugins/obsidian-image-manager/`）
+- **GitHub**：<https://github.com/tianshihao2003/obsidian-image-manager>（公开仓库，release 上挂 `main.js` / `manifest.json` / `styles.css`，BRAT 与手动安装都从这里拿）
+- **构建**：在该目录跑 `pnpm build`（自动类型检查 + 打包 + 拷贝进 `src/content` 与 `src` 两个 Obsidian 库）
+- **冒烟测试**：`pnpm smoke`（模拟「无 Node 的移动端」和「桌面端」各跑一次 onload，防顶层 `require` 复发）
+- **发版**：`gh release create vX.Y.Z main.js manifest.json styles.css --title "..." --notes "..."`，同时把 `manifest.json` 与 `package.json` 的版本号一起升——BRAT 靠 manifest 的 `version` 判断有没有新版
 - **生效**：构建后在 Obsidian 里把插件关闭再开启（或 Ctrl+P 重载）
 - **改了插件必须同步更新本文**，在文末版本历史里加一行
 
 ## 版本历史
 
+- **2026-10-20 · v2.4.0**：适配移动端（iOS / Android）——插件可在手机上加载，新增移动端左侧栏图标与笔记长按菜单；封面图命令与设置项在移动端隐藏；移动端不删除本地图片（无系统回收站）；进度提示与设置页文案适配窄屏。同时把插件的 WebP wasm 内嵌进 `main.js`（安装只需三个文件），并开源到 GitHub（`tianshihao2003/obsidian-image-manager`，可用 BRAT 一键安装与更新）
 - **2026-09-24 · v2.3.2**：修复封面图上传后"本地文件未删除"——Electron 14+ 渲染进程拿不到 `shell` 模块，改为回退到平台命令移入回收站（Windows 用 PowerShell 系统 API / macOS 用 Finder / Linux 用 gio trash）
 - **2026-09-24 · v2.3.1**：修复封面图上传必现的 `Failed to construct 'URL': Invalid URL` 报错——WebP 编码器的 WASM glue 在 CJS 打包后 `import.meta.url` 失效，改为注入 CJS 等价的文件 URL
 - **2026-09-23 · v2.3.0**：新增"上传文章封面图到图床"——批量把文章 frontmatter `image` 指向的本地封面转 WebP 压缩（默认无损，可切有损 q90）后上传到独立目录 `blog/post-covers`，自动改写 `image` 字段；成功后可选删除本地封面（多重校验 + 系统回收站）

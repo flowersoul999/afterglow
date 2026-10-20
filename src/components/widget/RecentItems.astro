@@ -12,16 +12,6 @@ const posts = await getCollection("posts", ({ data }) => {
 });
 const moments = await getCollection("moments");
 const bangumi = await getCollection("bangumi");
-const notebooksEntries = await getCollection("notebooks");
-const notebookNames: Record<string, string> = {};
-for (const n of notebooksEntries) {
-	if (n.id.includes("_index")) {
-		const folder = n.id
-			.replace(/\\/g, "/")
-			.replace(/\/_index(\.md|\.json)?$/, "");
-		notebookNames[folder] = n.data.name || folder;
-	}
-}
 
 const allItems = [
 	...posts
@@ -91,28 +81,6 @@ const allItems = [
 				id: b.id,
 			};
 		}),
-	...notebooksEntries
-		.filter((n) => !n.id.includes("_index"))
-		.sort(
-			(a, b) =>
-				(b.data.date ? new Date(b.data.date).getTime() : 0) -
-				(a.data.date ? new Date(a.data.date).getTime() : 0),
-		)
-		.slice(0, 2)
-		.map((n) => {
-			const folder = n.id.replace(/\\/g, "/").split("/")[0];
-			const slug = (n.id.split("/").pop() || "").replace(/\.md$/, "");
-			return {
-				type: "life-notebook",
-				title: `${notebookNames[folder] || folder} · ${n.data.name || "未命名"}`,
-				date: n.data.date || new Date(),
-				url: `/life/notebooks/${folder}/#note-${slug}`,
-				image:
-					n.data.cover ||
-					"https://img.tsh520.cn/file/blog/album/武侠风/22.webp",
-				id: n.id,
-			};
-		}),
 ];
 
 const recentItems = allItems
@@ -124,7 +92,6 @@ const typeLabel: Record<string, () => string> = {
 	post: () => i18n(I18nKey.recentPosts),
 	moment: () => i18n(I18nKey.recentMoments),
 	bangumi: () => i18n(I18nKey.recentLife),
-	"life-notebook": () => "笔记",
 };
 
 interface Props {

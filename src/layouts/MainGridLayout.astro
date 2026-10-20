@@ -2,13 +2,13 @@
 import Live2DWidget from "@components/features/Live2DWidget.astro";
 
 import SpineModel from "@components/features/SpineModel.astro";
+import ArticleTocPanel from "@components/layout/ArticleTocPanel.astro";
 import Footer from "@components/layout/Footer.astro";
 import MobileDock from "@components/layout/MobileDock.astro";
 import Navbar from "@components/layout/Navbar.astro";
 import NavMenuPanel from "@components/layout/NavMenuPanel.astro";
 import SideBar from "@components/layout/SideBar.astro";
 import UnifiedDock from "@components/layout/UnifiedDock.astro";
-import SidebarTOC from "@components/widget/SidebarTOC.astro";
 import type { MarkdownHeading } from "astro";
 import MobileMenuSheet from "@/components/layout/MobileMenuSheet.astro";
 import {
@@ -22,6 +22,7 @@ import { LinkPresets } from "@/constants/link-presets";
 import { LinkPreset, type NavBarLink } from "@/types/config";
 import { isHomePage } from "@/utils/layout-utils";
 import { getSidebarPageType, type SidebarPageType } from "@/utils/page-type";
+import type { RelatedPostCard } from "@/utils/related-posts";
 import {
 	generateGridClasses,
 	generateMainContentClasses,
@@ -43,6 +44,8 @@ interface Props {
 	setOGTypeArticle?: boolean;
 	postSlug?: string;
 	headings?: MarkdownHeading[];
+	/** 文章页右侧目录面板的相关文章卡片（[...slug] 算好透传）；非文章页不传 */
+	relatedCards?: RelatedPostCard[];
 	prevSlug?: string;
 	prevTitle?: string;
 	nextSlug?: string;
@@ -57,6 +60,7 @@ const {
 	setOGTypeArticle,
 	postSlug,
 	headings = [],
+	relatedCards,
 } = Astro.props;
 
 // 检查是否为首页
@@ -238,9 +242,10 @@ const navLinks = navBarConfig.links.map((item: NavBarLink | LinkPreset) => {
                 <div id="grid-class-carrier" data-grid-class={gridCols} class="hidden"></div>
                 {/* 备用 h1 标题 - 提供隐藏的主标题，满足 Swup A11y 和无 h1 页面的可访问性 */}
                 <h1 class="sr-only">{title || siteConfig.title}</h1>
-                {/* 文章目录浮层：与参考博客一致，fixed 挂在正文右侧（不在侧栏里），
-                    顶部跟随信息面板组；控制器见 src/utils/article-toc.ts */}
-                {isPostPage && <SidebarTOC />}
+                {/* 文章目录浮层：与参考博客一致，fixed 挂在正文右侧（不在侧栏里）。
+                    相关文章视图由 [...slug] 算好透传（加密文章无数据 → 面板退化为纯目录）；
+                    控制器见 src/utils/article-toc-panel-controller.ts */}
+                {isPostPage && <ArticleTocPanel relatedCards={relatedCards} />}
                 <div id="content-wrapper" class="onload-animation transition-leaving" data-no-sidebar={noSidebarPageType}>
                     <slot></slot>
 
@@ -278,7 +283,8 @@ const navLinks = navBarConfig.links.map((item: NavBarLink | LinkPreset) => {
                 </div>
             )}
 
-            <div class={footerClassName}>
+            <!-- data-site-footer：右侧目录面板用它做底部钳制与「切换相关文章」的参考线 -->
+            <div class={footerClassName} data-site-footer>
                 <Footer></Footer>
             </div>
         </div>

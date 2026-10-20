@@ -5,10 +5,15 @@
 
 /* ── 三段式容器 ── */
 .navbar-segments {
+  /* 左右两个胶囊与窗口边缘的留白。
+     绝对定位的子元素不受 padding 影响（containing block 是 padding box），
+     所以这里直接把容器本身缩窄，left: 0 / right: 0 才会真的离边 1.5rem。 */
+  --navbar-seg-inset: 1.5rem;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: calc(100% - var(--navbar-seg-inset) * 2);
   max-width: var(--page-width, 1200px);
   min-height: 2.75rem;
   margin-inline: auto;
@@ -37,6 +42,7 @@
     padding 0.4s cubic-bezier(0.4, 0, 0.2, 1),
     border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1),
     left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    right 0.4s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -78,6 +84,9 @@
 /* 移动端：中段隐藏，左右段恢复 flex 排列 */
 @media (max-width: 1023px) {
   .navbar-segments {
+    /* 手机上空间紧，留白减半 */
+    --navbar-seg-inset: 0.75rem;
+
     justify-content: space-between;
   }
   .navbar-seg--left,

@@ -69,14 +69,8 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			position: "sticky",
 			showOnPages: ["post", "posts-list"],
 		},
-		{
-			// 组件类型：文章目录（已移至右侧边栏，此处禁用）
-			type: "sidebarToc",
-			enable: false,
-			position: "sticky",
-			showOnPostPage: true,
-			showOnNonPostPage: false,
-		},
+		// 原「文章目录 sidebarToc」配置已于 2026-10-20 删除：目录改由
+		// MainGridLayout 渲染 ArticleTocPanel（正文右侧固定浮层），不再走侧栏组件表。
 		{
 			// 组件类型：分类组件
 			type: "categories",
@@ -204,16 +198,8 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			// 是否在文章详情页显示
 			showOnPostPage: false,
 		},
-		{
-			// 组件类型：文章目录
-			// 已改为在 MainGridLayout 里直接渲染成正文右侧的固定浮层（对齐参考博客），
-			// 不再作为侧栏组件输出，配置保留便于回退。
-			type: "sidebarToc",
-			enable: false,
-			position: "sticky",
-			showOnPostPage: true,
-			showOnNonPostPage: false,
-		},
+		// 原「文章目录 sidebarToc」配置已删除，目录由 MainGridLayout 的 ArticleTocPanel
+		// 统一渲染（正文右侧固定浮层）。
 		{
 			// 组件类型：广告栏组件 2
 			type: "advertisement",

@@ -21,7 +21,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			icon: "material-symbols:public",
 		},
 
-		// 文章（带下拉子菜单）
+		// 文章（带下拉子菜单：文章列表 → 图谱 → 归档）
 		{
 			name: "文章",
 			url: "/posts/",
@@ -30,12 +30,16 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 				// 文章列表
 				LinkPreset.Posts,
 
-				// 文章分类
-				{
-					name: "分类",
-					url: "/categories/",
-					icon: "material-symbols:folder-open",
-				},
+				// 知识图谱（原「分类」三视图页已被 /categories/ 的四层图谱取代）
+				...(siteConfig.pages.categories
+					? [
+							{
+								name: "图谱",
+								url: "/categories/",
+								icon: "material-symbols:hub-outline",
+							},
+						]
+					: []),
 
 				// 归档
 				LinkPreset.Archive,
@@ -63,11 +67,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 				name: "留言板",
 				url: "/guestbook/",
 				icon: "material-symbols:edit-outline",
-			},
-			{
-				name: "笔记本",
-				url: "/life/notebooks/",
-				icon: "material-symbols:menu-book-outline",
 			},
 			// 朋友圈
 			LinkPreset.Circle,
@@ -118,14 +117,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 
 			// 友链
 			LinkPreset.Friends,
-
-			// QQ群
-			{
-				name: "QQ群",
-				url: "https://qm.qq.com/q/FjkXxV9Hmo",
-				icon: "material-symbols:group",
-				external: true,
-			},
 
 			// 赞助
 			...(siteConfig.pages.sponsor ? [LinkPreset.Sponsor] : []),

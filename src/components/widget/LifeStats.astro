@@ -12,40 +12,19 @@ const { class: className, style } = Astro.props;
 
 // 获取生活相关 collection
 const lifeEntries = await getCollection("places");
-const notebookEntries = await getCollection("notebooks");
-// 辅助函数
-const isIn = (entryId: string, folder: string) =>
-	entryId.replace(/\\/g, "/").startsWith(`${folder}/`);
 
 // 统计地点
 const places = lifeEntries.map((e) => e.data);
 const placesCount = places.length;
 const visitedCities = new Set(places.map((p) => p.city).filter(Boolean)).size;
 
-// 统计笔记本（排除 _index 文件）
-const notebookFolders = new Set(
-	notebookEntries
-		.map((e) => {
-			const id = e.id.replace(/\\/g, "/");
-			const match = id.match(/^([^/]+)\//);
-			return match ? match[1] : null;
-		})
-		.filter(Boolean),
-);
-const notebooksCount = notebookFolders.size;
-
-// 构建统计数据
+// 构建统计数据（笔记本统计已于 2026-10-20 随 notebooks 集合摘除而移除）
 const stats: { icon: string; label: string; value: number; suffix?: string }[] =
 	[
 		{
 			icon: "material-symbols:apartment",
 			label: "去过城市",
 			value: visitedCities,
-		},
-		{
-			icon: "material-symbols:book-outline",
-			label: "笔记本数",
-			value: notebooksCount,
 		},
 		{
 			icon: "material-symbols:location-on-outline",

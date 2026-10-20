@@ -59,6 +59,10 @@ src/content/临时收集
 src/.claudian
 src/content/.trash
 src/content/notes
+# 百度网盘同步插件残留的临时文件（二进制，vite 会当依赖加载导致构建失败，2026-10-20 清理）
+*.baiduyun.uploading.cfg
+# 私人笔记归档（2026-10-20 笔记本功能下线，内容只留本地 Obsidian 库，不进仓库）
+src/content/笔记本归档
 src/.copilot
 src/.opencode
 .workbuddy/

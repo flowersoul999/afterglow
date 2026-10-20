@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import Comment from "@components/comment/index.astro";
 import Markdown from "@components/common/Markdown.astro";
+import FriendApply from "@components/features/FriendApply.astro";
 import FriendCard from "@components/features/FriendCard.astro";
 import { Icon } from "astro-icon/components";
 import PageTitle from "@/components/common/PageTitle.astro";
@@ -214,6 +215,9 @@ const description = i18n(I18nKey.friendsDescription);
     </div>
   </div>
 
+  <!-- 友链申请：右侧填站点信息、左侧实时预览；复制后到下方评论区粘贴发送 -->
+  <FriendApply />
+
   <!-- 评论区（负 margin 抵消评论卡片的 p-8 顶部 padding，收紧与上方内容的间距） -->
   <div class="-mt-6">
     <Comment post={friendsPost} customPath="/friends/" />
@@ -241,12 +245,45 @@ const description = i18n(I18nKey.friendsDescription);
         el.id = "friend-preview";
         el.setAttribute("aria-hidden", "true");
         el.hidden = true;
+        var media = document.createElement("div");
+        media.className = "friend-preview__media";
         var img = document.createElement("img");
         img.alt = "";
         img.decoding = "async";
-        el.appendChild(img);
+        media.appendChild(img);
+        var info = document.createElement("div");
+        info.className = "friend-preview__info";
+        var ttl = document.createElement("h4");
+        ttl.className = "friend-preview__title";
+        var desc = document.createElement("p");
+        desc.className = "friend-preview__desc";
+        info.appendChild(ttl);
+        info.appendChild(desc);
+        el.appendChild(media);
+        el.appendChild(info);
         document.body.appendChild(el);
         return el;
+      }
+
+      /* 截图预加载：原实现是 hover 才下载，首次悬浮会先白一下。
+         页面空闲后把所有卡片的截图提前拉进缓存，hover 时直接出图。 */
+      function preloadScreenshots() {
+        var cards = document.querySelectorAll("[data-friends-grid] .friend-card[data-screenshot]");
+        var sources = [];
+        cards.forEach(function (card) {
+          var src = card.dataset.screenshot;
+          if (src && sources.indexOf(src) === -1) sources.push(src);
+        });
+        var i = 0;
+        var loadOne = function () {
+          if (i >= sources.length) return;
+          var im = new Image();
+          im.decoding = "async";
+          im.src = sources[i++];
+          // 一张接一张，避免一次性几十个请求挤带宽
+          setTimeout(loadOne, 60);
+        };
+        loadOne();
       }
 
       function getPreview() {
@@ -292,9 +329,13 @@ const description = i18n(I18nKey.friendsDescription);
         if (card.classList.contains("friend-card--no-shot")) return;
         var el = ensurePreview();
         var img = el.querySelector("img");
+        var titleEl = el.querySelector(".friend-preview__title");
+        var descEl = el.querySelector(".friend-preview__desc");
         var src = card.dataset.screenshot;
         if (!src) return;
         if (img.getAttribute("src") !== src) img.src = src;
+        if (titleEl) titleEl.textContent = card.dataset.title || "";
+        if (descEl) descEl.textContent = card.getAttribute("data-desc") || "";
         el.hidden = false;
         void el.offsetWidth;
         el.classList.add("is-visible");
@@ -311,7 +352,7 @@ const description = i18n(I18nKey.friendsDescription);
         if (hideTimer) clearTimeout(hideTimer);
         hideTimer = setTimeout(function() {
           if (!el.classList.contains("is-visible")) el.hidden = true;
-        }, 220);
+        }, 120);
       }
 
       function bindPreview() {
@@ -345,6 +386,7 @@ const description = i18n(I18nKey.friendsDescription);
 
       function initPreview() {
         bindPreview();
+        preloadScreenshots();
       }
 
       initPreview();
@@ -354,13 +396,14 @@ const description = i18n(I18nKey.friendsDescription);
     })();
   </script>
 
-  <!-- "添加友链" 按钮滚动到评论区 -->
+  <!-- "添加友链" 按钮滚动到友链申请区块（没有时退回评论区） -->
   <script slot="head" is:inline>
     document.addEventListener('click', function(e) {
       var btn = e.target.closest('#btn-add-friend');
       if (!btn) return;
-      var comment = document.querySelector('.comment-container, #waline, #tcomment, .giscus');
-      if (comment) { comment.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      var target = document.getElementById('friend-apply')
+        || document.querySelector('.comment-container, #waline, #tcomment, .giscus');
+      if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     });
   </script>
 

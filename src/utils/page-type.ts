@@ -20,8 +20,6 @@ export type SidebarPageType =
 	| "about"
 	| "guestbook"
 	| "circle"
-	| "notebooks-list"
-	| "notebook"
 	| "places"
 	| "album-list"
 	| "album"
@@ -47,8 +45,6 @@ export const SIDEBAR_PAGE_TYPES: readonly SidebarPageType[] = [
 	"about",
 	"guestbook",
 	"circle",
-	"notebooks-list",
-	"notebook",
 	"places",
 	"album-list",
 	"album",
@@ -97,8 +93,6 @@ export function getSidebarPageType(pathname: string): SidebarPageType {
 	if (path === "/circle") return "circle";
 
 	// 生活
-	if (path === "/life/notebooks") return "notebooks-list";
-	if (path.startsWith("/life/notebooks/")) return "notebook";
 	if (path === "/life/places") return "places";
 	if (path === "/album") return "album-list";
 	if (path.startsWith("/album/")) return "album";

@@ -1,5 +1,5 @@
 /* 首页专属样式（home-*）已改为由对应组件在前言 import：
-   HomeHero / HomeTicker / HomeDataLayer / HomeDisplayLayer / HomePortfolioShutterLayer；
+   HomeHero / HomeTicker / HomeDataLayer（HomeDisplayLayer 已于 2026-10-20 下线）；
    这样只有渲染这些组件的页面（首页与分页）才会加载它们。 */
 /* ==========================================================================
    Firefly 主样式入口
@@ -50,6 +50,7 @@
 @import './components/image-pixel-reveal.css';
 @import './components/app-card.css';
 @import './components/archive-panel.css';
+@import './components/archive-stats.css';
 
 /* --- 功能样式 --- */
 @import './features/content.css';
@@ -64,6 +65,10 @@
 @import './features/moments.css';
 @import './pages/friends.css';
 @import './pages/apps.css';
+@import './pages/categories.css';
+@import './widgets/knowledge-graph.css';
+@import './widgets/graph-dock.css';
+@import './widgets/graph-detail-panel.css';
 @import './features/tts-player.css';
 @import './components/about-profile-card.css';
 @import './components/about-chat-bubble.css';

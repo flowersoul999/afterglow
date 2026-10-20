@@ -9,6 +9,30 @@ export const zh_CN: Translation = {
 	[Key.allCategories]: "全部分类",
 	[Key.about]: "关于我",
 	[Key.archive]: "归档",
+	[Key.archiveTime]: "时间",
+	[Key.archiveFilter]: "筛选",
+	[Key.archiveExpandAll]: "全部展开",
+	[Key.archiveCollapseAll]: "全部收起",
+	[Key.archiveMotto]: "时间不曾回头，却把走过的路都留在了这里。",
+	[Key.archiveDescription]:
+		"按发布时间浏览本站全部文章，结合分类、标签和筛选条件快速定位主题内容，并回顾持续积累的写作记录。",
+	[Key.noPosts]: "暂无文章内容",
+	[Key.archiveStatsTotalPosts]: "全部文章",
+	[Key.archiveStatsMonthPosts]: "本月文章",
+	[Key.archiveStatsWritingSpan]: "创作跨度（天）",
+	[Key.archiveStatsCategoryPosts]: "本分类文章",
+	[Key.archiveStatsTagPosts]: "本标签文章",
+	[Key.archiveStatsProgress]: "年进度",
+	[Key.archiveStatsGoal]: "年度目标",
+	[Key.archiveStatsUnavailable]: "--",
+	[Key.archiveStatsEvaluationAhead]:
+		"今年的更新节奏明显领先计划，距离年度目标仅剩 {remaining} 篇；余下 {months} 个月保持每月约 {pace} 篇即可从容完成，可以把更多精力放在内容质量上。",
+	[Key.archiveStatsEvaluationOnTrack]:
+		"今年的更新节奏与计划基本一致，距离年度目标还差 {remaining} 篇；余下 {months} 个月保持每月约 {pace} 篇，按当前状态稳步推进即可。",
+	[Key.archiveStatsEvaluationBehind]:
+		"今年的更新节奏暂时落后于计划，距离年度目标还差 {remaining} 篇；余下 {months} 个月平均每月需要完成约 {pace} 篇，后半程需要更稳定的输出。",
+	[Key.archiveStatsEvaluationComplete]:
+		"今年的年度目标已经完成，接下来不必追求数量，可以把重心放在内容质量、系列整理和长期沉淀上。",
 	[Key.search]: "搜索",
 	[Key.searchNoResults]: "找不到相关结果。",
 	[Key.searchTypeSomething]: "请输入搜索关键词。",
@@ -31,6 +55,7 @@ export const zh_CN: Translation = {
 	[Key.tocMindMapZoomOut]: "缩小",
 	[Key.tocMindMapReset]: "重置缩放",
 	[Key.tocMindMapFullscreen]: "全屏",
+	[Key.tocBuyCoffee]: "请喝咖啡",
 	[Key.readingProgress]: "阅读进度",
 	[Key.profileCountdownWeek]: "距周末",
 	[Key.profileCountdownMonth]: "距月底",
@@ -307,6 +332,7 @@ export const zh_CN: Translation = {
 	[Key.sponsorMessage]: "留言",
 	[Key.sponsorAnonymous]: "匿名",
 	[Key.scanToSponsor]: "扫码赞助",
+	[Key.sponsorMotto]: "热爱本身不求回报，但被看见的热爱能走得更远。",
 	[Key.sponsorGoTo]: "前往赞助",
 	[Key.sponsorButton]: "支持与分享",
 	[Key.sponsorButtonText]:
@@ -325,6 +351,9 @@ export const zh_CN: Translation = {
 	[Key.siteStatsLastUpdate]: "最后活动",
 	[Key.siteStatsDaysAgo]: "{days} 天前",
 	[Key.siteStatsDays]: "{days} 天",
+	[Key.siteStatsUpdatedSentence]: "最近更新于{updated}",
+	[Key.siteStatsWordsSentence]: "累计记录 {words} 字",
+	[Key.footerRunningDays]: "已运行 {days} 天",
 	[Key.siteStatsVisitorPrefix]: "您是造访本站的第 ",
 	[Key.siteStatsVisitorSuffix]: " 位旅人，很高兴与你相遇。",
 	[Key.siteStatsPageViewPrefix]: "小破站访问量为 ",
@@ -356,6 +385,7 @@ export const zh_CN: Translation = {
 	[Key.calendarDecember]: "12月",
 
 	[Key.shareArticle]: "分享",
+	[Key.coverImageAltSuffix]: "封面图",
 	[Key.generatingPoster]: "海报生成中...",
 	[Key.copied]: "已复制",
 	[Key.copyLink]: "复制链接",
@@ -368,8 +398,8 @@ export const zh_CN: Translation = {
 	[Key.codeCollapsibleExpanded]: "代码块已展开",
 	[Key.codeCollapsibleCollapsed]: "代码块已折叠",
 
-	// 相关阅读
-	[Key.relatedPosts]: "相关阅读",
+	// 相关文章
+	[Key.relatedPosts]: "相关文章",
 
 	// 欢迎卡片
 	[Key.aboutDescription]:
@@ -415,4 +445,30 @@ export const zh_CN: Translation = {
 	[Key.ttsFallback]: "朗读服务不可用，已切换系统语音",
 	[Key.ttsNoServer]: "未配置朗读服务，使用系统语音",
 	[Key.ttsTruncated]: "文章较长，已截断部分内容朗读",
+
+	// ===== 知识图谱（/categories/ 图谱页） =====
+	[Key.kgDetailTitle]: "节点详情",
+	[Key.kgSectionsCount]: "{count} 个小节",
+	[Key.kgPanelTitle]: "图谱控制",
+	[Key.kgSectionFilters]: "筛选",
+	[Key.kgSectionGroups]: "分类选择",
+	[Key.kgTierCategory]: "分类",
+	[Key.kgTierTag]: "标签",
+	[Key.kgTierPost]: "文章",
+	[Key.kgTierHeading]: "小标题",
+	[Key.kgSearch]: "搜索节点…",
+	[Key.kgMinPosts]: "最少文章数",
+	[Key.kgShowCooccurrence]: "标签共现连线",
+	[Key.kgParticles]: "流动粒子",
+	[Key.kgPlay]: "播放",
+	[Key.kgPause]: "暂停",
+	[Key.kgResetView]: "重置视图",
+	[Key.kgLayoutMindmap]: "切换为脑图布局",
+	[Key.kgLayoutForce]: "切换为力导向布局",
+	[Key.kgStats]: "{visible} / {total} 节点 · {links} 连线",
+	[Key.kgRelations]: "关联 {count} 个节点",
+	[Key.kgLoaded]: "知识图谱已加载",
+	[Key.tagGraphPageTitle]: "标签图谱",
+	[Key.tagGraphPageDescription]:
+		"通过分类、标签与关系图谱浏览本站文章，快速查找感兴趣的主题，并发现相关的内容与阅读路径。",
 };

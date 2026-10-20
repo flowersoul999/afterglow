@@ -566,33 +566,29 @@ $effect(() => {
 								<span class="article-list-pinned-item__title-text">{pinnedPost.title}</span>
 							</h3>
 							<div class="article-list-pinned-item__meta">
-								<div class="article-list-pinned-item__meta-row">
-									<span
-										class="article-list-pinned-item__taxonomy article-list-pinned-item__taxonomy--category"
-										style={getCategoryColor(pinnedPost.category)}
-									>
-										{pinnedPost.category}
-									</span>
-									{@render articleViews(pinnedPost.id)}
-								</div>
-								<div class="article-list-pinned-item__meta-row">
-									<span class="article-list-pinned-item__meta-item">
-										<svg class="article-calendar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none" /><path fill="currentColor" fill-rule="evenodd" d="M8 4h8V2h2v2h1a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V2h2zM5 8v12h14V8zm2 3h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm0 4h2v2h-2zm-4 0h2v2h-2zm-4 0h2v2H7z" /></svg>
-										<time datetime={pinnedPost.publishedIso}>{pinnedPost.publishedText}</time>
-									</span>
-									<span class="article-list-pinned-item__meta-item">
-										<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-										<span>{(pinnedPost.wordCount ?? 0).toLocaleString()} 字</span>
-									</span>
-									{#if pinnedPost.tags.length > 0}
-										{#each pinnedPost.tags.slice(0, 3) as tag, i (tag.name)}
-											<span class="article-list-pinned-item__taxonomy article-list-pinned-item__taxonomy--tag">{tag.name}</span>
-										{/each}
-										{#if pinnedPost.tags.length > 3}
-											<span class="article-list-pinned-item__tag-overflow">+{pinnedPost.tags.length - 3}</span>
-										{/if}
+								<span
+									class="article-list-pinned-item__taxonomy article-list-pinned-item__taxonomy--category"
+									style={getCategoryColor(pinnedPost.category)}
+								>
+									{pinnedPost.category}
+								</span>
+								{@render articleViews(pinnedPost.id)}
+								<span class="article-list-pinned-item__meta-item">
+									<svg class="article-calendar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none" /><path fill="currentColor" fill-rule="evenodd" d="M8 4h8V2h2v2h1a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V2h2zM5 8v12h14V8zm2 3h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm0 4h2v2h-2zm-4 0h2v2h-2zm-4 0h2v2H7z" /></svg>
+									<time datetime={pinnedPost.publishedIso}>{pinnedPost.publishedText}</time>
+								</span>
+								<span class="article-list-pinned-item__meta-item">
+									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+									<span>{(pinnedPost.wordCount ?? 0).toLocaleString()} 字</span>
+								</span>
+								{#if pinnedPost.tags.length > 0}
+									{#each pinnedPost.tags.slice(0, 3) as tag, i (tag.name)}
+										<span class="article-list-pinned-item__taxonomy article-list-pinned-item__taxonomy--tag">{tag.name}</span>
+									{/each}
+									{#if pinnedPost.tags.length > 3}
+										<span class="article-list-pinned-item__tag-overflow">+{pinnedPost.tags.length - 3}</span>
 									{/if}
-								</div>
+								{/if}
 							</div>
 							<p class="article-list-pinned-item__description">{pinnedPost.description}</p>
 						</div>
@@ -697,20 +693,16 @@ $effect(() => {
 										</h3>
 									</div>
 									<div class="article-list-card__meta">
-										<div class="article-list-pinned-item__meta-row">
-											<span class="article-list-card__taxonomy">{post.category}</span>
-											{@render articleViews(post.id)}
-										</div>
-										<div class="article-list-pinned-item__meta-row">
-											<span class="article-list-card__meta-item">
-												<svg class="article-calendar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none" /><path fill="currentColor" fill-rule="evenodd" d="M8 4h8V2h2v2h1a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V2h2zM5 8v12h14V8zm2 3h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm0 4h2v2h-2zm-4 0h2v2h-2zm-4 0h2v2H7z" /></svg>
-												<time datetime={post.publishedIso}>{post.publishedText}</time>
-											</span>
-											<span class="article-list-card__meta-item">
-												<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-												<span>{(post.wordCount ?? 0).toLocaleString()} 字</span>
-											</span>
-										</div>
+										<span class="article-list-card__taxonomy">{post.category}</span>
+										{@render articleViews(post.id)}
+										<span class="article-list-card__meta-item">
+											<svg class="article-calendar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none" /><path fill="currentColor" fill-rule="evenodd" d="M8 4h8V2h2v2h1a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V2h2zM5 8v12h14V8zm2 3h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm0 4h2v2h-2zm-4 0h2v2h-2zm-4 0h2v2H7z" /></svg>
+											<time datetime={post.publishedIso}>{post.publishedText}</time>
+										</span>
+										<span class="article-list-card__meta-item">
+											<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+											<span>{(post.wordCount ?? 0).toLocaleString()} 字</span>
+										</span>
 									</div>
 									<div class="article-list-card__rule" aria-hidden="true"></div>
 									<p class="article-list-card__description">{post.description}</p>
@@ -738,28 +730,24 @@ $effect(() => {
 								<span class="article-list-pinned-item__title-text" title={post.title}>{post.title}</span>
 							</h3>
 							<div class="article-list-pinned-item__meta">
-								<div class="article-list-pinned-item__meta-row">
-									<span class="article-list-pinned-item__taxonomy article-list-pinned-item__taxonomy--category" style={getCategoryColor(post.category)}>{post.category}</span>
-									{@render articleViews(post.id)}
-								</div>
-								<div class="article-list-pinned-item__meta-row">
-									<span class="article-list-pinned-item__meta-item">
-										<svg class="article-calendar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none" /><path fill="currentColor" fill-rule="evenodd" d="M8 4h8V2h2v2h1a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V2h2zM5 8v12h14V8zm2 3h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm0 4h2v2h-2zm-4 0h2v2h-2zm-4 0h2v2H7z" /></svg>
-										<time datetime={post.publishedIso}>{post.publishedText}</time>
-									</span>
-									<span class="article-list-pinned-item__meta-item">
-										<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
-										<span>{(post.wordCount ?? 0).toLocaleString()} 字</span>
-									</span>
-									{#if post.tags.length > 0}
-										{#each post.tags.slice(0, 3) as tag (tag.name)}
-											<span class="article-list-pinned-item__taxonomy article-list-pinned-item__taxonomy--tag">{tag.name}</span>
-										{/each}
-										{#if post.tags.length > 3}
-											<span class="article-list-pinned-item__tag-overflow">+{post.tags.length - 3}</span>
-										{/if}
+								<span class="article-list-pinned-item__taxonomy article-list-pinned-item__taxonomy--category" style={getCategoryColor(post.category)}>{post.category}</span>
+								{@render articleViews(post.id)}
+								<span class="article-list-pinned-item__meta-item">
+									<svg class="article-calendar-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none" /><path fill="currentColor" fill-rule="evenodd" d="M8 4h8V2h2v2h1a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V2h2zM5 8v12h14V8zm2 3h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zm0 4h2v2h-2zm-4 0h2v2h-2zm-4 0h2v2H7z" /></svg>
+									<time datetime={post.publishedIso}>{post.publishedText}</time>
+								</span>
+								<span class="article-list-pinned-item__meta-item">
+									<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+									<span>{(post.wordCount ?? 0).toLocaleString()} 字</span>
+								</span>
+								{#if post.tags.length > 0}
+									{#each post.tags.slice(0, 3) as tag (tag.name)}
+										<span class="article-list-pinned-item__taxonomy article-list-pinned-item__taxonomy--tag">{tag.name}</span>
+									{/each}
+									{#if post.tags.length > 3}
+										<span class="article-list-pinned-item__tag-overflow">+{post.tags.length - 3}</span>
 									{/if}
-								</div>
+								{/if}
 							</div>
 							<p class="article-list-pinned-item__description">{post.description}</p>
 						</div>

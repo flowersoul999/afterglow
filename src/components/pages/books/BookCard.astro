@@ -102,8 +102,7 @@ const scoreText = score > 0 ? `${score}`.replace(/\.0$/, "") : "";
 	}
 
 /* 封皮：封面图整铺（无白色文字区）
-   占位背景必须显式声明：notebooks.css 全局给同名类设了 --book-color 红色底，
-   不覆盖会在封面图加载前透出红色 */
+   占位背景显式声明，避免封面图加载前透出透明底（早期 notebooks.css 曾给同名类设红色底，该文件已于 2026-10-20 随笔记功能摘除） */
 .nb-book-illustration {
 	position: relative;
 	flex: 1 1 auto;
