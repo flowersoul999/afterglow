@@ -229,12 +229,12 @@ content:
                 - { label: 开发, value: 开发 }
 
           - name: images
-            label: 图片
+            label: 图片（已废弃）
             type: imgbed
             list: true
             options:
               media: false
-            description: 图片 URL 列表（图片在远端图床，直接粘贴链接）
+            description: 2026-10-21 起动态图片改写进正文，请直接粘贴到「内容」里；此字段仅为兼容存量数据保留，之后会下线。
 
           - name: location
             label: 位置
@@ -256,8 +256,9 @@ content:
 
           - name: body
             label: 内容
-            type: text
+            type: rich-text
             required: true
+            description: 正文。图片请以 Markdown 语法直接贴在正文里（![](图片地址)），这样 Obsidian 里也能看到。
 
   # ============================================================
   # 🔗 友链

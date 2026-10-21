@@ -5,6 +5,11 @@ import WidgetLayout from "@/components/common/WidgetLayout.astro";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import { processCoverImageSync } from "@/utils/image-utils";
+import {
+	isVideoUrl,
+	resolveMomentMedia,
+	stripMomentMedia,
+} from "@/utils/moment-media";
 import { getPostUrlBySlug } from "@/utils/url-utils";
 
 const posts = await getCollection("posts", ({ data }) => {
@@ -29,19 +34,15 @@ const allItems = [
 		.sort((a, b) => b.data.published.getTime() - a.data.published.getTime())
 		.slice(0, 2)
 		.map((m) => {
-			let title = m.body || "";
-			title = title.replace(/[#*`]/g, "").trim();
+			let title = stripMomentMedia(m.body).replace(/[#*`]/g, "").trim();
 			if (title.length > 40) title = `${title.substring(0, 40)}...`;
 			if (!title) title = i18n(I18nKey.moments) || "日常动态";
-			let image = "";
-			if (Array.isArray(m.data.images) && m.data.images.length > 0) {
-				image =
-					typeof m.data.images[0] === "string"
-						? m.data.images[0]
-						: m.data.images[0].src;
-			} else if (typeof m.data.images === "string") {
-				image = m.data.images;
-			}
+			// 图片来源：正文 Markdown 图片优先，旧的 frontmatter images 兜底（过渡期）
+			const momentMedia = resolveMomentMedia({
+				legacyImages: m.data.images,
+				body: m.body,
+			});
+			const image = momentMedia.find((url) => !isVideoUrl(url)) ?? "";
 			return {
 				type: "moment",
 				title,

@@ -5,6 +5,7 @@ import { render } from "astro:content";
 import { Icon } from "astro-icon/components";
 import Markdown from "@/components/common/Markdown.astro";
 import { formatDateToYYYYMMDD } from "@/utils/date-utils";
+import { resolveMomentMedia, stripMomentMedia } from "@/utils/moment-media";
 import { getTagUrl } from "@/utils/url-utils";
 
 interface Props {
@@ -82,7 +83,10 @@ const getGridCols = (count: number) => {
 	return 3;
 };
 
-const allMedia = parseImages(images);
+// 图片来源二选一（迁移期两种共存）：正文里的 Markdown 图片，以及旧的 frontmatter images
+const allMedia = parseImages(
+	resolveMomentMedia({ legacyImages: images, body: moment.body }),
+);
 const videosArray = allMedia.filter(
 	(item): item is string => typeof item === "string" && isVideoUrl(item),
 );
@@ -96,8 +100,8 @@ const getImgSrc = (img: string | ImageMetadata): string => {
 	return img.src;
 };
 
-const momentExcerpt = (moment.body || "")
-	.replace(/s+/gu, " ")
+const momentExcerpt = stripMomentMedia(moment.body)
+	.replace(/\s+/gu, " ")
 	.trim()
 	.slice(0, 80);
 const momentPublished = moment.data.published.toISOString();

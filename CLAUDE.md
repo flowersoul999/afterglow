@@ -462,6 +462,29 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - ⚠️ **手机底部那条浮岛（`MobileDock` + `src/styles/components/mobile-dock.css`）不在这次统一范围内，保持原样**（透明按钮 + 中间凸出的黑色圆钮 + 胶囊圆角）—— 站长 2026-09-30 明确要求改回来，别再顺手「统一规格」。它的总高 `4.25rem`（按钮 3.25rem + 上下留白 0.5rem）被 `dock-drawer`、动态页那 3 个按钮的 `bottom` 偏移按写死的值引用，**改它高度要同步改那两处**。
 - ⚠️ **图标空白 = sprite 丢符号**（本次踩到）：页面里的 `<Icon>` 默认走 astro-icon 的 sprite（`<use href="#ai:…">`），这份 sprite 有已知的丢符号问题（`src/components/common/Icon.astro` 就是为绕开它而写的包装组件）。症状是图标**整块空白**而不报错，`document.querySelector("symbol#ai:…")` 能确认缺没缺。判断/修复：给那个 `<Icon>` 加 `is:inline`（路径直接内联），或改用 `@/components/common/Icon.astro`。
 
+### 5.19 动态图片写在正文（2026-10-21）
+
+- **约定**：动态（moments）的图片一律以标准 Markdown 语法写进**正文**，一行一张，不再写 frontmatter 的 `images`。目的是让 Obsidian 打开 md 时能直接看到图。
+
+  ```markdown
+  ---
+  published: 2026-10-20 12:06:46
+  tags:
+    - 日常
+  ---
+
+  用了半年了才知道…
+
+  ![](https://img.tsh520.cn/file/blog/moments/xxx.jpg)
+  ```
+
+- ⚠️ **必须写空 alt**（`![](url)`）。开了 alt 会被 `rehype-figure`（`src/plugins/rehype-figure.mjs`）包成 `<figure>` + `<figcaption>`，卡片里就多出一行图注。
+- **网页端外观不变**：`MomentCard.astro` 用 `src/utils/moment-media.ts#resolveMomentMedia()` 把图片从正文抽出来统一排九宫格（1/2/4 张两列、其余三列、最多 9 张 +N），所以写在正文哪个位置都一样。`.mp4` 等视频扩展名会被分流到视频区。
+- ⚠️ **`<Content />` 不会重复渲染这些图**：`src/plugins/remark-strip-moment-images.mjs` 在 mdast 阶段摘掉图片节点，且只对 `/src/content/动态/` 生效（靠 `file.path` 判断，路径是 URL 编码的，需 `decodeURIComponent`）。**没有这个插件页面上会出两份图**。
+- **迁移期两种写法都认**：旧的 `images` 字段保留在 `src/content.config.ts` 的 schema 里，与正文图片合并去重（正文在前）。等存量 `images` 彻底清空后再下线 schema 字段与 `.pages.yml` 的同名字段。
+- **改任何动态相关的摘要 / 缩略图逻辑都要先 `stripMomentMedia()`**，否则 `![](https://...)` 会混进摘要和搜索索引。现已知消费点：`MomentCard.astro`（九宫格 + 评论摘要）、`moments.astro`（置顶预览 + 筛选索引）、`RecentItems.astro`（侧栏缩略图）、`content-utils.ts`（归档标题）。工具集中在 `src/utils/moment-media.ts`，别各处自己写正则。
+- **AstrBot 插件已同步**：`blog_writer_core.py#build_moment_md` 新发的动态直接写正文格式。存量迁移脚本 `scripts/动态图片迁入正文/index.mjs`（幂等，带 `--dry-run` / `--sample=<片段>`）。
+
 ### 5.18 归档页（2026-10-20 整页照参考站重做）
 
 - **结构**：`src/pages/archive.astro` = PageTitle（stacked，eyebrow `Archive` + 座右铭 `archiveMotto`）→ `ArchiveStats.svelte`（四格：全部文章 / 创作跨度天数 / 本月文章 / 年进度 + 一句节奏评语）→ `ArchivePanel.astro`。

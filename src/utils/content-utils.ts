@@ -10,6 +10,7 @@ import {
 	buildKnowledgeGraphData,
 	type KGData,
 } from "@utils/knowledge-graph-data";
+import { stripMomentMedia } from "@utils/moment-media";
 import { getCategoryUrl, getPostUrlBySlug, getTagUrl } from "@utils/url-utils";
 import type { MarkdownHeading } from "astro";
 import { siteConfig } from "@/config";
@@ -152,9 +153,8 @@ export async function getArchiveList(): Promise<ArchiveItem[]> {
 	}));
 
 	const momentItems: ArchiveItem[] = moments.map((moment) => {
-		// 提取摘要作为标题
-		let title = moment.body || "";
-		title = title.replace(/[#*`]/g, "").trim(); // 移除 markdown 符号
+		// 提取摘要作为标题（先去掉正文里的图片语法，避免 https://... 混进标题）
+		let title = stripMomentMedia(moment.body).replace(/[#*`]/g, "").trim();
 		if (title.length > 50) title = `${title.substring(0, 50)}...`;
 		if (!title) title = i18n(I18nKey.moments) || "日常动态";
 
