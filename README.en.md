@@ -2,7 +2,7 @@
 
 <div align="center">
 
-# 团子和蛋糕的博客
+# 团子和蛋糕的网站
 > A Fresh and Beautiful Astro Static Blog Theme Template
 >
 > ![Node.js >= 22](https://img.shields.io/badge/node.js-%3E%3D22-brightgreen) 

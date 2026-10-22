@@ -32,7 +32,7 @@
 
 | 项 | 值 |
 |---|---|
-| 名称 | Firefly v6.6.13 — "团子和蛋糕的博客" |
+| 名称 | Firefly v6.6.13 — "团子和蛋糕的网站" |
 | 框架 | Astro 7.1.6 + Svelte 5 + Tailwind CSS v4 |
 | 包管理 | pnpm 9.14.4 (ESM, `preinstall` 强制) |
 | 运行时 | Node.js >= 22 |
@@ -485,6 +485,13 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **改任何动态相关的摘要 / 缩略图逻辑都要先 `stripMomentMedia()`**，否则 `![](https://...)` 会混进摘要和搜索索引。现已知消费点：`MomentCard.astro`（九宫格 + 评论摘要）、`moments.astro`（置顶预览 + 筛选索引）、`RecentItems.astro`（侧栏缩略图）、`content-utils.ts`（归档标题）。工具集中在 `src/utils/moment-media.ts`，别各处自己写正则。
 - **AstrBot 插件已同步**：`blog_writer_core.py#build_moment_md` 新发的动态直接写正文格式。存量迁移脚本 `scripts/动态图片迁入正文/index.mjs`（幂等，带 `--dry-run` / `--sample=<片段>`）。
 
+### 5.20 站点名改为「团子和蛋糕的网站」（2026-10-22）
+
+- 定位从「博客」升级为「网站」（内容早就不止文章：动态 / 影视 / 足迹 / 相册 / 导航等），`siteConfig.title` 由「团子和蛋糕的博客」改为「团子和蛋糕的网站」。
+- ⚠️ **一处配置牵动多处**，改 `siteConfig.title` 前先想清楚：首页名字徽章 `homeConfig.nameBadge`（**直接取 `siteConfig.title`**）、浏览器标签页标题后缀（`Layout.astro` 的 `${title} - ${siteConfig.title}`）、`og:site_name`、SEO 结构化数据 `name`、Artalk 评论的 `site`、TTS 的 `artist`。
+- ⚠️ **导航栏标题不受影响**：它是 `siteConfig.navbar.title`（现为「团子和蛋糕」），`Navbar.astro` / `NavMenuPanel.astro` 只在 `navbar.title` 为空时才回退 `siteConfig.title`。要改导航栏名字得改那一处。
+- ⚠️ **两处硬编码文案必须手动跟着改**（grep `siteConfig.title` 抓不到）：`src/utils/tab-title-controller.ts` 的「欢迎回来，这里是…」、`src/config/homeConfig.ts` 的对话 intro。改名时**直接全仓 grep 中文旧名**最保险。
+
 ### 5.18 归档页（2026-10-20 整页照参考站重做）
 
 - **结构**：`src/pages/archive.astro` = PageTitle（stacked，eyebrow `Archive` + 座右铭 `archiveMotto`）→ `ArchiveStats.svelte`（四格：全部文章 / 创作跨度天数 / 本月文章 / 年进度 + 一句节奏评语）→ `ArchivePanel.astro`。
@@ -544,7 +551,8 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **分类详情页 /categories/... 照常显示这些笔记**；首页、归档、搜索、统计计数、sitemap 都保持原样。
   想连首页/归档一起隐藏，就在对应页面的调用点再包一层 excludeHiddenNotes。
 - 与 draft 的分工：draft 是「全站隐藏（dev 可见）」；本机制是「只从列表与 RSS 拿掉，详情页与分类页照常看得到」。
-- 当前隐藏 287 篇：编程学习/{JavaWeb学习笔记,Python学习笔记,LangChain学习笔记,MySQL学习笔记,JavaWebAI} + Java笔记本 + 学习路线。
+- 当前隐藏 304 篇：编程学习/{JavaWeb学习笔记,Python学习笔记,LangChain学习笔记,MySQL学习笔记,JavaWebAI} + Java笔记本 + 学习路线 + **已弃用**（17 篇，2026-10-22 追加：内容过时，站长只想在归档页留档）。
+- ⚠️ 往这个数组加东西前先想清楚：**归档页永远看得到**（`archive.astro` 没包 excludeHiddenNotes，是刻意保留的回溯入口）。要连归档一起拿掉，得同时改 `archive.astro` 的调用点。
 
 ### 5.12 相册页（/album/）整面照片墙（2026-09-30）
 
