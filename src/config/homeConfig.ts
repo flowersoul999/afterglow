@@ -54,7 +54,7 @@ export const homeConfig = {
 			typingSpeed: 45,
 			autoDelay: 1600,
 			intro: [
-				{ speaker: "host", text: "欸，来客人啦。欢迎来到团子和蛋糕的网站。" },
+				{ speaker: "host", text: "欸，来客人啦。欢迎来到团子和蛋糕的博客。" },
 				{
 					speaker: "host",
 					text: `这里是 ${profileConfig.name} 的个人空间，技术、生活和喜欢的东西都会慢慢收进来。`,

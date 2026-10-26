@@ -32,7 +32,7 @@
 
 | 项 | 值 |
 |---|---|
-| 名称 | Firefly v6.6.13 — "团子和蛋糕的网站" |
+| 名称 | Firefly v6.6.13 — "团子和蛋糕的博客" |
 | 框架 | Astro 7.1.6 + Svelte 5 + Tailwind CSS v4 |
 | 包管理 | pnpm 9.14.4 (ESM, `preinstall` 强制) |
 | 运行时 | Node.js >= 22 |
@@ -500,6 +500,17 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - ⚠️ **一处配置牵动多处**，改 `siteConfig.title` 前先想清楚：首页名字徽章 `homeConfig.nameBadge`（**直接取 `siteConfig.title`**）、浏览器标签页标题后缀（`Layout.astro` 的 `${title} - ${siteConfig.title}`）、`og:site_name`、SEO 结构化数据 `name`、Artalk 评论的 `site`、TTS 的 `artist`。
 - ⚠️ **导航栏标题不受影响**：它是 `siteConfig.navbar.title`（现为「团子和蛋糕」），`Navbar.astro` / `NavMenuPanel.astro` 只在 `navbar.title` 为空时才回退 `siteConfig.title`。要改导航栏名字得改那一处。
 - ⚠️ **两处硬编码文案必须手动跟着改**（grep `siteConfig.title` 抓不到）：`src/utils/tab-title-controller.ts` 的「欢迎回来，这里是…」、`src/config/homeConfig.ts` 的对话 intro。改名时**直接全仓 grep 中文旧名**最保险。
+
+### 5.21 站点名又改回「团子和蛋糕的博客」（2026-10-26）
+
+- 站长要求改回「博客」。当前值：`siteConfig.title` = **团子和蛋糕的博客**；导航栏仍是 `siteConfig.navbar.title` =「团子和蛋糕」（不受影响）。
+- 本次一并改的文案（都属于「名字出现的地方」，不在 `siteConfig.title` 的传播链上，需单独维护）：
+  `src/config/siteConfig.ts` 的 `description` / `keywords` / `portal.announcement.text`；
+  `src/config/homeConfig.ts` 的对话 intro；`src/utils/tab-title-controller.ts` 的「欢迎回来…」。
+- 文档同步：`README.md` / `README.en.md` 标题、`AGENTS.md` 与 `CLAUDE.md` 第 1 节名称表、`.pages.yml` 首行注释。
+- **不动的地方**：`src/content/更新日志/2026-10-22-…` 与 `src/content/临时收集/…/待办笔记.md` 里的旧名 —— 那是历史记录，改了就失真。
+- 再次提醒 §5.20 的教训：改名前全仓 `grep -rn "中文旧名"`，光改 `siteConfig.title` 会漏。
+
 
 ### 5.18 归档页（2026-10-20 整页照参考站重做）
 

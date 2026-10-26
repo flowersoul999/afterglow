@@ -8,7 +8,7 @@ const SITE_LANG = "zh_CN";
 
 export const siteConfig: SiteConfig = {
 	// 站点标题
-	title: "团子和蛋糕的网站",
+	title: "团子和蛋糕的博客",
 
 	// 站点副标题
 	subtitle: "",
@@ -18,14 +18,14 @@ export const siteConfig: SiteConfig = {
 
 	// 站点描述
 	description:
-		"团子和蛋糕的网站，一个分享技术见解与生活感悟的个人空间。涵盖编程开发、实用工具推荐、ACG文化与日常生活的随想，记录成长的每一步。",
+		"团子和蛋糕的博客，一个分享技术见解与生活感悟的个人空间。涵盖编程开发、实用工具推荐、ACG文化与日常生活的随想，记录成长的每一步。",
 
 	// 站点关键词
 	keywords: [
 		"团子",
 		"团子和蛋糕",
 		"蛋糕",
-		"团子和蛋糕的网站",
+		"团子和蛋糕的博客",
 		"团子的网站",
 		"蛋糕的网站",
 	],
@@ -93,7 +93,7 @@ export const siteConfig: SiteConfig = {
 	portal: {
 		announcement: {
 			enable: true,
-			text: "欢迎来到团子和蛋糕的网站！这里有技术分享、生活记录和更多有趣内容。",
+			text: "欢迎来到团子和蛋糕的博客！这里有技术分享、生活记录和更多有趣内容。",
 		},
 		dailyQuote: {
 			enable: true,
