@@ -44,7 +44,11 @@ export { licenseConfig } from "./licenseConfig"; // 许可证配置
 export { momentConfig } from "./momentConfig"; // 动态评论配置
 // 组件配置
 export { musicPlayerConfig } from "./musicConfig"; // 音乐播放器配置
-export { navBarConfig, navBarSearchConfig } from "./navBarConfig"; // 导航栏配置与搜索配置
+export {
+	navBarConfig,
+	navBarSearchConfig,
+	navCategoryConfig,
+} from "./navBarConfig"; // 导航栏配置、搜索配置与「分类」下拉规则
 export { isHiddenFromLists, notesHiddenFromLists } from "./notesConfig"; // 自用系列笔记：不进文章列表页与 RSS
 export { live2dModelConfig, spineModelConfig } from "./pioConfig"; // 看板娘配置
 export { profileConfig } from "./profileConfig"; // 用户资料配置

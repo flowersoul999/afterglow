@@ -233,6 +233,15 @@ export type NavBarLink = {
 	external?: boolean;
 	icon?: string; // 菜单项图标
 	children?: (NavBarLink | LinkPreset)[]; // 支持子菜单，可以是NavBarLink或LinkPreset
+	/**
+	 * 动态数据源：导航渲染前由 Navbar / MobileMenuSheet 从内容目录实时填充 children。
+	 * 目前只有 "post-categories"（文章分类），配置里只写按钮本身，不用手维护分类列表。
+	 */
+	dynamicSource?: "post-categories";
+	/** 条目右侧的数量徽标（分类菜单里是文章数），由动态数据源填充 */
+	count?: number;
+	/** 子项层级，从 1 开始；仅用于「分类」下拉的缩进，不影响其它导航项 */
+	depth?: number;
 };
 
 export enum NavBarSearchMethod {

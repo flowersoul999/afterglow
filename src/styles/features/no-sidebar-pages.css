@@ -2,8 +2,8 @@
  * 无侧栏页面（2026-09-22）
  *
  * 站长指定的这几个页面不显示左右侧栏小组件，内容区居中并留白：
- *   文章列表 /posts/、导航站 /projects/、归档 /archive/、说说 /moments/、
- *   留言板 /guestbook/、更新日志 /changelog/、友链 /friends/
+ *   文章列表 /posts/、分类详情 /categories/<分类>/、导航站 /projects/、归档 /archive/、
+ *   说说 /moments/、留言板 /guestbook/、更新日志 /changelog/、友链 /friends/
  * （音乐页 /music/ 不用 MainGridLayout、本来就没有侧栏，不在此列）
  *
  * 标记来源：`MainGridLayout.astro` 按页面类型给 `#content-wrapper` 加
@@ -59,9 +59,10 @@
    内容区宽度 —— 每个页面一条，单独调整互不影响
    ========================================================================== */
 
-/* 文章列表 /posts/ */
+/* 文章列表 /posts/ 与分类详情 /categories/<分类>/ —— 两者排版保持一致（2026-10-26 站长要求） */
 @media (min-width: 768px) {
-	html:has(#content-wrapper[data-no-sidebar="posts-list"]) #content-wrapper {
+	html:has(#content-wrapper[data-no-sidebar="posts-list"]) #content-wrapper,
+	html:has(#content-wrapper[data-no-sidebar="category"]) #content-wrapper {
 		max-width: 932px;
 	}
 }

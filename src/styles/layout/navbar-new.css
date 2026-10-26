@@ -184,6 +184,19 @@
   }
 }
 
+/* 中等宽度（1024–1200）中段会压到左侧站点名：导航项有 7 个之后，
+   居中的椭圆和 logo 文字会叠在一起。收紧内边距与图标间距，
+   大约省 70px，到 1024 也还留得下；≥1201 恢复宽松。 */
+@media (min-width: 1024px) and (max-width: 1200px) {
+  .navbar-nav .navbar-link-item {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  .navbar-nav .navbar-icon {
+    margin-right: 0.375rem;
+  }
+}
+
 /* ── 右段：搜索按钮 + 快捷键徽章 ── */
 .navbar-seg--right .btn-plain {
   background-color: transparent !important;
@@ -346,6 +359,15 @@
 .navbar-nav:hover
   .dropdown-container.nav-item-active:not(:hover)
   .navbar-link-text {
+  color: var(--deep-text) !important;
+}
+
+/* 点击展开下拉后，鼠标要移向下方面板、必然离开按钮 → 按钮失去 :hover，
+   只剩上面那条反色白字压在浅灰胶囊上，整项等于消失。
+   展开态且没悬停时不反色，保持常态深色字（滑块此时也不在它身上）。 */
+.navbar-nav .dropdown-container.dropdown-open:not(:hover) > a,
+.navbar-nav .dropdown-container.dropdown-open:not(:hover) > button,
+.navbar-nav .dropdown-container.dropdown-open:not(:hover) .navbar-link-text {
   color: var(--deep-text) !important;
 }
 

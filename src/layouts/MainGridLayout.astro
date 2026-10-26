@@ -18,9 +18,8 @@ import {
 	sidebarLayoutConfig,
 	siteConfig,
 } from "@/config";
-import { LinkPresets } from "@/constants/link-presets";
-import { LinkPreset, type NavBarLink } from "@/types/config";
 import { isHomePage } from "@/utils/layout-utils";
+import { resolveNavLinks } from "@/utils/nav-categories";
 import { getSidebarPageType, type SidebarPageType } from "@/utils/page-type";
 import type { RelatedPostCard } from "@/utils/related-posts";
 import {
@@ -80,6 +79,9 @@ const isPostPage = !!postSlug;
 const NO_SIDEBAR_PAGE_TYPES: SidebarPageType[] = [
 	"post",
 	"posts-list",
+	// 2026-10-26：分类详情页 /categories/<分类>/ 与文章列表页保持一致（站长要求
+	// 「和 /posts/ 一样、两边的小组件都不要」），宽度也在 no-sidebar-pages.css 里对齐
+	"category",
 	"projects",
 	"archive",
 	"moments",
@@ -181,10 +183,9 @@ const footerClassName = footerClass.join(" ");
 
 const navbarWidthFull = siteConfig.navbar.widthFull ?? false;
 
-const navLinks = navBarConfig.links.map((item: NavBarLink | LinkPreset) => {
-	if (typeof item === "number") return LinkPresets[item];
-	return item;
-});
+// 移动抽屉 NavMenuPanel 用的导航数据：与桌面 Navbar 共用解析逻辑
+// （含「分类」下拉的动态子项，否则抽屉里的分类会是空的）
+const navLinks = await resolveNavLinks(navBarConfig.links);
 ---
 
 <Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} postSlug={postSlug}>

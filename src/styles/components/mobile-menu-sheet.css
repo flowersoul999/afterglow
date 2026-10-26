@@ -326,6 +326,17 @@ details[open] .menu-sheet__chevron {
   opacity: 0.85;
 }
 
+/* 「分类」子项右侧的文章数 */
+.menu-sheet__subrow-count {
+  margin-left: auto;
+  padding-left: 0.6rem;
+  font-size: 0.7rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--content-meta);
+  flex-shrink: 0;
+}
+
 .menu-sheet__subrow-external {
   font-size: 0.875rem;
   color: var(--content-meta);

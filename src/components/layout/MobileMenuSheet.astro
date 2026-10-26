@@ -1,14 +1,20 @@
 ---
 import { getCollection } from "astro:content";
 import { Icon } from "astro-icon/components";
-import { commentConfig } from "@/config";
+import { commentConfig, navCategoryConfig } from "@/config";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
+import { getNavCategoryLinks } from "@/utils/nav-categories";
 
 const allPosts = await getCollection("posts", ({ data }) => {
 	return import.meta.env.PROD ? data.draft !== true : true;
 });
 const postCount = allPosts.length;
+
+// 「分类」分组：与桌面导航栏同一个数据源（文章目录），不手维护
+const navCategories = siteConfig.pages.categories
+	? await getNavCategoryLinks(navCategoryConfig)
+	: [];
 
 const startDate = new Date(siteConfig.siteStartDate || Date.now());
 const now = new Date();
@@ -49,6 +55,22 @@ const groups = [
 			{ icon: "material-symbols:archive", label: "归档", url: "/archive/" },
 		],
 	},
+	// 分类：子项来自文章目录（标了 count/depth 的会在下面渲染成徽标与缩进）
+	...(navCategories.length > 0
+		? [
+				{
+					icon: "material-symbols:folder-outline",
+					label: "分类",
+					children: navCategories.map((category) => ({
+						icon: category.icon,
+						label: category.name,
+						url: category.url,
+						count: category.count,
+						depth: category.depth,
+					})),
+				},
+			]
+		: []),
 	{
 		icon: "material-symbols:local-cafe",
 		label: "动态",
@@ -132,8 +154,14 @@ const groups = [
           <div class="menu-sheet__group-body">
             {(group.children ?? []).map((child) => (
               <a href={child.url} class="menu-sheet__subrow" target={(child as any).external ? "_blank" : undefined} rel={(child as any).external ? "noopener" : undefined}>
-                <span class="menu-sheet__subrow-icon"><Icon name={child.icon} /></span>
-                <span class="menu-sheet__subrow-label">{child.label}</span>
+                <span class="menu-sheet__subrow-icon">{child.icon && <Icon name={child.icon} />}</span>
+                <span
+                  class="menu-sheet__subrow-label"
+                  style={((child as any).depth ?? 1) > 1 ? `padding-left: ${Math.min((child as any).depth - 1, 2) * 0.85}rem` : undefined}
+                >
+                  {child.label}
+                </span>
+                {typeof (child as any).count === "number" && <span class="menu-sheet__subrow-count">{(child as any).count}</span>}
                 {(child as any).external && <span class="menu-sheet__subrow-external"><Icon name="material-symbols:open-in-new-rounded" /></span>}
               </a>
             ))}
