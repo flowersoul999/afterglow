@@ -68,6 +68,7 @@ src/
 │   ├── 页面/            # spec 集合：about.mdx 为组件化 Q&A，friends.md / guestbook.md 分别渲染进 /friends/ 与 /life/guestbook/ 下方正文
 │   ├── 友链/            # friends 集合；子目录 友链/墓碑/ 为 tombstones 集合（friends 的 glob 已加 `!墓碑/**` 排除，否则墓碑文件会被 friends 集合收进去导致 zod 校验失败）
 │   └── 笔记本归档/      # ⚠️ 不在任何集合内（2026-10-20 笔记功能下线）：私人笔记 78 篇 + 7 个 _index.json，已写入 .gitignore，只留在本地 Obsidian 库，**不进 git、不参与构建**
+│   # ⚠️ src/content 本身还是一个独立 git 仓库（私人内容备份，内含 .git）→ 详见第 23 节
 ├── i18n/                # 界面文案（2026-10-20 起单语言：只有 zh_CN，369 个翻译键）
 │   └── languages/       # zh_CN.ts
 ├── layouts/             # Layout.astro (591行), MainGridLayout.astro (305行)
@@ -243,7 +244,7 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 - **两个字段互斥**，同时配以 `showOnPages` 为准；都不写则回落到旧的 `showOnPostPage` / `showOnNonPostPage`。
 - **为什么必须"服务端渲染全部 + 运行期切 class"**：侧栏渲染在 Swup 容器之外（`#left-sidebar-wrapper` / `#right-sidebar-static`），客户端导航时不重新渲染。实现链路：`SideBar.astro` 输出 `data-show-pages` / `data-hide-pages` 并按当前页给出初始 `hidden`（防闪烁）→ `src/utils/sidebar-utils.ts#updateSidebarComponentsVisibility` 在首屏与 `swup:content:replaced` / `page:view` 后重算。**不要改成构建期过滤**——那样导航后侧栏不会更新。
 - **`/posts/` 列表页与 `/posts/<slug>/` 详情页是不同类型**：`isCurrentPagePost()`（`grid-layout-utils.ts`）已修正为严格匹配详情页（旧实现 `includes("/posts/")` 会把列表页误判成文章页）。所以 `showOnPostPage: false` 的组件现在**在文章列表页会显示**（原先被误隐藏）。
-- **无侧栏页面（2026-09-22）**：文章列表 / 导航站 / 归档 / 说说 / 留言板 / 更新日志 / 友链这几个页面**整栏隐藏左右侧栏**、内容区放宽到约原中间列宽的 4/3（`src/styles/features/no-sidebar-pages.css`）。标记由 `MainGridLayout.astro` 按页面类型写到 `#content-wrapper[data-no-sidebar]`——该元素在 Swup 容器内、导航时随内容替换，所以**纯 CSS `:has()` 就能跟随切换，不需要 JS**（用 JS 会有一帧闪烁）。增删页面改 `NO_SIDEBAR_PAGE_TYPES` 数组；调宽度改 CSS 里的 `4 / 3` 系数。
+- **无侧栏页面（2026-09-22）**：文章列表 / **分类详情（2026-10-26 加入）** / 导航站 / 归档 / 说说 / 留言板 / 更新日志 / 友链这几个页面**整栏隐藏左右侧栏**、内容区放宽到约原中间列宽的 4/3（`src/styles/features/no-sidebar-pages.css`）。标记由 `MainGridLayout.astro` 按页面类型写到 `#content-wrapper[data-no-sidebar]`——该元素在 Swup 容器内、导航时随内容替换，所以**纯 CSS `:has()` 就能跟随切换，不需要 JS**（用 JS 会有一帧闪烁）。增删页面改 `NO_SIDEBAR_PAGE_TYPES` 数组；调宽度改 CSS 里的系数（现多为逐页一条 `max-width`，分类详情与 `/posts/` 都取 932px）。⚠️ 只加进数组不给 CSS 宽度规则 → 侧栏没了但内容不是预期宽度，两处要一起改。
 
 ### 3.9 文章朗读（TTS，2026-09-15 新增）
 
@@ -438,6 +439,14 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
   - 「其他站点」：列表在**构建时**直接读 `daohang` 集合里**直接父目录为「我的网站」**的条目（文件夹判定与 `projects.astro` 的 `getFolderCategory` 一致），所以在 `/projects/` 增删站点后这里自动跟着变 —— **不要再回到 navBarConfig 里手抄一份**（`personalSites` 字段已删除）。面板显示的名字取导航 md 的 `name`。
   - **点热力图格子看当月文章**：格子是 `<button>`，构建期把「今年的文章」按月份存成 JSON 内联在组件上（标题 + 链接 + 日期），点格子切到 `posts` 态渲染；返回按钮回 default。右栏三态（default / site / posts）都用 `data-view` + `.nav-profile__view--*` 切换，卡片高度始终锚在左栏、切换不跳动。
   - 仍未移植：参考站的节假日 / 文章元数据 API（本项目不需要，热力图与文章列表都在构建期算好了）。
+- **「分类」下拉（2026-10-26）**：导航栏第 4 位（「文章」之后）。子项**不在配置里手写** —— `navBarConfig` 里只放 `{ name: "分类", dynamicSource: "post-categories" }` 占位，渲染时由 `src/utils/nav-categories.ts` 的 `resolveNavLinks()` 读 `posts` 集合、按目录前缀建树后注入；**新建 `src/content/文章/<分类>/` 文件夹，下拉里自动多一项**。桌面 `Navbar.astro` 与移动抽屉 `NavMenuPanel.astro`（经 `MainGridLayout` 的 `navLinks`）走同一份；底部 Dock 打开的 `MobileMenuSheet` 是另一套手写 groups，同样调 `getNavCategoryLinks()`。
+  - ⚠️ **外观完全走站内下拉语言，别另起一套**（2026-10-26 站长否掉了毛玻璃版）：`DropdownMenu.astro` 有 `variant: "list" | "grid"`，Navbar 按 `dynamicSource` 传 `grid`，但两者都渲染同一个 `.dropdown-content` —— 白底 + 1.5px `--deep-text` 描边 + 左上小角 + `.dropdown-item` 的浅灰 hover。**grid 只改排列**：`dropdown.css` 的 `.dropdown-grid` 负责列数与内边距，不碰背景/边框/圆角/阴影，也不要删那颗 `::before` 小角。
+  - 排列：**固定两列**（`.dropdown-grid` 的 `grid-template-columns: repeat(2, minmax(10.5rem, 1fr))`），5 个分类排成 3 行。**多级分类**靠 `depth` 缩进平铺（缩进加在项的行内 `padding-left`），不做嵌套 flyout。改列数只动这一处。
+  - ⚠️ **别给 `DropdownPanel` 的 class 加 `overflow-y-auto` / `max-h-*`**（2026-10-26 踩过）：Tailwind utilities 层压过 `dropdown.css` 的 components 层，`overflow-y:auto` 还会让 `overflow-x` 计算成 auto，结果每张下拉底部都多出一条横向滚动条。面板本来就不该滚动，`overflow: visible` 是给小角留的。
+  - 图标沿用 astro-icon 的 `material-symbols:folder-outline`（`NavBarLink.icon`），一级分类才有图标，子分类只缩进不重复画文件夹。
+  - 篇数：`navCategoryConfig.showCount`（当前 `false`，卡片上不显示）。列表式下拉的 `.dropdown-item-count` 渲染逻辑还在，只是 count 为 undefined 时不输出。
+  - ⚠️ 导航高亮改成「**最长命中路径优先**」（`Navbar.astro` 的 `detectActiveItem`）：进 `/categories/技术分享/` 时只亮「分类」，不会连「文章 > 图谱」(`/categories/`) 一起亮。改高亮逻辑时别退回 `some()`。
+  - ⚠️ **点击展开（`.dropdown-open`）且鼠标不在按钮上时不要反色**（`navbar-new.css` 末尾那条 `:not(:hover)` 规则）：鼠标要移向下方面板必然离开按钮，此时若还套用反色白字，白字会压在浅灰胶囊上让整项消失。
 
 ### 5.8 动态页左栏筛选（2026-09-30）
 
@@ -611,7 +620,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 |----------|--------|------|
 | `siteConfig.ts` | `siteConfig` | 标题、URL、语言、主题色、页面开关、分析、图片优化 |
 | `profileConfig.ts` | `profileConfig` | 个人信息：头像、昵称、职业、简介 |
-| `navBarConfig.ts` | `navBarConfig`, `navBarSearchConfig` | 导航栏链接（根据页面开关动态生成） |
+| `navBarConfig.ts` | `navBarConfig`, `navBarSearchConfig`, `navCategoryConfig` | 导航栏链接（根据页面开关动态生成）；`navCategoryConfig` 控制「分类」下拉的计数与排除项 |
 | `sidebarConfig.ts` | `sidebarLayoutConfig` | 侧栏布局：左/右/双侧栏、组件列表 |
 | `commentConfig.ts` | `commentConfig` | 评论系统选择（Waline/Twikoo/Giscus/Disqus/Artalk） |
 | `musicConfig.ts` | `musicPlayerConfig` | 音乐播放器：Meting API 或本地播放列表 |
@@ -1151,3 +1160,55 @@ description: 一句话概括（显示在列表页）
 5. **验证**：模块/功能完成属第 18 节 C 档，`pnpm build` + `pnpm check` + `pnpm exec biome ci ./src --reporter=github` 全绿（与 CI 完全一致，勿仅跑本地默认 reporter），浏览器实测关键路径（分类页展开/叶子跳转、文章页面包屑、归档过滤）
 
 **禁止**：做完功能不写 changelog、不清临时文件、静默推断用户意图。
+
+---
+
+## 23. 内容目录的双仓库模型（新增 2026-10-26）
+
+`src/content/` 既是 Obsidian 库根，**本身又是一个独立 git 仓库**（私人内容备份），
+所以这里是「仓库套仓库」。两个仓库对「新文件夹」的态度正好相反：
+
+| | 博客主仓（公开） | 备份仓库（私有，`src/content/.git`） |
+|---|---|---|
+| 规则位置 | 根 `.gitignore`：先 `src/content/*/` 全忽略，再逐条 `!src/content/xx/` 放行 | `src/content/.git/info/exclude` 黑名单 |
+| 新建目录 | **忽略**（不上传，安全默认） | **纳入**（下次 commit 即备份） |
+| 已跟踪集合目录 | 跟踪（公开） | 排除（不重复备份） |
+
+### 三条铁律
+
+1. **绝不在 `src/content/` 下放 `.gitignore`**（2026-10-26 踩过）。
+   git 会读取仓库内**每一层目录**的 `.gitignore`，这个文件会被**博客主仓一并读取**，
+   于是 `文章/`、`页面/`、`笔记本/`、`更新日志/` 被整体忽略，**新文章/新更新日志静默提交不上去**
+   （当时 `更新日志/2026-10-26-*.md` 两个新文件就这样被藏了）。备份仓库的规则只能写 `.git/info/exclude`。
+2. **注意命令作用域**：在 `dumplingandcakeblog/` 执行 git 操作的是博客主仓；
+   在 `dumplingandcakeblog/src/content/` 执行的是备份仓库。两个仓库的 `git status` 互不兼容。
+3. **新增公开集时要两边都改**：主仓 `.gitignore` 加 `!src/content/xx/` + `src/content.config.ts` 加 collection
+   + 路由 + `.pages.yml`；**同时**在备份仓库 `.git/info/exclude` 加 `xx/`，否则公开内容会被重复备份。
+
+### 验证方法（改完必须跑）
+
+```bash
+# 在博客仓根：已有集合应"跟踪"，新目录应"忽略"
+git check-ignore -v "src/content/文章/某分类/x.md"      # 无输出 = 跟踪
+git check-ignore -v "src/content/随便新建/x.md"          # 有输出 = 忽略
+
+# 在 src/content：反之
+git check-ignore -v "文章/某分类/x.md"                   # 有输出 = 跳过备份
+git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = 会备份
+```
+
+### 备份仓库要点
+
+- 首次提交：`chore: 私人内容首次归档`（448 文件，`.git` 约 12M）；推送 `gh repo create content-backup --private`。
+- 备份范围：学习笔记 / 笔记本归档 / notes / 临时收集 / 工作 / `Obsidian/` / 精简 `.obsidian` 配置。
+- **`.obsidian/plugins/*/data.json` 永不入库**（图床密码 / LiveSync token / 微信读书 cookie 明文）；
+  `main.js`、`styles.css` 也不入库（插件装得回来）。
+- **不要给 `学习笔记/` 再单独 `git init`**（会形成三层嵌套）。
+- `.git/info/exclude` 不随 clone 走：换机器要手动抄一份（内容见 `dumplingandcake-notes/DEPLOY.md`）。
+
+### 关联但独立的项目
+
+学习笔记的**发布站**是另一个仓库：`E:/GithubProgect/MyRunProject/dumplingandcake-notes`
+（VitePress + `@sugarat/theme`，与本站构建、部署、依赖全部无关）。
+它把 `src/content/学习笔记` 只读同步到自己的 `docs/posts`，操作手册在该目录的 `DEPLOY.md`。
+**本站任何 `pnpm build` / `pnpm check` / biome 都不覆盖它**，改它不影响本站。

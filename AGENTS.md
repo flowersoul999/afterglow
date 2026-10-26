@@ -36,3 +36,5 @@
 - 页面交互脚本必须放在 Swup 容器内（MainGridLayout slot 里），否则 SPA 导航进入页面时不执行（§15）
 - dev 下组件卡初始状态（"加载中…"、按钮无反应）先查浏览器控制台是否报 `504 Outdated Optimize Dep`：删 `node_modules/.vite` 重启 dev（§15）
 - 禁止用 Python 脚本操作/修改文件，一律用 Node 脚本（§15）
+- **`src/content/` 是嵌套 git 仓库**（私人内容备份），**绝不能在 `src/content/` 下放 `.gitignore`**——会被博客主仓一并读取，把 `文章/`、`笔记本/`、`更新日志/` 整体忽略，导致新文章静默提交不上去。备份仓库的规则只能写 `src/content/.git/info/exclude`（§23）
+- 在 `src/content/` 里执行 git 操作的是**备份仓库**，不是博客主仓；两个仓库的 `git status` 互不通用（§23）
