@@ -1,0 +1,20 @@
+name: Code quality
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0 (Node 24)
+      - name: Setup Biome
+        uses: biomejs/setup-biome@0d181e85625cb7dafc75257719de900eda7393c6 # v2.7.1 (Node 24)
+        # 不指定 version：自动读取 package.json 中 @biomejs/biome 的版本，
+        # 保证 CI 与本地一致，避免 version: latest 造成规则漂移
+      - name: Run Biome
+        run: biome ci ./src --reporter=github

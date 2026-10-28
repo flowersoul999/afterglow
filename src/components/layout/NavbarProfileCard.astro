@@ -1,0 +1,582 @@
+---
+import { getCollection } from "astro:content";
+/**
+ * 导航栏个人资料面板（对齐参考博客：悬浮在站点名上时出现）
+ *
+ * 触发器是 Navbar 左段的站点名按钮（带 data-nav-profile-trigger），本组件只负责
+ * 面板本体。样式见 src/styles/components/navbar-profile-card.css。
+ *
+ * 数据来源：
+ * - 身份 / 社交：`profileConfig`
+ * - 热力图：构建期用 `getCollection("posts")` 统计「今年 12 个月 × 月内 4 周段」
+ *   的发文量（不需要接口）；跨年后需要重新构建才会换到新年份
+ * - 倒计时与事件进度：事件日期（国庆节 10/1、建站日取 `siteConfig.siteStartDate`）
+ *   以 JSON 传给客户端，由脚本按当天实时计算
+ *
+ * 参考站的面板还有「点热力图格子看当月文章列表」与「其他站点」两处，本项目
+ * 暂时没做（前者要额外的右栏 pane 与文章标题数据，后者缺 navBarConfig 配置项）。
+ */
+import { Icon } from "astro-icon/components";
+import { profileConfig, siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { url } from "@/utils/url-utils";
+import "@/styles/components/navbar-profile-card.css";
+
+const { avatar, name, occupation, links } = profileConfig;
+const avatarSrc = avatar ? (avatar.startsWith("/") ? url(avatar) : avatar) : "";
+const socialLinks = (links ?? []).filter((link) => link.icon && link.url);
+
+/* ---------------------------------------------------------------------------
+   构建期数据（模块级缓存）
+   本组件挂在导航栏上、**每个页面都会渲染一次**，这里把两份依赖内容集合的
+   数据缓存住，避免每页重复读集合、反复持有集合快照 —— dev 下长时间开着
+   会明显吃内存（曾把 dev server 撑到 heap OOM）。
+   --------------------------------------------------------------------------- */
+
+type PersonalSite = {
+	name: string;
+	url: string;
+	icon: string;
+	external: boolean;
+};
+type ProfileData = {
+	personalSites: PersonalSite[];
+	/** 12 × 4 的发文数（月 × 月内周段）：服务端直接渲染进热力图，只有 48 个数字 */
+	heat: number[][];
+};
+
+let profileDataPromise: Promise<ProfileData> | null = null;
+
+/** 读集合并算出资料面板要的两份数据（整个构建期只跑一次） */
+async function loadProfileData(): Promise<ProfileData> {
+	if (profileDataPromise) return profileDataPromise;
+
+	profileDataPromise = (async () => {
+		/* 「其他站点」：导航集合里「我的网站」这个分类（文件夹）的条目 ——
+		   在 /projects/ 增删站点后这里自动跟着变。文件夹判定与 projects.astro
+		   的 getFolderCategory 一致（取直接父目录）。 */
+		const daohangEntries = await getCollection("daohang");
+		const personalSites: PersonalSite[] = daohangEntries
+			.filter((entry) => {
+				const normalized = entry.id
+					.replace(/\\/g, "/")
+					.replace(/\.(md|mdx)$/i, "");
+				const slash = normalized.lastIndexOf("/");
+				return slash >= 0 && normalized.slice(0, slash) === "我的网站";
+			})
+			.map((entry) => ({
+				name: entry.data.name,
+				url: entry.data.url,
+				icon: entry.data.icon,
+				external: /^https?:\/\//.test(entry.data.url),
+			}))
+			.sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
+
+		/* 热力图：只统计今年的发文数（12 月 × 4 周段，48 个数字，服务端直接渲染）。
+		   「点格子看当月文章」的 postsByMonth 原先也在这里内联（约 51KB），
+		   站长 2026-10-05 起改为点格子时再拉 /profile-posts.json（见 pages/profile-posts.json.ts）。 */
+		const posts = await getCollection("posts");
+		const year = new Date().getFullYear();
+		const heat: number[][] = Array.from({ length: 12 }, () => [0, 0, 0, 0]);
+		for (const post of posts) {
+			const date = post.data.published;
+			if (date.getFullYear() !== year) continue;
+			const week = Math.min(3, Math.floor((date.getDate() - 1) / 7));
+			heat[date.getMonth()][week] += 1;
+		}
+
+		return { personalSites, heat };
+	})();
+
+	return profileDataPromise;
+}
+
+const { personalSites, heat } = await loadProfileData();
+/** 「点格子看当月文章」的数据源：不再内联，按需拉取 */
+const profilePostsUrl = url("/profile-posts.json");
+const maxCount = Math.max(1, ...heat.flat());
+const heatLevel = (count: number): number => {
+	if (count === 0) return 0;
+	const ratio = count / maxCount;
+	if (ratio <= 0.34) return 1;
+	if (ratio <= 0.67) return 2;
+	return 3;
+};
+const monthWeekLabel = (month: number, week: number): string =>
+	i18n(I18nKey.profileMonthWeek)
+		.replace("{month}", `${month + 1}月`)
+		.replace("{week}", String(week + 1));
+
+/* 事件：客户端按当天算剩余天数与「上一次 → 下一次」的进度 */
+const startParts = String(siteConfig.siteStartDate ?? "")
+	.split("-")
+	.map((part) => Number.parseInt(part, 10));
+const siteMonth = Number.isFinite(startParts[1]) ? startParts[1] : 1;
+const siteDay = Number.isFinite(startParts[2]) ? startParts[2] : 1;
+const events = [
+	{
+		key: "national",
+		label: i18n(I18nKey.profileEventNational),
+		month: 10,
+		day: 1,
+	},
+	{
+		key: "site",
+		label: i18n(I18nKey.profileEventSite),
+		month: siteMonth,
+		day: siteDay,
+	},
+];
+---
+
+<div
+	class="nav-profile"
+	data-nav-profile
+	data-events={JSON.stringify(events)}
+	data-day-suffix={i18n(I18nKey.dayShort)}
+	data-posts-url={profilePostsUrl}
+	data-posts-title={i18n(I18nKey.profilePostsOfMonth)}
+	data-no-posts={i18n(I18nKey.profileNoPosts)}
+>
+	<!-- 触发按钮由 Navbar 提供（左段的站点名按钮带 data-nav-profile-trigger）；
+	     悬浮交互不需要遮罩层——它反而会拦住「站点名 → 面板」的鼠标路径 -->
+	<div
+		class="nav-profile__card"
+		data-nav-profile-card
+		role="dialog"
+		aria-label={name}
+	>
+		<span class="nav-profile__triangle" aria-hidden="true"></span>
+
+		<!-- 左栏：身份 + 社交 + 文章热力图 -->
+		<div class="nav-profile__left">
+			<div class="nav-profile__identity">
+				<span class="nav-profile__avatar">
+					{
+						avatarSrc ? (
+							<img src={avatarSrc} alt="" loading="lazy" decoding="async" />
+						) : (
+							<span>{name.slice(0, 1)}</span>
+						)
+					}
+				</span>
+				<span class="nav-profile__text">
+					<strong class="nav-profile__name">{name}</strong>
+					{occupation && (
+						<span class="nav-profile__occupation">{occupation}</span>
+					)}
+				</span>
+			</div>
+
+			<div class="nav-profile__socials">
+				{
+					socialLinks.map((link) => {
+						const external = link.url.startsWith("http");
+						return (
+							<a
+								class="nav-profile__social-btn"
+								href={link.url}
+								target={external ? "_blank" : undefined}
+								rel={external ? "noopener noreferrer" : undefined}
+								aria-label={link.name}
+								title={link.name}
+							>
+								<Icon name={link.icon} class="h-4 w-4" />
+							</a>
+						);
+					})
+				}
+				{
+					personalSites.length > 0 && (
+						<button
+							type="button"
+							class="nav-profile__site-btn"
+							data-nav-profile-site-trigger
+							aria-pressed="false"
+						>
+							{i18n(I18nKey.otherSites)}
+						</button>
+					)
+				}
+			</div>
+
+			<div class="nav-profile__heatmap">
+				{
+					Array.from({ length: 12 }, (_, month) => (
+						<div class="nav-profile__heat-col">
+							<span class="nav-profile__heat-month" aria-hidden="true">
+								{month + 1}
+							</span>
+							{Array.from({ length: 4 }, (_, week) => {
+								const count = heat[month][week];
+								const label = `${monthWeekLabel(month, week)} · ${count}`;
+								return (
+									<button
+										type="button"
+										class:list={[
+											"nav-profile__heat-cell",
+											count > 0 && `is-level-${heatLevel(count)}`,
+										]}
+										data-nav-profile-cell={month}
+										title={label}
+										aria-label={label}
+									/>
+								);
+							})}
+						</div>
+					))
+				}
+			</div>
+		</div>
+
+		<!-- 右栏：倒计时 + 事件进度 -->
+		<div class="nav-profile__right" data-nav-profile-right data-view="default">
+			<!-- default 态：倒计时 + 事件进度（两态都铺满右栏、超高在栏内滚动） -->
+			<div class="nav-profile__view nav-profile__view--default">
+				<div class="nav-profile__countdowns">
+				<div class="nav-profile__countdown">
+					<span>{i18n(I18nKey.profileCountdownWeek)}</span>
+					<strong data-nav-profile-days="week">--</strong>
+				</div>
+				<div class="nav-profile__countdown">
+					<span>{i18n(I18nKey.profileCountdownMonth)}</span>
+					<strong data-nav-profile-days="month">--</strong>
+				</div>
+				<div class="nav-profile__countdown">
+					<span>{i18n(I18nKey.profileCountdownYear)}</span>
+					<strong data-nav-profile-days="year">--</strong>
+				</div>
+			</div>
+
+				<div class="nav-profile__events">
+				{
+					events.map((event) => (
+						<article class="nav-profile__event" data-nav-profile-event={event.key}>
+							<div class="nav-profile__event-main">
+								<strong class="nav-profile__event-title">{event.label}</strong>
+								<span class="nav-profile__event-date">
+									{event.month}月{event.day}日
+								</span>
+							</div>
+							<div class="nav-profile__progress-row">
+								<span
+									class="nav-profile__progress"
+									role="progressbar"
+									aria-valuemin="0"
+									aria-valuemax="100"
+									aria-valuenow="0"
+									data-nav-profile-progress
+								>
+									<span data-nav-profile-progress-fill />
+								</span>
+								<span class="nav-profile__remaining" data-nav-profile-remaining>
+									--
+								</span>
+							</div>
+						</article>
+					))
+				}
+			</div>
+
+			</div>
+
+			<!-- posts 态：点热力图格子后展示当月文章 -->
+			<div class="nav-profile__view nav-profile__view--posts">
+				<div class="nav-profile__posts-head">
+					<strong class="nav-profile__posts-title" data-nav-profile-posts-title
+					></strong>
+					<button
+						type="button"
+						class="nav-profile__posts-back"
+						data-nav-profile-posts-back
+						title={i18n(I18nKey.close)}
+						aria-label={i18n(I18nKey.close)}
+					>
+						<Icon name="material-symbols:arrow-back-rounded" class="h-4 w-4" />
+					</button>
+				</div>
+				<div class="nav-profile__post-list" data-nav-profile-post-list></div>
+			</div>
+
+			<!-- site 态：其他站点列表 -->
+			<div class="nav-profile__view nav-profile__view--site">
+				{
+					personalSites.map((site) => (
+						<a
+							class="nav-profile__site-cta"
+							href={site.external ? site.url : url(site.url)}
+							target={site.external ? "_blank" : undefined}
+							rel={site.external ? "noopener noreferrer" : undefined}
+						>
+							{site.icon &&
+								(site.icon.startsWith("http") ? (
+									<img
+										src={site.icon}
+										alt=""
+										class="nav-profile__site-cta-icon is-img"
+										loading="lazy"
+										decoding="async"
+									/>
+								) : (
+									<Icon name={site.icon} class="nav-profile__site-cta-icon" />
+								))}
+							<span class="nav-profile__site-cta-name">{site.name}</span>
+							{site.external && (
+								<Icon
+									name="fa7-solid:arrow-up-right-from-square"
+									class="nav-profile__site-cta-arrow"
+								/>
+							)}
+						</a>
+					))
+				}
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+	const DAY_MS = 86_400_000;
+	const root = document.querySelector<HTMLElement>("[data-nav-profile]");
+	/** 触发器是 Navbar 左段的站点名按钮，不在本组件内部 */
+	const trigger = document.querySelector<HTMLElement>(
+		"[data-nav-profile-trigger]",
+	);
+	const card = root?.querySelector<HTMLElement>("[data-nav-profile-card]");
+	const DAY_SUFFIX = root?.dataset.daySuffix ?? "";
+	const events: { key: string; month: number; day: number }[] = JSON.parse(
+		root?.dataset.events ?? "[]",
+	);
+	/** 「点格子看当月文章」的数据：不内联进 HTML，首次点格子时拉一次并缓存 */
+	type MiniPost = { title: string; url: string; date: string };
+	const postsUrl = root?.dataset.postsUrl ?? "/profile-posts.json";
+	let postsByMonth: MiniPost[][] = [];
+	let postsLoaded = false;
+	let postsPromise: Promise<void> | null = null;
+	function ensurePosts(): Promise<void> {
+		if (postsLoaded) return Promise.resolve();
+		if (!postsPromise) {
+			postsPromise = fetch(postsUrl, { credentials: "same-origin" })
+				.then((res) =>
+					res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`)),
+				)
+				.then((data: unknown) => {
+					postsByMonth = Array.isArray(data) ? (data as MiniPost[][]) : [];
+				})
+				.catch(() => {
+					postsByMonth = [];
+				})
+				.then(() => {
+					postsLoaded = true;
+				});
+		}
+		return postsPromise;
+	}
+	const postsTitleTemplate = root?.dataset.postsTitle ?? "{month} · {count}";
+	const noPostsText = root?.dataset.noPosts ?? "";
+
+	const startOfDay = (date: Date): Date =>
+		new Date(date.getFullYear(), date.getMonth(), date.getDate());
+	const daysBetween = (from: Date, to: Date): number =>
+		Math.round((to.getTime() - from.getTime()) / DAY_MS);
+
+	/** 距周末（下一个周五）、距月底、距年底的整天数 */
+	function computeCountdowns(): { week: number; month: number; year: number } {
+		const today = startOfDay(new Date());
+		const weekday = today.getDay(); // 0 = 周日
+		const toFriday = (5 - weekday + 7) % 7 || 7;
+		const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+		const yearEnd = new Date(today.getFullYear(), 11, 31);
+		return {
+			week: toFriday,
+			month: daysBetween(today, monthEnd),
+			year: daysBetween(today, yearEnd),
+		};
+	}
+
+	/** 事件的一年窗口：上一次（去年这天）→ 下一次（今年或明年这天） */
+	function eventWindow(
+		month: number,
+		day: number,
+		today: Date,
+	): { previous: Date; next: Date } {
+		const thisYear = new Date(today.getFullYear(), month - 1, day);
+		const next =
+			thisYear.getTime() >= today.getTime()
+				? thisYear
+				: new Date(today.getFullYear() + 1, month - 1, day);
+		const previous = new Date(next.getFullYear() - 1, month - 1, day);
+		return { previous, next };
+	}
+
+	function render(): void {
+		const today = startOfDay(new Date());
+		const values = computeCountdowns();
+		for (const key of ["week", "month", "year"] as const) {
+			const el = card?.querySelector<HTMLElement>(
+				`[data-nav-profile-days="${key}"]`,
+			);
+			if (el) el.textContent = `${values[key]}${DAY_SUFFIX}`;
+		}
+
+		for (const event of events) {
+			const article = card?.querySelector<HTMLElement>(
+				`[data-nav-profile-event="${event.key}"]`,
+			);
+			if (!article) continue;
+			const { previous, next } = eventWindow(event.month, event.day, today);
+			const span = daysBetween(previous, next);
+			const passed = daysBetween(previous, today);
+			const percent = span > 0 ? Math.round((passed / span) * 100) : 0;
+			const remaining = daysBetween(today, next);
+			const bar = article.querySelector<HTMLElement>(
+				"[data-nav-profile-progress]",
+			);
+			bar?.setAttribute("aria-valuenow", String(percent));
+			const fill = article.querySelector<HTMLElement>(
+				"[data-nav-profile-progress-fill]",
+			);
+			if (fill) fill.style.width = `${percent}%`;
+			const remainingEl = article.querySelector<HTMLElement>(
+				"[data-nav-profile-remaining]",
+			);
+			if (remainingEl) remainingEl.textContent = `${remaining}${DAY_SUFFIX}`;
+		}
+	}
+
+	/* 右栏两态：default（倒计时 + 事件）/ site（其他站点列表），由「其他站点」按钮切换 */
+	const siteTrigger = root?.querySelector<HTMLElement>(
+		"[data-nav-profile-site-trigger]",
+	);
+	const rightPane = root?.querySelector<HTMLElement>("[data-nav-profile-right]");
+	function showView(view: "default" | "site" | "posts"): void {
+		if (rightPane) rightPane.dataset.view = view;
+		siteTrigger?.setAttribute("aria-pressed", String(view === "site"));
+	}
+
+	const postsTitleEl = card?.querySelector<HTMLElement>(
+		"[data-nav-profile-posts-title]",
+	);
+	const postListEl = card?.querySelector<HTMLElement>(
+		"[data-nav-profile-post-list]",
+	);
+
+	/** 把某个月的文章列表渲染进 posts 视图 */
+	async function renderPosts(month: number): Promise<void> {
+		await ensurePosts();
+		const list = postsByMonth[month] ?? [];
+		if (postsTitleEl) {
+			postsTitleEl.textContent = postsTitleTemplate
+				.replace("{month}", `${month + 1}月`)
+				.replace("{count}", String(list.length));
+		}
+		if (!postListEl) return;
+		postListEl.replaceChildren();
+		if (list.length === 0) {
+			const empty = document.createElement("p");
+			empty.className = "nav-profile__post-empty";
+			empty.textContent = noPostsText;
+			postListEl.appendChild(empty);
+			return;
+		}
+		for (const post of list) {
+			const link = document.createElement("a");
+			link.className = "nav-profile__post-item";
+			link.href = post.url;
+			const title = document.createElement("span");
+			title.className = "nav-profile__post-name";
+			title.textContent = post.title;
+			const date = document.createElement("span");
+			date.className = "nav-profile__post-date";
+			date.textContent = post.date;
+			link.append(title, date);
+			postListEl.appendChild(link);
+		}
+	}
+
+	function positionCard(): void {
+		if (!trigger || !card) return;
+		const rect = trigger.getBoundingClientRect();
+		const width = card.offsetWidth || 560;
+		card.style.top = `${rect.bottom + 10}px`;
+		// 面板比站点名宽：左缘对齐站点名，但不许顶出屏幕右缘
+		const left = Math.min(rect.left, window.innerWidth - width - 12);
+		card.style.left = `${Math.max(12, left)}px`;
+		card.style.right = "auto";
+	}
+
+	/* 悬浮触发：站点名与面板之间隔着 0.6rem 缝隙，两边都留一点宽限再收，
+	   免得鼠标从名字移进面板的途中闪断 */
+	let closeTimer: number | undefined;
+	function openCard(): void {
+		if (!root) return;
+		if (closeTimer) window.clearTimeout(closeTimer);
+		render();
+		showView("default");
+		positionCard();
+		root.classList.add("is-open");
+		trigger?.setAttribute("aria-expanded", "true");
+	}
+	function closeCard(delay = 0): void {
+		if (!root) return;
+		if (closeTimer) window.clearTimeout(closeTimer);
+		closeTimer = window.setTimeout(() => {
+			root.classList.remove("is-open");
+			trigger?.setAttribute("aria-expanded", "false");
+		}, delay);
+	}
+
+	if (root && trigger && card) {
+		trigger.addEventListener("mouseenter", () => openCard());
+		trigger.addEventListener("mouseleave", () => closeCard(140));
+		// 触屏设备没有 hover，点一下也能开
+		trigger.addEventListener("click", () => openCard());
+		trigger.addEventListener("focus", () => openCard());
+		card.addEventListener("mouseenter", () => openCard());
+		card.addEventListener("mouseleave", () => closeCard(140));
+		siteTrigger?.addEventListener("click", (event) => {
+			event.stopPropagation();
+			showView(
+				siteTrigger.getAttribute("aria-pressed") === "true" ? "default" : "site",
+			);
+		});
+
+		/* 点热力图格子 → 右栏切到「当月文章列表」 */
+		card.addEventListener("click", (event) => {
+			const cell = (event.target as HTMLElement | null)?.closest<HTMLElement>(
+				"[data-nav-profile-cell]",
+			);
+			if (!cell) return;
+			event.stopPropagation();
+			void renderPosts(Number(cell.dataset.navProfileCell));
+			showView("posts");
+		});
+
+		card
+			.querySelector("[data-nav-profile-posts-back]")
+			?.addEventListener("click", (event) => {
+				event.stopPropagation();
+				showView("default");
+			});
+		// 触屏 / 键盘：点到别处也收起（悬浮模式下没有遮罩可用）
+		document.addEventListener("click", (event) => {
+			if (!root.classList.contains("is-open")) return;
+			const target = event.target as HTMLElement | null;
+			if (
+				target &&
+				!target.closest("[data-nav-profile-card]") &&
+				!target.closest("[data-nav-profile-trigger]")
+			) {
+				closeCard();
+			}
+		});
+		document.addEventListener("keydown", (event) => {
+			if (event.key === "Escape") closeCard();
+		});
+		document.addEventListener("swup:content:replaced", () => closeCard());
+		window.addEventListener("resize", () => {
+			if (root.classList.contains("is-open")) positionCard();
+		});
+	}
+</script>

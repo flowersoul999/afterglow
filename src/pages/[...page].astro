@@ -1,0 +1,26 @@
+---
+import HomeDataLayer from "@components/layout/HomeDataLayer.astro";
+import HomeHero from "@components/layout/HomeHero.astro";
+import HomeTicker from "@components/layout/HomeTicker.astro";
+import type { GetStaticPaths } from "astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { getSortedPosts } from "@/utils/content-utils";
+
+export const getStaticPaths = (async ({ paginate }) => {
+	const allBlogPosts = await getSortedPosts();
+	return paginate(allBlogPosts, { pageSize: allBlogPosts.length });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+---
+
+<MainGridLayout>
+	<div class="home-page home-page--motion-pending">
+		{/* 首页 = 首屏 Hero + 公告跑马灯 + 地图指南数据层。
+		    全屏滚动展示层（HomeDisplayLayer：柱子展开 + 百叶窗 + 结尾大图/视频）
+		    已于 2026-10-20 按站长要求删除。页脚由 MainGridLayout 提供，未动。 */}
+		<HomeHero />
+		<HomeTicker />
+		<HomeDataLayer />
+	</div>
+</MainGridLayout>

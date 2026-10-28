@@ -1,0 +1,82 @@
+/* ===== 内容样式（图片、时间线、剧透） ===== */
+@reference "tailwindcss";
+
+/* 图片缩放光标 */
+.custom-md img,
+#post-cover img {
+  @apply cursor-zoom-in;
+}
+
+/* 时间线虚线 */
+.dash-line {
+  position: relative;
+}
+.dash-line::before {
+  content: "";
+  position: absolute;
+  width: 10%;
+  height: 100%;
+  left: calc(50% - 1px);
+  border-left: 2px dashed var(--line-color);
+  pointer-events: none;
+  transition: all 0.3s;
+  transform: translateY(-50%);
+}
+
+/* 剧透效果 */
+.custom-md spoiler {
+  --_spoiler-mask: var(--primary);
+  @apply hover:bg-transparent px-1 py-0.5 overflow-hidden rounded-md transition-all duration-150;
+  background-color: var(--_spoiler-mask);
+  box-decoration-break: clone;
+  &:not(:hover) {
+    color: var(--_spoiler-mask);
+    * {
+      color: var(--_spoiler-mask);
+    }
+  }
+}
+/* 浅色模式：使用更浅的主题色且完全不透明 */
+:root:not(.dark) .custom-md spoiler {
+  --_spoiler-mask: color-mix(in oklch, var(--primary) 55%, white 45%);
+}
+
+/* 文章内表格横向滚动 */
+.custom-md table,
+article table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+.custom-md table::-webkit-scrollbar,
+article table::-webkit-scrollbar {
+  height: 6px;
+}
+.custom-md table::-webkit-scrollbar-track,
+article table::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-md table::-webkit-scrollbar-thumb,
+article table::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, rgba(128, 128, 128, 0.3));
+  border-radius: 3px;
+}
+.custom-md table::-webkit-scrollbar-thumb:hover,
+article table::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover, rgba(128, 128, 128, 0.5));
+}
+/* Firefox 滚动条 */
+.custom-md table,
+article table {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb, rgba(128, 128, 128, 0.3)) transparent;
+}
+/* 确保表格单元格不换行 */
+.custom-md table th,
+.custom-md table td,
+article table th,
+article table td {
+  white-space: nowrap;
+  min-width: max-content;
+}

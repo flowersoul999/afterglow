@@ -1,0 +1,404 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { getPostUrlBySlug } from "@utils/url-utils";
+import PostCard from "@/components/layout/PostCard.astro";
+import { sidebarLayoutConfig, siteConfig } from "@/config";
+import { getCategoryFromId } from "@/utils/category-tree";
+
+const { page } = Astro.props;
+
+let delay = 0;
+const interval = 50;
+
+// 类型别名避免Fragment语法问题
+type PostEntry = CollectionEntry<"posts">;
+
+// 检查是否启用双侧边栏
+const isBothSidebars = sidebarLayoutConfig.position === "both";
+const masonryEnabled = siteConfig.postListLayout.grid.masonry;
+const gridColumns = siteConfig.postListLayout.grid.columns || 2;
+
+// 根据配置设置初始布局模式，避免闪烁
+const defaultLayout = siteConfig.postListLayout.defaultMode || "list";
+const gridCols =
+	!isBothSidebars && gridColumns === 4
+		? "md:grid-cols-2 lg:grid-cols-4"
+		: !isBothSidebars && gridColumns === 3
+			? "md:grid-cols-2 lg:grid-cols-3"
+			: "md:grid-cols-2";
+const initialLayoutClass =
+	defaultLayout === "grid"
+		? `grid grid-cols-1 ${gridCols} gap-4 grid-mode`
+		: "flex flex-col gap-4 md:gap-4 list-mode";
+---
+
+<div
+  id="post-list-container"
+  class={`transition-all duration-500 ease-in-out mb-4 ${initialLayoutClass}`}
+  data-default-layout={defaultLayout}
+  data-both-sidebars={isBothSidebars}
+  data-masonry-enabled={masonryEnabled}
+  data-grid-columns={gridColumns}
+>
+  {
+    page.data.map((entry: PostEntry, index: number) => (
+      <PostCard
+        entry={entry}
+        title={entry.data.title}
+        tags={entry.data.tags}
+        category={getCategoryFromId(entry.id) || null}
+        published={entry.data.published}
+        updated={entry.data.updated}
+        url={getPostUrlBySlug(entry.id)}
+        image={entry.data.image}
+        description={entry.data.description}
+        draft={entry.data.draft}
+        pinned={entry.data.pinned}
+        loading={index < 2 ? "eager" : "lazy"}
+        class:list="onload-animation post-card-item"
+        style={`animation-delay: calc(var(--content-delay) + ${delay++ * interval}ms);`}
+      />
+    ))
+  }
+</div>
+
+<!-- 立即执行脚本：防止刷新时的布局闪烁 -->
+<script is:inline define:vars={{ defaultLayout, isBothSidebars, gridColumns }}>
+  (function() {
+    const savedLayout = localStorage.getItem('postListLayout');
+
+    // 如果有保存的布局且与默认布局不同，更新容器布局
+    if (savedLayout && savedLayout !== defaultLayout) {
+      const container = document.getElementById('post-list-container');
+
+      if (container) {
+        // 禁用过渡动画
+        container.style.transition = 'none';
+
+        // 移除所有布局类
+        container.classList.remove('list-mode', 'grid-mode', 'flex', 'flex-col', 'grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'lg:grid-cols-4', 'gap-4', 'md:gap-4');
+
+        if (savedLayout === 'grid') {
+          container.classList.add('grid-mode', 'grid', 'grid-cols-1', 'md:grid-cols-2', 'gap-4');
+          if (!isBothSidebars && gridColumns === 4) {
+            container.classList.add('lg:grid-cols-4');
+          } else if (!isBothSidebars && gridColumns === 3) {
+            container.classList.add('lg:grid-cols-3');
+          }
+        } else {
+          container.classList.add('list-mode', 'flex', 'flex-col', 'gap-4', 'md:gap-4');
+        }
+
+        // 强制重排后恢复过渡动画
+        container.offsetHeight;
+        container.style.transition = '';
+      }
+    }
+  })();
+</script>
+
+<script is:inline>
+  // 动态布局切换脚本（is:inline 确保 Swup ScriptsPlugin 能重新执行）
+  function initLayout() {
+    var postListContainer = document.getElementById("post-list-container");
+    if (!postListContainer) return;
+
+    var screenWidth = window.innerWidth;
+    var isSmallScreen = screenWidth < 1200;
+
+    var savedLayout = localStorage.getItem("postListLayout");
+    var defaultLayout = postListContainer.getAttribute("data-default-layout") || "list";
+    var currentLayout = savedLayout || defaultLayout;
+
+    if (isSmallScreen) {
+      currentLayout = "list";
+    }
+
+    updatePostListLayout(currentLayout);
+  }
+
+  function updatePostListLayout(layout) {
+    var postListContainer = document.getElementById("post-list-container");
+    if (!postListContainer) return;
+
+    var isCurrentGrid = postListContainer.classList.contains("grid-mode");
+    var isCurrentList = postListContainer.classList.contains("list-mode");
+    var currentLayout = isCurrentGrid ? "grid" : (isCurrentList ? "list" : null);
+
+    var isBothSidebars = postListContainer.getAttribute("data-both-sidebars") === "true";
+    var masonryEnabled = postListContainer.getAttribute("data-masonry-enabled") === "true";
+    var gridColumns = parseInt(postListContainer.getAttribute("data-grid-columns") || "2");
+
+    var applyClasses = function() {
+        postListContainer.classList.remove("list-mode", "grid-mode");
+        if (layout === "grid") {
+            postListContainer.classList.add("grid-mode");
+            postListContainer.classList.remove("flex", "flex-col");
+            if (masonryEnabled) {
+                postListContainer.classList.remove("grid", "grid-cols-1", "md:grid-cols-2", "lg:grid-cols-3", "lg:grid-cols-4", "gap-4");
+                applyMasonryLayout();
+            } else {
+                postListContainer.classList.add("grid", "grid-cols-1", "md:grid-cols-2", "gap-4");
+                if (!isBothSidebars && gridColumns === 4) {
+                    postListContainer.classList.add("lg:grid-cols-4");
+                } else if (!isBothSidebars && gridColumns === 3) {
+                    postListContainer.classList.add("lg:grid-cols-3");
+                }
+                resetMasonryLayout();
+            }
+        } else {
+            postListContainer.classList.add("list-mode");
+            postListContainer.classList.add("flex", "flex-col", "gap-4", "md:gap-4");
+            postListContainer.classList.remove("grid", "grid-cols-1", "md:grid-cols-2", "lg:grid-cols-3", "lg:grid-cols-4");
+            resetMasonryLayout();
+        }
+    };
+
+    if (!currentLayout) {
+        applyClasses();
+        return;
+    }
+
+    if (currentLayout === layout) {
+        if (layout === "grid" && masonryEnabled) {
+            applyMasonryLayout();
+        }
+        return;
+    }
+
+    postListContainer.classList.add("layout-switching");
+    setTimeout(function() {
+        applyClasses();
+        requestAnimationFrame(function() {
+            postListContainer.classList.remove("layout-switching");
+        });
+    }, 200);
+  }
+
+  function resetMasonryLayout() {
+    var container = document.getElementById("post-list-container");
+    if (!container) return;
+    container.style.height = "";
+    container.style.position = "";
+    container.style.display = "";
+    var items = container.querySelectorAll(".post-card-item");
+    items.forEach(function(item) {
+      item.style.position = "";
+      item.style.top = "";
+      item.style.left = "";
+      item.style.width = "";
+    });
+  }
+
+  function applyMasonryLayout() {
+    var container = document.getElementById("post-list-container");
+    if (!container) return;
+    var masonryEnabled = container.getAttribute("data-masonry-enabled") === "true";
+    if (!masonryEnabled) return;
+    if (!container.classList.contains("grid-mode")) return;
+
+    var items = Array.from(container.querySelectorAll(".post-card-item"));
+    if (items.length === 0) return;
+
+    var gap = 16;
+    var isBothSidebars = container.getAttribute("data-both-sidebars") === "true";
+    var gridColumns = parseInt(container.getAttribute("data-grid-columns") || "2");
+    var colCount = 2;
+    if (!isBothSidebars && gridColumns === 3 && window.innerWidth >= 1024) {
+        colCount = 3;
+    }
+    container.style.position = "relative";
+    container.style.display = "block";
+
+    var containerWidth = container.offsetWidth;
+    var itemWidth = (containerWidth - (colCount - 1) * gap) / colCount;
+    var colHeights = new Array(colCount).fill(0);
+
+    items.forEach(function(item, index) {
+      var colIndex = index % colCount;
+      item.style.position = "absolute";
+      item.style.width = itemWidth + "px";
+      item.style.setProperty('height', 'auto', 'important');
+      var height = item.offsetHeight;
+      var top = colHeights[colIndex];
+      var left = colIndex * (itemWidth + gap);
+      item.style.top = top + "px";
+      item.style.left = left + "px";
+      colHeights[colIndex] += height + gap;
+    });
+    container.style.height = Math.max.apply(null, colHeights) + "px";
+  }
+
+  function initLayoutAndWatchImages() {
+    setTimeout(initLayout, 50);
+    var imgs = document.querySelectorAll('#post-list-container img');
+    imgs.forEach(function(img) {
+        if (img.complete) return;
+        img.addEventListener('load', function() {
+            applyMasonryLayout();
+        });
+    });
+  }
+
+  // 初始化
+  initLayoutAndWatchImages();
+
+  // Swup/astro 页面导航后重新初始化
+  document.addEventListener("astro:page-load", initLayoutAndWatchImages);
+  document.addEventListener("swup:content:replace", function() {
+    setTimeout(initLayout, 50);
+  });
+
+  // 监听布局变化事件
+  window.addEventListener("layoutChange", function (event) {
+    var newLayout = event.detail.layout;
+    var postListContainer = document.getElementById("post-list-container");
+    if (!postListContainer) return;
+    var screenWidth = window.innerWidth;
+    var isSmallScreen = screenWidth < 1200;
+    if (isSmallScreen) {
+      updatePostListLayout("list");
+    } else {
+      updatePostListLayout(newLayout);
+    }
+  });
+
+  // 监听窗口大小变化
+  var resizeTimeout;
+  window.addEventListener("resize", function () {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(function () {
+      initLayout();
+    }, 250);
+  });
+</script>
+
+<style>
+  /* 布局切换动画 */
+  #post-list-container {
+    /* 限制过渡属性为 opacity 和 transform，避免响应父元素位置变化 */
+    transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+                transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* 文章卡片的过渡动画 */
+  #post-list-container > :global(*) {
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* 布局切换时的动画效果 */
+  #post-list-container {
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  }
+  
+  #post-list-container.layout-switching {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  /* 移除特定模式下的子元素动画，避免布局计算冲突 */
+  /*
+  #post-list-container.layout-switching > :global(*) {
+    transform: scale(0.98);
+  }
+
+  #post-list-container.list-mode > :global(*) {
+    animation: fadeInSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  */
+
+  /* List Mode Customization */
+  #post-list-container.list-mode :global(.post-card-title) {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+
+  #post-list-container.list-mode :global(.post-card-title::before) {
+    top: 2.25rem !important;
+    height: 1rem !important;
+  }
+
+  /* 列表模式下，有封面的文章，摘要最多显示一行 */
+  #post-list-container.list-mode :global(.has-cover .description) {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    -webkit-line-clamp: 1 !important;
+    line-clamp: 1 !important;
+  }
+
+  /* Grid Mode Customization */
+  #post-list-container.grid-mode :global(.post-card-wrapper) {
+    flex-direction: column-reverse !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-card-image) {
+    width: 100% !important;
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    border-radius: var(--radius-large) var(--radius-large) 0 0 !important;
+    /*aspect-ratio: 16/9 !important;*/
+  }
+
+  #post-list-container.grid-mode :global(.post-card-content) {
+    width: 100% !important;
+    padding: 1rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.no-cover .post-card-content) {
+    padding-right: 4.5rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-card-title) {
+    font-size: 1.125rem !important;
+    line-height: 1.75rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-card-title::before) {
+    display: none !important;
+  }
+
+  #post-list-container.grid-mode :global(.description) {
+    font-size: 0.875rem !important;
+    margin-bottom: 0.75rem !important;
+    padding-right: 0 !important;
+  }
+  /* 网格模式下，有封面的文章，摘要最多显示一行 */
+  #post-list-container.grid-mode :global(.has-cover .description) {
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    -webkit-line-clamp: 1 !important;
+    line-clamp: 1 !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-meta) {
+    margin-bottom: 0.5rem !important;
+    gap: 0.5rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-meta .text-xl) {
+    font-size: 1rem !important;
+    line-height: 1.25rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.meta-icon) {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    margin-right: 0.25rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-meta .text-sm) {
+    font-size: 0.75rem !important;
+    line-height: 1rem !important;
+  }
+
+  #post-list-container.grid-mode :global(.post-meta .pinned-btn) {
+    padding: 0.25rem 0.375rem !important;
+  }
+
+</style>

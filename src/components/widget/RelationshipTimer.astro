@@ -1,0 +1,170 @@
+---
+import WidgetLayout from "@/components/common/WidgetLayout.astro";
+import { relationshipConfig } from "@/config/relationshipConfig";
+
+const config = relationshipConfig;
+
+// 计算从起始日期到现在的总天数
+const startDate = new Date(config.startDate);
+const now = new Date();
+const totalDays = Math.floor(
+	(now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+);
+
+interface Props {
+	class?: string;
+	style?: string;
+}
+const className = Astro.props.class;
+const style = Astro.props.style;
+---
+
+<WidgetLayout
+  name={`${config.title || "恋爱时光"} ${totalDays} 天`}
+  id="relationship"
+  class={`${className || ""} relationship-widget`}
+  style={style}
+>
+  <div class="flex flex-col items-center p-2">
+    <!-- 顶部名称栏 -->
+    <div class="relationship-names flex items-center justify-center gap-2 mb-4 text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+      <span class="relationship-name">{config.name1}</span>
+      <span class="text-red-500 animate-pulse text-base flex-shrink-0">♥</span>
+      <span class="relationship-name">{config.name2}</span>
+    </div>
+
+    <!-- 头像和爱心 -->
+    <div class="flex items-center justify-center gap-4 mb-5">
+      <div class="w-14 h-14 rounded-full overflow-hidden border-[3px] border-neutral-900 dark:border-white shadow-md transition-transform hover:scale-110">
+        <img src={config.avatar1} alt={config.name1} class="w-full h-full object-cover" />
+      </div>
+      <div class="flex-shrink-0 transition-all hover:scale-125 cursor-default select-none">
+        <img src="/assets/images/emoji/13428669541200711.gif" alt="love" class="w-8 h-8 object-contain" />
+      </div>
+      <div class="w-14 h-14 rounded-full overflow-hidden border-[3px] border-neutral-900 dark:border-white shadow-md transition-transform hover:scale-110">
+        <img src={config.avatar2} alt={config.name2} class="w-full h-full object-cover" />
+      </div>
+    </div>
+
+    <!-- 计时器 -->
+    <div class="relationship-timer flex flex-col items-center">
+      <!-- 年份大数字 -->
+      <div class="flex items-baseline gap-1 mb-1">
+        <span class="timer-years" data-timer-years>0</span>
+        <span class="text-xs font-semibold" style="color: #3b82f6;">年</span>
+        <span class="timer-months" data-timer-months>0</span>
+        <span class="text-xs font-semibold" style="color: #ef4444;">月</span>
+        <span class="timer-days" data-timer-days>0</span>
+        <span class="text-xs font-semibold" style="color: #ec4899;">天</span>
+      </div>
+      <!-- 时分秒小字 -->
+      <div class="flex items-center gap-0.5 text-neutral-400 dark:text-neutral-500">
+        <span class="text-lg font-mono font-bold tabular-nums text-neutral-500 dark:text-neutral-300" data-timer-hours>00</span>
+        <span class="text-xs mr-1">时</span>
+        <span class="text-lg font-mono font-bold tabular-nums text-neutral-500 dark:text-neutral-300" data-timer-minutes>00</span>
+        <span class="text-xs mr-1">分</span>
+        <span class="text-lg font-mono font-bold tabular-nums text-neutral-500 dark:text-neutral-300" data-timer-seconds>00</span>
+        <span class="text-xs">秒</span>
+      </div>
+    </div>
+  </div>
+</WidgetLayout>
+
+<style>
+  .timer-years,
+  .timer-months,
+  .timer-days {
+    font-size: 1.75rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, SFMono-Regular, 'Cascadia Code', monospace;
+    color: var(--deep-text);
+    line-height: 1;
+    min-width: 1.5rem;
+    text-align: center;
+  }
+
+  .relationship-names {
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .relationship-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    max-width: 45%;
+  }
+
+  /* 标题样式调整 - 强制覆盖 WidgetLayout 默认样式 */
+  :global(.relationship-widget .widget-title) {
+    text-align: center !important;
+    justify-content: center !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    position: relative !important;
+  }
+
+  :global(.relationship-widget .widget-title)::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  :global(.relationship-widget .widget-name) {
+    font-size: 0.9375rem;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+</style>
+
+<script is:inline define:vars={{ startDateStr: config.startDate }}>
+  function updateRelationshipTimer() {
+    const startDate = new Date(startDateStr);
+    const now = new Date();
+
+    let diff = now.getTime() - startDate.getTime();
+    if (diff < 0) return;
+
+    // 计算总天数
+    const totalDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    let years = now.getFullYear() - startDate.getFullYear();
+    let months = now.getMonth() - startDate.getMonth();
+    let days = now.getDate() - startDate.getDate();
+    let hours = now.getHours() - startDate.getHours();
+    let minutes = now.getMinutes() - startDate.getMinutes();
+    let seconds = now.getSeconds() - startDate.getSeconds();
+
+    if (seconds < 0) { seconds += 60; minutes--; }
+    if (minutes < 0) { minutes += 60; hours--; }
+    if (hours < 0) { hours += 24; days--; }
+    if (days < 0) {
+      const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      days += lastMonth.getDate();
+      months--;
+    }
+    if (months < 0) { months += 12; years--; }
+
+    const set = (attr, value) => {
+      document.querySelectorAll(`[data-timer-${attr}]`).forEach(el => {
+        el.innerText = value;
+      });
+    };
+
+    set('total-days', totalDays);
+    set('years', years);
+    set('months', months);
+    set('days', days);
+    set('hours', String(hours).padStart(2, '0'));
+    set('minutes', String(minutes).padStart(2, '0'));
+    set('seconds', String(seconds).padStart(2, '0'));
+  }
+
+  updateRelationshipTimer();
+  if (!window.relationshipTimerInterval) {
+    window.relationshipTimerInterval = setInterval(updateRelationshipTimer, 1000);
+  }
+
+  document.addEventListener('swup:content:replace', updateRelationshipTimer);
+</script>

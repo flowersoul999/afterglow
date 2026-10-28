@@ -1,0 +1,57 @@
+/* Waline 代码块主题适配 */
+:root {
+  --waline-code-bg: #f4f4f5;
+  --waline-code-color: #18181b;
+}
+
+html.dark {
+  --waline-code-bg: #27272a;
+  --waline-code-color: #fafafa;
+}
+
+/* Waline 代码块样式 */
+#waline .wl-content code,
+#waline .vpower[data-type='code'] code,
+#waline pre {
+  background-color: var(--waline-code-bg) !important;
+  color: var(--waline-code-color) !important;
+  padding: 0.5rem 0.75rem !important;
+  border-radius: 0.5rem !important;
+  font-family: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace !important;
+  font-size: 0.875rem !important;
+  line-height: 1.6 !important;
+  overflow-x: auto !important;
+}
+
+/* 代码高亮优化 - 使用简单的单色方案确保可见性 */
+#waline pre[class*="language-"] {
+  background-color: var(--waline-code-bg) !important;
+  color: var(--waline-code-color) !important;
+  border: 1px solid var(--waline-code-bg) !important;
+}
+
+#waline code[class*="language-"],
+#waline pre[class*="language-"] > code {
+  background-color: var(--waline-code-bg) !important;
+  color: var(--waline-code-color) !important;
+}
+
+/* 兼容不同版本的 Waline 类名 */
+#waline .wl-code,
+#waline .wl-comment,
+#waline .wl-string,
+#waline .wl-keyword,
+#waline .wl-number,
+#waline .wl-function,
+#waline .wl-punctuation,
+#waline .wl-operator,
+#waline .wl-class-name,
+#waline .wl-tag,
+#waline .wl-attr-name,
+#waline .wl-attr-value,
+#waline .wl-builtin,
+#waline .wl-selector,
+#waline .wl-variable,
+#waline .wl-template-string {
+  color: var(--waline-code-color) !important;
+}

@@ -1,0 +1,129 @@
+---
+import { Icon } from "astro-icon/components";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+
+interface Props {
+	id: string;
+	name?: string;
+	isCollapsed?: boolean;
+	collapsedHeight?: string;
+	class?: string;
+	style?: string;
+	flat?: boolean;
+}
+const {
+	id,
+	name,
+	isCollapsed,
+	collapsedHeight,
+	style,
+	flat = false,
+} = Astro.props;
+const className = Astro.props.class;
+---
+<widget-layout
+  data-id={id}
+  data-is-collapsed={String(isCollapsed)}
+  class:list={["section pt-3", flat && "widget-layout--flat", className]}
+  style={style}
+>
+    {name && (
+        <div class="widget-title font-bold transition text-lg text-neutral-900 dark:text-neutral-100 relative ml-8 mt-4 mb-2
+            before:w-1 before:h-4 before:rounded-md before:bg-(--primary)
+            before:absolute before:left-[-16px] before:top-[5.5px] flex items-center justify-between">
+            <span class="widget-name">{name}</span>
+            <slot name="title-icon" />
+        </div>
+    )}
+    <div id={id} class:list={["collapse-wrapper px-4 overflow-hidden", {"collapsed": isCollapsed, "pt-4": !name}]}>
+        <slot></slot>
+    </div>
+    {isCollapsed && <div class="expand-btn px-4 -mb-2">
+        <button class="btn-plain rounded-lg w-full h-9" title={i18n(I18nKey.more)} aria-label={i18n(I18nKey.more)}>
+            <div class="text-(--primary) flex items-center justify-center gap-2 -translate-x-2">
+                <Icon name="material-symbols:more-horiz" class="text-[1.75rem]" aria-hidden="true"></Icon> {i18n(I18nKey.more)}
+            </div>
+        </button>
+    </div>}
+</widget-layout>
+
+<style define:vars={{ collapsedHeight }}>
+    widget-layout {
+        display: block;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 10px;
+        background: #fff;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        padding-bottom: 0.75rem;
+        box-shadow: none;
+        transition: border-color 0.3s ease;
+    }
+
+    :root.dark widget-layout {
+        border-color: rgba(255, 255, 255, 0.1);
+        background: #181818;
+        box-shadow: none;
+    }
+
+    widget-layout:hover {
+        border-color: rgba(0, 0, 0, 0.15);
+        box-shadow: 0 0 20px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    :root.dark widget-layout:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 0 20px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    widget-layout.widget-layout--flat {
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    :root.dark widget-layout.widget-layout--flat {
+        border-color: transparent;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    widget-layout.widget-layout--flat:hover {
+        border-color: transparent;
+        box-shadow: none;
+    }
+
+    :root.dark widget-layout.widget-layout--flat:hover {
+        border-color: transparent;
+        box-shadow: none;
+    }
+
+    .collapsed {
+        height: var(--collapsedHeight);
+    }
+</style>
+
+<script>
+    class WidgetLayout extends HTMLElement {
+        constructor() {
+            super();
+
+            if (this.dataset.isCollapsed !== "true")
+                return;
+
+            const id = this.dataset.id;
+            const btn = this.querySelector('.expand-btn');
+            const wrapper = this.querySelector(`#${id}`)
+            btn!.addEventListener('click', () => {
+                wrapper!.classList.remove('collapsed');
+                btn!.classList.add('hidden');
+            })
+        }
+    }
+
+    if (!customElements.get("widget-layout")) {
+        customElements.define("widget-layout", WidgetLayout);
+    }
+</script>

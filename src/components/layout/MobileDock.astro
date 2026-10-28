@@ -1,0 +1,200 @@
+---
+import { Icon } from "astro-icon/components";
+/**
+ * 移动端底部悬浮 Dock — 仅 ≤768px 显示
+ * 5 栏位单浮岛：首页、搜索、菜单（凸出）、主题、返回
+ * 右下角浮动工具已统合到 UnifiedDock，此处仅保留底部主导航
+ */
+---
+
+<div class="mobile-dock" id="mobile-dock">
+	<button class="mobile-dock__btn" id="mobile-dock-home-btn" aria-label="首页" type="button">
+		<span class="mobile-dock__icon"><Icon name="material-symbols:home-outline-rounded" is:inline /></span>
+		<span class="mobile-dock__label">首页</span>
+	</button>
+
+	<button class="mobile-dock__btn" id="mobile-dock-search-btn" aria-label="搜索" type="button">
+		<span class="mobile-dock__icon"><Icon name="material-symbols:search-rounded" is:inline /></span>
+		<span class="mobile-dock__label">搜索</span>
+	</button>
+
+	<button class="mobile-dock__btn mobile-dock__btn--center" id="mobile-dock-menu-btn" aria-label="菜单" type="button">
+		<span class="mobile-dock__icon">
+			<Icon name="material-symbols:menu-rounded" is:inline class="mobile-dock-menu-icon-collapsed" />
+			<Icon name="material-symbols:close-rounded" is:inline class="mobile-dock-menu-icon-open" style="display:none" />
+		</span>
+	</button>
+
+	<button class="mobile-dock__btn" id="mobile-dock-theme-btn" aria-label="主题切换" type="button">
+		<span class="mobile-dock__icon">
+			<Icon name="material-symbols:wb-sunny-outline-rounded" is:inline class="mobile-dock-theme-icon-light" />
+			<Icon name="material-symbols:dark-mode-outline-rounded" is:inline class="mobile-dock-theme-icon-dark" style="display:none" />
+		</span>
+		<span class="mobile-dock__label">主题</span>
+	</button>
+
+	<button class="mobile-dock__btn" id="mobile-dock-back-btn" aria-label="返回" type="button">
+		<span class="mobile-dock__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" class="mobile-dock__svg-icon"><path fill="currentColor" d="M11.994 4c1.059 0 1.924.818 2 1.856l.006.15v1.988a2.005 2.005 0 0 1-1.856 2L12 10H3.484l1.91 1.82a.52.52 0 0 1 0 .77a.616.616 0 0 1-.829 0l-2.05-1.95a1.55 1.55 0 0 1 0-2.31l2.05-1.95a.617.617 0 0 1 .83 0a.52.52 0 0 1 0 .77L3.45 9H12c.514-.003.935-.39.993-.888L13 7.994V6.006c0-.516-.388-.941-.888-1L11.994 5H9.5a.5.5 0 0 1-.09-.992L9.5 4z" /></svg></span>
+		<span class="mobile-dock__label">返回</span>
+	</button>
+</div>
+
+<script is:inline data-swup-ignore-script>
+(function() {
+	if (window.__mobileDockInited) return;
+	window.__mobileDockInited = true;
+
+	var dockEl = document.getElementById("mobile-dock");
+	if (!dockEl) return;
+
+	var lastScrollY = window.scrollY;
+	var isOverlayOpen = false;
+
+	function onScroll() {
+		if (isOverlayOpen) return;
+		var y = window.scrollY;
+		if (y > lastScrollY + 8 && y > 100) {
+			dockEl.classList.add("is-hidden");
+		} else if (y < lastScrollY - 8) {
+			dockEl.classList.remove("is-hidden");
+		}
+		lastScrollY = y;
+	}
+
+	window.addEventListener("scroll", onScroll, { passive: true });
+
+	document.getElementById("mobile-dock-home-btn")?.addEventListener("click", function(e) {
+		e.stopPropagation();
+		var isHome = window.location.pathname === "/" || window.location.pathname === "";
+		if (!isHome) window.location.href = "/";
+	});
+
+	document.getElementById("mobile-dock-search-btn")?.addEventListener("click", function(e) {
+		e.stopPropagation();
+		if (window.__fireflySearchModalController) {
+			window.__fireflySearchModalController.toggle();
+		} else {
+			window.__fireflySearchModalPendingToggle = true;
+		}
+	});
+
+	var menuBtn = document.getElementById("mobile-dock-menu-btn");
+	var menuCollapsedIcon = menuBtn?.querySelector(".mobile-dock-menu-icon-collapsed");
+	var menuOpenIcon = menuBtn?.querySelector(".mobile-dock-menu-icon-open");
+
+	function setMenuOpenState(open) {
+		if (menuCollapsedIcon) menuCollapsedIcon.style.display = open ? "none" : "";
+		if (menuOpenIcon) menuOpenIcon.style.display = open ? "" : "none";
+		isOverlayOpen = open;
+	}
+
+	function getMenuSheetElements() {
+		return {
+			sheet: document.getElementById("menu-sheet"),
+			overlay: document.getElementById("menu-sheet-overlay"),
+			close: document.getElementById("menu-sheet-close"),
+		};
+	}
+
+	function openMenuSheet() {
+		var els = getMenuSheetElements();
+		els.sheet?.classList.add("is-open");
+		els.overlay?.classList.add("is-open");
+		els.overlay?.setAttribute("aria-hidden", "false");
+		setMenuOpenState(true);
+	}
+
+	function closeMenuSheet() {
+		var els = getMenuSheetElements();
+		if (els.sheet) {
+			els.sheet.classList.remove("is-open");
+			els.sheet.style.maxHeight = "";
+		}
+		els.overlay?.classList.remove("is-open");
+		els.overlay?.setAttribute("aria-hidden", "true");
+		setMenuOpenState(false);
+	}
+
+	menuBtn?.addEventListener("click", function(e) {
+		e.stopPropagation();
+		var els = getMenuSheetElements();
+		if (els.sheet?.classList.contains("is-open")) {
+			closeMenuSheet();
+		} else {
+			openMenuSheet();
+		}
+	});
+
+	function bindMenuSheetCloseEvents() {
+		var els = getMenuSheetElements();
+		if (!els.sheet) return;
+		els.close?.addEventListener("click", function(e) {
+			e.stopPropagation();
+			closeMenuSheet();
+		});
+		els.overlay?.addEventListener("click", function() {
+			closeMenuSheet();
+		});
+	}
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", bindMenuSheetCloseEvents);
+	} else {
+		bindMenuSheetCloseEvents();
+	}
+
+	document.addEventListener("keydown", function(e) {
+		if (e.key === "Escape") {
+			var els = getMenuSheetElements();
+			if (els.sheet?.classList.contains("is-open")) {
+				closeMenuSheet();
+			}
+		}
+	});
+
+	var dockThemeBtn = document.getElementById("mobile-dock-theme-btn");
+	var dockThemeLightIcon = dockThemeBtn?.querySelector(".mobile-dock-theme-icon-light");
+	var dockThemeDarkIcon = dockThemeBtn?.querySelector(".mobile-dock-theme-icon-dark");
+
+	function toggleTheme() {
+		var isDark = document.documentElement.classList.contains("dark");
+		var next = isDark ? "light" : "dark";
+		localStorage.setItem("theme", next);
+		if (next === "dark") {
+			document.documentElement.classList.add("dark");
+		} else {
+			document.documentElement.classList.remove("dark");
+		}
+		updateAllThemeIcons();
+	}
+
+	function updateAllThemeIcons() {
+		var isDark = document.documentElement.classList.contains("dark");
+		if (dockThemeLightIcon) dockThemeLightIcon.style.display = isDark ? "none" : "";
+		if (dockThemeDarkIcon) dockThemeDarkIcon.style.display = isDark ? "" : "none";
+	}
+
+	dockThemeBtn?.addEventListener("click", function(e) {
+		e.stopPropagation();
+		toggleTheme();
+	});
+
+	updateAllThemeIcons();
+	window.addEventListener("theme-change", updateAllThemeIcons);
+
+	document.getElementById("mobile-dock-back-btn")?.addEventListener("click", function(e) {
+		e.stopPropagation();
+		window.history.back();
+	});
+
+	document.addEventListener("astro:page-load", function() {
+		closeMenuSheet();
+		lastScrollY = window.scrollY;
+		dockEl.classList.remove("is-hidden");
+	});
+
+	document.addEventListener("swup:content:replaced", function() {
+		closeMenuSheet();
+	});
+})();
+</script>

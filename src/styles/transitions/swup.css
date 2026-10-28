@@ -1,0 +1,119 @@
+/* ==========================================================================
+   Swup Page Transitions & Global Animations
+   规范版本：v2 — 包含 7 个已知 CSS 渲染问题的修复
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Swup Page Transitions
+   -------------------------------------------------------------------------- */
+
+/* Main Content Transition — 快速淡入淡出，无位移 */
+.transition-main {
+  transition: opacity 200ms ease-out;
+}
+
+/* Leaving Animation */
+.transition-leaving {
+  transition: opacity 200ms ease-out;
+}
+
+/* State: Changing (Swup) */
+html.is-changing .transition-main {
+  transition: opacity 200ms ease-out;
+}
+
+html.is-leaving .transition-main {
+  transition: opacity 200ms ease-out;
+}
+
+/* State: Animating (Entering) — 即时切换，无位移 */
+html.is-animating .transition-main {
+  opacity: 0;
+}
+
+/* State: Leaving — 即时切换，无位移 */
+html.is-animating.is-leaving .transition-leaving {
+  opacity: 0;
+}
+
+/* Swup Fade Fallback */
+.transition-swup-fade {
+  transition: opacity 200ms ease-out;
+}
+
+html.is-changing .transition-swup-fade {
+  transition: opacity 200ms ease-out;
+}
+
+html.is-animating .transition-swup-fade {
+  opacity: 0;
+}
+
+/* --------------------------------------------------------------------------
+   2. Keyframes
+   -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
+   3. Onload Animations — 即时显示，无位移
+   -------------------------------------------------------------------------- */
+
+.onload-animation {
+  opacity: 1;
+  animation: none;
+}
+
+/* --------------------------------------------------------------------------
+   4. Navigation Progress Bar
+   -------------------------------------------------------------------------- */
+
+#progress-bar {
+  --progress-height: 3px;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--progress-height);
+  z-index: 9999;
+  pointer-events: none;
+  background: var(--primary);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--primary) 60%, transparent);
+  /* 初始态：整条缩到 0、透明。
+     动画全部交给 src/utils/progress-bar.ts 用 WAAPI 驱动 —— 改 transform 而非
+     width（走合成线程，不触发重排），也不再靠切类名 + 强制重排来重启动画 */
+  transform: scaleX(0);
+  transform-origin: left center;
+  opacity: 0;
+}
+
+/* ==========================================================================
+   SWUP 过渡修复（7 个已知问题）
+   ========================================================================== */
+
+/* 修复 A：禁用子元素独立动画，防止与 Swup 容器双重 opacity 冲突 */
+html.is-animating .onload-animation,
+html.is-changing .onload-animation {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* 修复 B/D：过渡期间冻结布局属性，防止 Banner 高度跳动 */
+html.is-page-transitioning #wallpaper-wrapper,
+html.is-page-transitioning #main-grid,
+html.is-page-transitioning #top-row {
+  transition: none !important;
+}
+
+/* 修复 G：隐藏的侧边栏容器在动画期间保持隐藏，防止闪烁 */
+html.is-animating #left-sidebar-dynamic.hidden,
+html.is-animating #right-sidebar-dynamic.hidden {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  transition: none !important;
+}
+
+/* 过渡期间隐藏 banner 文字覆盖层 */
+html.is-page-transitioning .banner-home-text-overlay {
+  display: none !important;
+}

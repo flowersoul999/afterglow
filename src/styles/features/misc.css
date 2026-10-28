@@ -1,0 +1,64 @@
+/* ===== 杂项工具类 ===== */
+@reference "tailwindcss";
+@layer components {
+  /* 极简区块容器 */
+  .section {
+    @apply w-full;
+  }
+  .section + .section {
+    @apply mt-12 pt-12 border-t border-(--line-divider);
+  }
+
+  /* TOC 可见性 */
+  .toc-hide,
+  .toc-not-ready {
+    @apply opacity-0 pointer-events-none;
+  }
+
+  /* 隐藏滚动条 */
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 文字透明度工具类 */
+  .text-90 {
+    @apply text-black/90;
+  }
+  .text-75 {
+    @apply text-black/75;
+  }
+  .text-50 {
+    @apply text-black/50;
+  }
+  .text-30 {
+    @apply text-black/30;
+  }
+  .text-25 {
+    @apply text-black/25;
+  }
+
+  /* Meta 图标和分隔符 */
+  .meta-icon {
+    @apply w-8 h-8 transition-colors duration-150 rounded-md flex items-center justify-center
+      bg-(--btn-regular-bg) text-(--btn-content) mr-2;
+  }
+  .with-divider {
+    @apply before:content-['/'] before:ml-1.5 before:mr-1.5 before:text-(--meta-divider)
+      before:text-sm before:font-medium before:first-of-type:hidden
+      before:transition-colors before:duration-150;
+  }
+}
+
+/* 暗色模式文字透明度修复 */
+:root.dark .text-90 { color: oklch(0.95 0 0 / 0.90); }
+:root.dark .text-75 { color: oklch(0.95 0 0 / 0.75); }
+:root.dark .text-50 { color: oklch(0.95 0 0 / 0.55); }
+:root.dark .text-30 { color: oklch(0.95 0 0 / 0.35); }
+:root.dark .text-25 { color: oklch(0.95 0 0 / 0.25); }
+
+/* 暗色模式 PostMeta 容器文字 */
+:root.dark .text-neutral-500 { color: oklch(0.70 0 0); }

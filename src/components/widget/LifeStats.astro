@@ -1,0 +1,62 @@
+---
+import { getCollection } from "astro:content";
+import { Icon } from "astro-icon/components";
+import WidgetLayout from "@/components/common/WidgetLayout.astro";
+
+interface Props {
+	class?: string;
+	style?: string;
+}
+
+const { class: className, style } = Astro.props;
+
+// 获取生活相关 collection
+const lifeEntries = await getCollection("places");
+
+// 统计地点
+const places = lifeEntries.map((e) => e.data);
+const placesCount = places.length;
+const visitedCities = new Set(places.map((p) => p.city).filter(Boolean)).size;
+
+// 构建统计数据（笔记本统计已于 2026-10-20 随 notebooks 集合摘除而移除）
+const stats: { icon: string; label: string; value: number; suffix?: string }[] =
+	[
+		{
+			icon: "material-symbols:apartment",
+			label: "去过城市",
+			value: visitedCities,
+		},
+		{
+			icon: "material-symbols:location-on-outline",
+			label: "足迹记录",
+			value: placesCount,
+		},
+	];
+---
+
+<WidgetLayout name="生活统计" id="life-stats" class={className} style={style}>
+	<div class="flex flex-col gap-2">
+		{stats.map((stat) => (
+			<div class="flex items-center justify-between px-3 py-1.5">
+				<div class="flex items-center gap-2.5">
+					<div class="text-(--primary) text-xl">
+						<Icon name={stat.icon} />
+					</div>
+					<span class="text-neutral-700 dark:text-neutral-300 font-medium text-sm">
+						{stat.label}
+					</span>
+				</div>
+				<div class="flex items-center">
+					<span class="text-base font-bold text-neutral-900 dark:text-neutral-100">
+						{stat.value}
+					</span>
+					{stat.suffix && (
+						<span class="text-sm text-neutral-500 dark:text-neutral-400 ml-1">
+							{stat.suffix}
+						</span>
+					)}
+				</div>
+			</div>
+		))}
+	</div>
+</WidgetLayout>

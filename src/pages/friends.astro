@@ -1,0 +1,529 @@
+---
+import { getCollection, getEntry, render } from "astro:content";
+import fs from "node:fs";
+import path from "node:path";
+import Comment from "@components/comment/index.astro";
+import Markdown from "@components/common/Markdown.astro";
+import FriendApply from "@components/features/FriendApply.astro";
+import FriendCard from "@components/features/FriendCard.astro";
+import { Icon } from "astro-icon/components";
+import PageTitle from "@/components/common/PageTitle.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const friendsPost = await getEntry("spec", "friends");
+
+if (!friendsPost) {
+	throw new Error("friends page content not found");
+}
+
+const { Content } = await render(friendsPost);
+
+// 从 content/friends 目录读取友链数据，按权重排序
+const friendsEntries = await getCollection("friends");
+const items = friendsEntries
+	.filter((item) => item.data.enabled !== false)
+	.sort((a, b) => (b.data.weight || 0) - (a.data.weight || 0));
+
+// 新朋友：按添加日期（added）降序取最近 3 个。
+// 禁止用文件 mtime 兜底：CI 全新 clone 时所有文件 mtime 都等于构建时刻，
+// 会让缺 added 的旧友链永远霸占"新朋友"区块（2026-09 线上事故根因）
+const missingAdded = items.filter((item) => !item.data.added);
+if (missingAdded.length > 0) {
+	console.warn(
+		`[friends] ${missingAdded.length} 个友链缺少 added 字段，不参与"新朋友"排序：${missingAdded.map((item) => item.id).join("、")}`,
+	);
+}
+const latestItems = [...items]
+	.sort(
+		(a, b) => (b.data.added?.getTime() ?? 0) - (a.data.added?.getTime() ?? 0),
+	)
+	.slice(0, 3);
+
+// 新朋友区块独立展示后，从分组中排除，避免同一站点出现两次
+const latestIds = new Set(latestItems.map((item) => item.id));
+
+// 我的朋友们 / 更多伙伴（group 缺省为 other）
+const myFriends = items.filter(
+	(item) =>
+		(item.data.group ?? "other") === "friend" && !latestIds.has(item.id),
+);
+const moreFriends = items.filter(
+	(item) =>
+		(item.data.group ?? "other") !== "friend" && !latestIds.has(item.id),
+);
+
+// 友链墓碑（纪念下线的友链）：目录无数据时不调用 getCollection（避免 Astro 空集合警告），区块自动隐藏
+const tombstonesDir = path.join(
+	process.cwd(),
+	"src",
+	"content",
+	"友链",
+	"墓碑",
+);
+const hasTombstones = fs
+	.readdirSync(tombstonesDir)
+	.some((f) => f.endsWith(".md"));
+const tombstoneEntries = hasTombstones ? await getCollection("tombstones") : [];
+
+// 站点截图：public/assets/friends-shots/{contentId}.webp。
+// 卡片本身不展示它 —— 只作为 data-screenshot 喂给悬浮预览（#friend-preview）。
+const shotsDir = path.join(process.cwd(), "public", "assets", "friends-shots");
+const shotExists = (id: string) =>
+	fs.existsSync(path.join(shotsDir, `${id}.webp`));
+
+// 页面标题和描述
+const title = i18n(I18nKey.friends);
+const description = i18n(I18nKey.friendsDescription);
+---
+
+<MainGridLayout title={title} description={description}>
+  <div
+    class="flex w-full rounded-(--radius-large) relative min-h-32"
+  >
+    <div class="card-base z-10 px-4 py-6 md:px-9 relative w-full">
+      <!-- 页面标题和描述 -->
+      <div class="mb-6">
+        <PageTitle
+          title={title}
+          eyebrow="Friends"
+          description="志同道合的朋友们"
+        />
+        <div class="flex items-center justify-end mb-3">
+          <button
+            id="btn-add-friend"
+            class="flex items-center gap-1.5 px-4 py-2 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium hover:opacity-85 transition-opacity cursor-pointer"
+          >
+            <Icon name="material-symbols:person-add-rounded" class="text-base" />
+            添加友链
+          </button>
+        </div>
+      </div>
+
+      <!-- 新朋友：最近添加的 3 个 -->
+      {
+        latestItems.length > 0 && (
+          <section class="friend-section">
+            <div class="friend-group-head">
+              <div>
+                <h2 class="friend-group-title">
+                  {i18n(I18nKey.friendsLatestTitle)}
+                </h2>
+              </div>
+            </div>
+            <div class="friends-grid" data-friends-grid>
+              {
+                latestItems.map((item) => (
+                  <FriendCard
+                    title={item.data.title}
+                    href={item.data.siteurl}
+                    imgurl={item.data.imgurl}
+                    desc={item.data.desc}
+                    screenshot={shotExists(item.id) ? `/assets/friends-shots/${item.id}.webp` : undefined}
+                  />
+                ))
+              }
+            </div>
+          </section>
+        )
+      }
+
+      <!-- 我的朋友们 -->
+      {
+        myFriends.length > 0 && (
+          <section class="friend-section mt-8">
+            <div class="friend-group-head">
+              <div>
+                <h2 class="friend-group-title">
+                  {i18n(I18nKey.friendsMyFriendsTitle)}
+                </h2>
+              </div>
+            </div>
+            <div class="friends-grid" data-friends-grid>
+              {
+                myFriends.map((item) => (
+                  <FriendCard
+                    title={item.data.title}
+                    href={item.data.siteurl}
+                    imgurl={item.data.imgurl}
+                    desc={item.data.desc}
+                    screenshot={shotExists(item.id) ? `/assets/friends-shots/${item.id}.webp` : undefined}
+                  />
+                ))
+              }
+            </div>
+          </section>
+        )
+      }
+
+      <!-- 更多伙伴 -->
+      {
+        moreFriends.length > 0 && (
+          <section class="friend-section mt-8">
+            <div class="friend-group-head">
+              <div>
+                <h2 class="friend-group-title">
+                  {i18n(I18nKey.friendsMoreTitle)}
+                </h2>
+              </div>
+            </div>
+            <div class="friends-grid" data-friends-grid>
+              {
+                moreFriends.map((item) => (
+                  <FriendCard
+                    title={item.data.title}
+                    href={item.data.siteurl}
+                    imgurl={item.data.imgurl}
+                    desc={item.data.desc}
+                    screenshot={shotExists(item.id) ? `/assets/friends-shots/${item.id}.webp` : undefined}
+                  />
+                ))
+              }
+            </div>
+          </section>
+        )
+      }
+
+      <!-- 友链墓碑：纪念因失联/关闭而下线的友链 -->
+      {
+        tombstoneEntries.length > 0 && (
+          <section class="tombstone-section">
+            <h2 class="tombstone-title">{i18n(I18nKey.friendsTombstone)}</h2>
+            <div class="tombstone-desc">
+              <blockquote>
+                <p>{i18n(I18nKey.friendsTombstoneDesc)}</p>
+              </blockquote>
+            </div>
+            <div class="tombstone-list">
+              {
+                tombstoneEntries.map((entry) => (
+                  <span class="tombstone-item">
+                    {entry.data.avatar && <img class="tombstone-avatar" src={entry.data.avatar} alt="" loading="lazy" />}
+                    <span class="tombstone-name">{entry.data.title}</span>
+                  </span>
+                ))
+              }
+            </div>
+          </section>
+        )
+      }
+
+      <Markdown class="mt-2">
+        <Content />
+      </Markdown>
+    </div>
+  </div>
+
+  <!-- 友链申请：右侧填站点信息、左侧实时预览；复制后到下方评论区粘贴发送 -->
+  <FriendApply />
+
+  <!-- 评论区（负 margin 抵消评论卡片的 p-8 顶部 padding，收紧与上方内容的间距） -->
+  <div class="-mt-6">
+    <Comment post={friendsPost} customPath="/friends/" />
+  </div>
+
+  <!-- 友链悬浮大图预览 — portal 单例，卡旁白边圆角大图（仅桌面 hover） -->
+  <script is:inline>
+    (function() {
+      if (window.__friendPreviewReady) return;
+      window.__friendPreviewReady = true;
+
+      var GAP = 16;
+      var MARGIN = 12;
+      var activeCard = null;
+      var hideTimer = null;
+
+      function canHover() {
+        return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+      }
+
+      function ensurePreview() {
+        var el = document.getElementById("friend-preview");
+        if (el) return el;
+        el = document.createElement("div");
+        el.id = "friend-preview";
+        el.setAttribute("aria-hidden", "true");
+        el.hidden = true;
+        var media = document.createElement("div");
+        media.className = "friend-preview__media";
+        var img = document.createElement("img");
+        img.alt = "";
+        img.decoding = "async";
+        media.appendChild(img);
+        var info = document.createElement("div");
+        info.className = "friend-preview__info";
+        var ttl = document.createElement("h4");
+        ttl.className = "friend-preview__title";
+        var desc = document.createElement("p");
+        desc.className = "friend-preview__desc";
+        info.appendChild(ttl);
+        info.appendChild(desc);
+        el.appendChild(media);
+        el.appendChild(info);
+        document.body.appendChild(el);
+        return el;
+      }
+
+      /* 截图预加载：原实现是 hover 才下载，首次悬浮会先白一下。
+         页面空闲后把所有卡片的截图提前拉进缓存，hover 时直接出图。 */
+      function preloadScreenshots() {
+        var cards = document.querySelectorAll("[data-friends-grid] .friend-card[data-screenshot]");
+        var sources = [];
+        cards.forEach(function (card) {
+          var src = card.dataset.screenshot;
+          if (src && sources.indexOf(src) === -1) sources.push(src);
+        });
+        var i = 0;
+        var loadOne = function () {
+          if (i >= sources.length) return;
+          var im = new Image();
+          im.decoding = "async";
+          im.src = sources[i++];
+          // 一张接一张，避免一次性几十个请求挤带宽
+          setTimeout(loadOne, 60);
+        };
+        loadOne();
+      }
+
+      function getPreview() {
+        return document.getElementById("friend-preview");
+      }
+
+      function positionPreview(card) {
+        var el = getPreview();
+        if (!el || !card) return;
+        var rect = card.getBoundingClientRect();
+        var pw = el.offsetWidth || 360;
+        var ph = el.offsetHeight || 225;
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var left, top;
+
+        if (rect.right + GAP + pw + MARGIN <= vw) {
+          left = rect.right + GAP;
+          top = rect.top + (rect.height - ph) / 2;
+        } else if (rect.left - GAP - pw - MARGIN >= 0) {
+          left = rect.left - pw - GAP;
+          top = rect.top + (rect.height - ph) / 2;
+        } else if (rect.top - ph - GAP >= MARGIN) {
+          left = rect.left + (rect.width - pw) / 2;
+          top = rect.top - ph - GAP;
+        } else if (rect.bottom + ph + GAP <= vh - MARGIN) {
+          left = rect.left + (rect.width - pw) / 2;
+          top = rect.bottom + GAP;
+        } else {
+          left = (vw - pw) / 2;
+          top = (vh - ph) / 2;
+        }
+
+        left = Math.max(MARGIN, Math.min(left, vw - pw - MARGIN));
+        top = Math.max(MARGIN, Math.min(top, vh - ph - MARGIN));
+        el.style.left = left + "px";
+        el.style.top = top + "px";
+      }
+
+      function showPreview(card) {
+        if (!canHover()) return;
+        if (!card || !card.dataset.screenshot) return;
+        if (card.classList.contains("friend-card--no-shot")) return;
+        var el = ensurePreview();
+        var img = el.querySelector("img");
+        var titleEl = el.querySelector(".friend-preview__title");
+        var descEl = el.querySelector(".friend-preview__desc");
+        var src = card.dataset.screenshot;
+        if (!src) return;
+        if (img.getAttribute("src") !== src) img.src = src;
+        if (titleEl) titleEl.textContent = card.dataset.title || "";
+        if (descEl) descEl.textContent = card.getAttribute("data-desc") || "";
+        el.hidden = false;
+        void el.offsetWidth;
+        el.classList.add("is-visible");
+        activeCard = card;
+        if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+        requestAnimationFrame(function() { positionPreview(card); });
+      }
+
+      function hidePreview() {
+        var el = getPreview();
+        if (!el) return;
+        el.classList.remove("is-visible");
+        activeCard = null;
+        if (hideTimer) clearTimeout(hideTimer);
+        hideTimer = setTimeout(function() {
+          if (!el.classList.contains("is-visible")) el.hidden = true;
+        }, 120);
+      }
+
+      function bindPreview() {
+        if (!canHover()) return;
+        ensurePreview();
+        document.querySelectorAll("[data-friends-grid]").forEach(function(grid) {
+          if (grid.dataset.previewBound) return;
+          grid.dataset.previewBound = "1";
+          grid.addEventListener("pointerover", function(e) {
+            var card = e.target.closest(".friend-card");
+            if (!card || !grid.contains(card)) return;
+            if (card === activeCard) return;
+            showPreview(card);
+          });
+          grid.addEventListener("pointerout", function(e) {
+            var card = e.target.closest(".friend-card");
+            if (!card) return;
+            var related = e.relatedTarget;
+            if (related && related.closest && related.closest(".friend-card") === card) return;
+            var nextCard = related && related.closest ? related.closest(".friend-card") : null;
+            if (nextCard && nextCard.dataset.screenshot && !nextCard.classList.contains("friend-card--no-shot")) return;
+            hidePreview();
+          });
+          grid.addEventListener("pointerleave", hidePreview);
+        });
+        window.addEventListener("scroll", hidePreview, { passive: true });
+        window.addEventListener("resize", function() {
+          if (activeCard) positionPreview(activeCard);
+        });
+      }
+
+      function initPreview() {
+        bindPreview();
+        preloadScreenshots();
+      }
+
+      initPreview();
+      document.addEventListener("astro:page-load", initPreview);
+      document.addEventListener("swup:content:replaced", initPreview);
+      document.addEventListener("swup:willReplaceContent", hidePreview);
+    })();
+  </script>
+
+  <!-- "添加友链" 按钮滚动到友链申请区块（没有时退回评论区） -->
+  <script slot="head" is:inline>
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('#btn-add-friend');
+      if (!btn) return;
+      var target = document.getElementById('friend-apply')
+        || document.querySelector('.comment-container, #waline, #tcomment, .giscus');
+      if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+  </script>
+
+  <!-- 友链卡片交互：光晕跟随 / 整卡点击 / 头像懒加载 / 状态注入
+       （守卫防 document 级监听重复注册；Swup 导航后新 DOM 的 inline script 会重新执行，
+        init 由 astro:page-load / swup:content:replaced 驱动重新绑定） -->
+  <script is:inline>
+    (function() {
+      if (window.__friendCardReady) return;
+      window.__friendCardReady = true;
+
+      /* --- 头像懒加载（data-src → src，失败显示涂鸦） --- */
+      function loadAvatar(card) {
+        var img = card.querySelector(".friend-card-avatar__img");
+        if (!img || img.dataset.avatarLoaded) return;
+        img.dataset.avatarLoaded = "1";
+        var wrap = img.parentElement;
+        var src = img.dataset.src;
+        if (!wrap || !src) return;
+        var TIMEOUT = 5000;
+        var timer = setTimeout(function() {
+          if (!wrap.classList.contains("is-loaded")) wrap.classList.add("is-error");
+        }, TIMEOUT);
+        img.addEventListener("load", function() {
+          clearTimeout(timer);
+          wrap.classList.remove("is-error");
+          wrap.classList.add("is-loaded");
+        });
+        img.addEventListener("error", function() {
+          clearTimeout(timer);
+          wrap.classList.add("is-error");
+        });
+        img.src = src;
+        if (img.complete && img.naturalWidth > 0) {
+          clearTimeout(timer);
+          wrap.classList.remove("is-error");
+          wrap.classList.add("is-loaded");
+        }
+      }
+
+      var io = null;
+      function bindAvatarObserver() {
+        if (io) io.disconnect();
+        var cards = document.querySelectorAll(".friend-card");
+        if (!cards.length) return;
+        io = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (!entry.isIntersecting) return;
+            loadAvatar(entry.target);
+            io.unobserve(entry.target);
+          });
+        }, { rootMargin: "200px 0px" });
+        cards.forEach(function(card) { io.observe(card); });
+      }
+
+      /* --- 鼠标跟随光晕（事件委托到网格容器，一次绑定） --- */
+      function bindGlow() {
+        document.querySelectorAll("[data-friends-grid]").forEach(function(grid) {
+          if (grid.dataset.glowBound) return;
+          grid.dataset.glowBound = "1";
+          grid.addEventListener("mousemove", function(e) {
+            var card = e.target.closest(".friend-card");
+            if (!card) return;
+            var rect = card.getBoundingClientRect();
+            card.style.setProperty("--mouse-x", (e.clientX - rect.left) + "px");
+            card.style.setProperty("--mouse-y", (e.clientY - rect.top) + "px");
+          });
+        });
+      }
+
+      /* --- 整卡点击（事件委托：click / Enter / Space；头像 overlay 链接优先） --- */
+      function bindCardClick() {
+        document.addEventListener("click", function(e) {
+          var card = e.target.closest(".friend-card");
+          if (!card || e.target.closest("a")) return;
+          var href = card.dataset.href;
+          if (href) window.open(href, "_blank", "noopener,noreferrer");
+        });
+        document.addEventListener("keydown", function(e) {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          var card = e.target.closest(".friend-card");
+          if (!card) return;
+          var href = card.dataset.href;
+          if (href) { e.preventDefault(); window.open(href, "_blank", "noopener,noreferrer"); }
+        });
+      }
+
+      /* --- 状态注入：fetch friends-status.json 按 siteurl 匹配（无 JSON 静默隐藏） --- */
+      var statusFetched = false;
+      function bindStatus() {
+        if (statusFetched) return;
+        statusFetched = true;
+        fetch("/friends-status.json")
+          .then(function(r) { if (!r.ok) throw new Error("status json missing"); return r.json(); })
+          .then(function(data) {
+            var sites = data.sites || {};
+            document.querySelectorAll(".friend-card").forEach(function(card) {
+              var info = sites[card.dataset.siteurl];
+              var tag = card.querySelector(".friend-status-tag");
+              if (!tag || !info) return;
+              tag.classList.add("friend-status-tag--" + info.status);
+              tag.querySelector(".friend-status-text").textContent =
+                info.status === "down" ? "DOWN" : (info.ms + " MS");
+              tag.hidden = false;
+            });
+          })
+          .catch(function() { /* 无 JSON：静默隐藏徽标 */ });
+      }
+
+      function init() {
+        bindAvatarObserver();
+        bindGlow();
+        bindCardClick();
+        bindStatus();
+      }
+
+      init();
+      document.addEventListener("astro:page-load", init);
+      document.addEventListener("swup:content:replaced", init);
+    })();
+  </script>
+
+</MainGridLayout>

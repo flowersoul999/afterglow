@@ -1,0 +1,348 @@
+---
+import ClientPagination from "@/components/common/ClientPagination.astro";
+import BookCard from "./BookCard.astro";
+
+interface BookData {
+	title: string;
+	coverImage: string;
+	link: string;
+	status: number;
+	score: number;
+	category: string;
+}
+
+interface FilterItem {
+	value: string;
+	label: string;
+	count: number;
+}
+
+interface Props {
+	books: BookData[];
+	tabs: FilterItem[];
+	statusFilters: FilterItem[];
+}
+
+const { books, tabs, statusFilters } = Astro.props;
+
+const SECTION_ID = "books";
+const statusMap: Record<number, string> = {
+	1: "wish",
+	2: "collect",
+	3: "doing",
+	4: "on_hold",
+	5: "dropped",
+};
+---
+
+<div class="bookshelf">
+	{books.length > 0 ? (
+		<>
+			<!-- 分类筛选（影视页同款胶囊） -->
+			<div class="books-filter-pill" data-books-tab-nav>
+				<div class="tools-tab-indicator" data-books-tab-indicator></div>
+				{tabs.map((tab, i) => (
+					<button
+						type="button"
+						class:list={[
+							"tools-tab-btn",
+							i === 0 ? "tools-tab-btn-active" : "tools-tab-btn-inactive",
+						]}
+						data-books-tab={tab.value}
+					>
+						<span>{tab.label}</span>
+						<span class="tools-tab-badge">{tab.count}</span>
+					</button>
+				))}
+			</div>
+
+			<!-- 状态筛选（读过/在读/想读…） -->
+			<div class="books-filter-pill books-status-pill" data-books-status-nav>
+				<div class="tools-tab-indicator" data-books-status-indicator></div>
+				{statusFilters.map((filter, i) => (
+					<button
+						type="button"
+						class:list={[
+							"tools-tab-btn",
+							i === 0 ? "tools-tab-btn-active" : "tools-tab-btn-inactive",
+						]}
+						data-books-status={filter.value}
+					>
+						<span>{filter.label}</span>
+						<span class="tools-tab-badge">{filter.count}</span>
+					</button>
+				))}
+			</div>
+
+			<div class="shelf-grid">
+				{books.map((book) => (
+					<div
+						class="shelf-item"
+						data-item-section={SECTION_ID}
+						data-books-item-cat={book.category}
+						data-books-item-status={statusMap[book.status] || "unknown"}
+					>
+						<BookCard
+							title={book.title}
+							coverImage={book.coverImage}
+							link={book.link}
+							status={book.status}
+							score={book.score}
+						/>
+					</div>
+				))}
+			</div>
+
+			<ClientPagination
+				totalItems={books.length}
+				itemsPerPage={10}
+				itemsPerPageMobile={6}
+				currentPage={1}
+				sectionId={SECTION_ID}
+			/>
+		</>
+	) : (
+		<div class="flex flex-col items-center justify-center py-16 text-center">
+			<p class="text-sm text-[var(--content-meta)]">书架上还没有书籍</p>
+		</div>
+	)}
+</div>
+
+<script is:inline>
+	// 分类 + 状态双条件筛选（影视页同款交互）
+	// 容器内脚本：Swup 导航后随内容重放；AbortController 重绑（CLAUDE.md §8.2）
+	(function () {
+		var abortCtrl = null;
+
+		function updateIndicator(indicator, btn) {
+			if (!indicator || !btn) return;
+			indicator.style.left = btn.offsetLeft + "px";
+			indicator.style.top = btn.offsetTop + "px";
+			indicator.style.width = btn.offsetWidth + "px";
+			indicator.style.height = btn.offsetHeight + "px";
+			indicator.style.opacity = "1";
+		}
+
+		function activateBtn(btns, target, indicator) {
+			btns.forEach(function (btn) {
+				btn.classList.remove("tools-tab-btn-active");
+				btn.classList.add("tools-tab-btn-inactive");
+			});
+			target.classList.remove("tools-tab-btn-inactive");
+			target.classList.add("tools-tab-btn-active");
+			if (indicator) {
+				requestAnimationFrame(function () {
+					updateIndicator(indicator, target);
+				});
+			}
+		}
+
+		function initIndicators() {
+			document.querySelectorAll("[data-books-tab-nav]").forEach(function (nav) {
+				var indicator = nav.querySelector("[data-books-tab-indicator]");
+				var active = nav.querySelector(".tools-tab-btn-active");
+				if (indicator && active) updateIndicator(indicator, active);
+			});
+			document.querySelectorAll("[data-books-status-nav]").forEach(function (nav) {
+				var indicator = nav.querySelector("[data-books-status-indicator]");
+				var active = nav.querySelector(".tools-tab-btn-active");
+				if (indicator && active) updateIndicator(indicator, active);
+			});
+		}
+
+	function applyFilter() {
+		var tabNav = document.querySelector("[data-books-tab-nav]");
+		var statusNav = document.querySelector("[data-books-status-nav]");
+		if (!tabNav || !statusNav) return;
+		var cat = tabNav.querySelector(".tools-tab-btn-active")?.dataset.booksTab || "all";
+		var status = statusNav.querySelector(".tools-tab-btn-active")?.dataset.booksStatus || "all";
+
+		var visibleCount = 0;
+		document.querySelectorAll("[data-item-section='books']").forEach(function (el) {
+			var matchCat = cat === "all" || el.dataset.booksItemCat === cat;
+			var matchStatus = status === "all" || el.dataset.booksItemStatus === status;
+			var match = matchCat && matchStatus;
+			el.classList.toggle("hidden", !match);
+			el.style.display = match ? "" : "none";
+			if (match) visibleCount++;
+		});
+
+		var pagi = document.querySelector("[data-pagination-section='books']");
+		if (pagi) {
+			pagi.dispatchEvent(
+				new CustomEvent("updatePagination", { detail: { visibleCount: visibleCount } }),
+			);
+		}
+	}
+
+	function onClick(e) {
+		var tab = e.target.closest ? e.target.closest("[data-books-tab]") : null;
+			if (tab) {
+				var nav = tab.closest("[data-books-tab-nav]");
+				var indicator = nav ? nav.querySelector("[data-books-tab-indicator]") : null;
+				activateBtn(Array.from(nav.querySelectorAll("[data-books-tab]")), tab, indicator);
+				applyFilter();
+				return;
+			}
+			var statusBtn = e.target.closest ? e.target.closest("[data-books-status]") : null;
+			if (statusBtn) {
+				var statusNav = statusBtn.closest("[data-books-status-nav]");
+				var statusIndicator = statusNav ? statusNav.querySelector("[data-books-status-indicator]") : null;
+				activateBtn(Array.from(statusNav.querySelectorAll("[data-books-status]")), statusBtn, statusIndicator);
+				applyFilter();
+			}
+		}
+
+	function bind() {
+		if (abortCtrl) abortCtrl.abort();
+		abortCtrl = new AbortController();
+		document.addEventListener("click", onClick, { signal: abortCtrl.signal });
+		window.addEventListener("resize", initIndicators, { signal: abortCtrl.signal });
+		initIndicators();
+	}
+
+		bind();
+		document.addEventListener("swup:content:replaced", bind);
+	})();
+</script>
+
+<style>
+	.bookshelf {
+		padding: 4px 0 8px;
+	}
+
+	/* 分类/状态筛选（影视页同款胶囊，边框 1.5px 略细于原版 2px） */
+	.books-filter-pill {
+		position: relative;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
+		padding: 0.375rem;
+		border-radius: 1rem;
+		border: 1.5px solid #000;
+		margin-bottom: 0.875rem;
+	}
+	:root.dark .books-filter-pill {
+		border-color: #fff;
+	}
+
+	.books-status-pill {
+		margin-bottom: 1.25rem;
+	}
+
+	.tools-tab-indicator {
+		position: absolute;
+		border-radius: 9999px;
+		background: #000;
+		transition:
+			left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+			top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+			width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+			height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		opacity: 0;
+		pointer-events: none;
+		z-index: 0;
+	}
+	:root.dark .tools-tab-indicator {
+		background: #fff;
+	}
+
+	.tools-tab-btn {
+		position: relative;
+		z-index: 1;
+		display: flex;
+		align-items: center;
+		gap: 0.375rem;
+		padding: 0.375rem 0.875rem;
+		border: none;
+		border-radius: 9999px;
+		font-size: 0.8125rem;
+		font-weight: 500;
+		white-space: nowrap;
+		cursor: pointer;
+		background: transparent;
+		transition: color 0.2s;
+		flex-shrink: 0;
+		font-family: inherit;
+	}
+
+	.tools-tab-btn-active {
+		color: #fff;
+		cursor: default;
+	}
+	:root.dark .tools-tab-btn-active {
+		color: #000;
+	}
+
+	.tools-tab-btn-inactive {
+		color: #000;
+	}
+	.tools-tab-btn-inactive:hover {
+		opacity: 0.7;
+	}
+	:root.dark .tools-tab-btn-inactive {
+		color: #fff;
+	}
+
+	.tools-tab-badge {
+		font-size: 0.65rem;
+		padding: 0.0625rem 0.375rem;
+		border-radius: 9999px;
+		background: oklch(0.92 0 0);
+		color: oklch(0.35 0 0);
+		line-height: 1.4;
+	}
+	:root.dark .tools-tab-badge {
+		background: oklch(0.25 0 0);
+		color: oklch(0.65 0 0);
+	}
+
+	.tools-tab-btn-active .tools-tab-badge {
+		background: rgba(255, 255, 255, 0.25);
+		color: #fff;
+	}
+	:root.dark .tools-tab-btn-active .tools-tab-badge {
+		background: rgba(0, 0, 0, 0.2);
+		color: #000;
+	}
+
+	/* 桌面 5 列、移动端 3 列（1fr 自适应列宽，书厚 left 定位不依赖固定书宽）
+	   外框与上方筛选胶囊同款黑色线框 + 大圆角（1.5px，略细于胶囊原版），把整片书架框住 */
+	.shelf-grid {
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 24px 16px;
+		padding: 20px 16px;
+		border: 1.5px solid #000;
+		border-radius: 1rem;
+		margin-bottom: 0.5rem;
+		--shelf-book-depth: 42px;
+	}
+	:root.dark .shelf-grid {
+		border-color: #fff;
+	}
+
+	.shelf-item {
+		min-width: 0;
+	}
+
+	/* SSR 首屏防闪烁：桌面隐藏第 11 本起，移动端隐藏第 7 本起（与 ClientPagination 10/6 本每页一致） */
+	.shelf-grid .shelf-item:nth-child(n + 11) {
+		display: none;
+	}
+
+	@media (max-width: 768px) {
+		.shelf-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			gap: 20px 10px;
+			padding: 16px 12px;
+			--shelf-book-depth: 30px;
+		}
+
+		.shelf-grid .shelf-item:nth-child(n + 7) {
+			display: none;
+		}
+	}
+
+	/* 分页与文章列表页 Pagination.astro 保持一致，无额外覆写 */
+</style>

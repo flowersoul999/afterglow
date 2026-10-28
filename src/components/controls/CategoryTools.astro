@@ -1,0 +1,612 @@
+---
+import { getCategoryList } from "@/utils/content-utils";
+import { url } from "@/utils/url-utils";
+
+const categories = await getCategoryList();
+
+interface Props {
+	class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<div class:list={["category-tools", className]} id="category-tools">
+  <!-- 封面图拨动开关 (骷髅头样式) -->
+  <div class="skull-cover-wrap" id="cover-toggle" title="封面图开关">
+    <div class="skull-cover-scale">
+      <div class="skull-cover-toggle">
+        <input type="checkbox" id="cover-checkbox" checked>
+        <label for="cover-checkbox">
+          <span class="thumb">
+            <div class="cranium"></div>
+            <div class="mouth"></div>
+          </span>
+          <span class="arm-wrapper">
+            <span class="arm">
+              <span class="bone"></span>
+              <span class="bone"></span>
+              <span class="hand">
+                <span class="bone"></span>
+                <span class="bone"></span>
+                <span class="bone"></span>
+                <span class="bone"></span>
+              </span>
+              <span class="big"></span>
+            </span>
+          </span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 分类和归档按钮组 -->
+  <div class="category-actions">
+    <a href={url('/archive/')} class="category-action-pill">
+      归档
+    </a>
+    <button
+      class="category-action-pill"
+      id="cat-bubble-btn"
+      aria-label="分类菜单"
+      aria-expanded="false"
+    >
+      分类
+    </button>
+  </div>
+</div>
+
+<!-- 分类气泡菜单覆盖层 -->
+<div class="cat-bubble-overlay" id="cat-bubble-overlay" aria-hidden="true">
+  <ul class="cat-pill-list" role="menu" aria-label="分类列表">
+    {categories.map((cat, idx) => (
+      <li class="cat-pill-col" role="none">
+        <a
+          role="menuitem"
+          href={cat.url}
+          aria-label={`查看 ${cat.name} 分类`}
+          class="cat-pill-link"
+          data-idx={idx}
+        >
+          <span class="cat-pill-label">{cat.name}</span>
+          <span class="cat-pill-count">{cat.count}</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  /* ============ 工具栏容器 ============ */
+  .category-tools {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 4px 0;
+  }
+
+  /* ============ 分类和归档按钮组 ============ */
+  .category-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .category-action-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border: 2.5px solid var(--deep-text);
+    border-radius: 0.5rem;
+    color: var(--btn-content);
+    background: transparent;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .category-action-pill:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  :root.dark .category-action-pill {
+    border-color: #fff;
+    color: var(--btn-content);
+  }
+
+  :root.dark .category-action-pill:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  /* ============ 骷髅头封面图拨动开关 ============ */
+  .skull-cover-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-shrink: 0;
+    width: 64px;
+    height: 40px;
+    overflow: visible;
+    margin-left: -6px;
+  }
+  .skull-cover-scale {
+    transform: scale(0.35);
+    transform-origin: left center;
+    pointer-events: auto;
+  }
+  @media (min-width: 768px) {
+    .skull-cover-wrap {
+      width: 48px;
+      height: 28px;
+    }
+    .skull-cover-scale {
+      transform: scale(0.22);
+    }
+  }
+
+  .skull-cover-toggle {
+    --sz: 10vmin;
+    --ttf: ease-in-out;
+    --bone: #888;
+    position: relative;
+    width: calc(var(--sz) * 5);
+    height: calc(var(--sz) * 3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .skull-cover-toggle input { display: none; }
+
+  .skull-cover-toggle label {
+    position: absolute;
+    width: calc(var(--sz) * 4);
+    height: calc(var(--sz) * 2);
+    background: #141414;
+    border-radius: var(--sz);
+    overflow: hidden;
+    box-shadow: 0 0 calc(var(--sz) / 50) calc(var(--sz) / 50) #000000, 0 0 calc(var(--sz) / 10) calc(var(--sz) / 50) #0b0b10 inset;
+    cursor: pointer;
+  }
+
+  .skull-cover-toggle .thumb {
+    position: absolute;
+    width: calc(calc(var(--sz) * 2) - calc(var(--sz) / 4));
+    height: calc(calc(var(--sz) * 2) - calc(var(--sz) / 4));
+    top: calc(calc(var(--sz) / 10) + calc(var(--sz) / 50));
+    left: calc(calc(100% - calc(calc(var(--sz) * 2) - calc(var(--sz) / 3))) - calc(calc(var(--sz) / 10) + calc(var(--sz) / 10)));
+    border-radius: var(--sz);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    animation: skull-move-left 0.5s var(--ttf) 0.5s;
+    animation-fill-mode: forwards;
+  }
+
+  .skull-cover-toggle input:checked + label .thumb {
+    left: calc(calc(var(--sz) / 10) + calc(var(--sz) / 50));
+    animation: skull-move-right 0.5s var(--ttf) 0.5s;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes skull-move-right {
+    0% { left: calc(calc(var(--sz) / 10) + calc(var(--sz) / 50)); }
+    100% { left: calc(calc(100% - calc(calc(var(--sz) * 2) - calc(var(--sz) / 3))) - calc(calc(var(--sz) / 10) + calc(var(--sz) / 10))); }
+  }
+
+  @keyframes skull-move-left {
+    0% { left: calc(calc(100% - calc(calc(var(--sz) * 2) - calc(var(--sz) / 3))) - calc(calc(var(--sz) / 10) + calc(var(--sz) / 10))); }
+    100% { left: calc(calc(var(--sz) / 10) + calc(var(--sz) / 50)); }
+  }
+
+  .skull-cover-toggle .thumb > * {
+    position: absolute;
+    animation: skull-unselected 1.5s var(--ttf) 0s reverse;
+    animation-fill-mode: forwards;
+    filter: drop-shadow(0px 2px 2px #000);
+  }
+
+  .skull-cover-toggle input:checked + label .thumb * {
+    animation: skull-selected 1.5s var(--ttf) 0s;
+    animation-fill-mode: forwards;
+  }
+
+  @keyframes skull-selected {
+    0%, 50% { --bone: #888; }
+    50%, 100% { --bone: #fff; }
+  }
+
+  @keyframes skull-unselected {
+    0%, 50% { --bone: #888; }
+    50%, 100% { --bone: #fff; }
+  }
+
+  @supports (-moz-appearance:none) {
+    .skull-cover-toggle .thumb > * { --bone: #888; }
+    .skull-cover-toggle input:checked + label .thumb * { --bone: #fff; }
+  }
+
+  .skull-cover-toggle .cranium {
+    background: linear-gradient(180deg, var(--bone) 0 54%, #fff0 0 94%, var(--bone) 0 100%), radial-gradient(circle at 75% 69%, #fff0 0 1.75vmin, var(--bone) calc(1.75vmin + 1px) 4.85vmin, #fff0 calc(4.85vmin + 1px) 100%), radial-gradient(circle at 25% 69%, #fff0 0 1.75vmin, var(--bone) calc(1.75vmin + 1px) 4.85vmin, #fff0 calc(4.85vmin + 1px) 100%);
+    width: 100%; height: 14vmin; left: 0; top: 0;
+    border-radius: 10vmin 10vmin 5.5vmin 5.5vmin;
+  }
+
+  .skull-cover-toggle .cranium:before {
+    content: ""; position: absolute;
+    width: 1.25vmin; height: 1.25vmin;
+    bottom: -0.75vmin; left: 7.5vmin;
+    background: var(--bone); border-radius: 100%;
+    box-shadow: 1.25vmin 0 0 0 var(--bone);
+  }
+
+  .skull-cover-toggle .cranium:after {
+    content: ""; position: absolute;
+    width: 5.25vmin; height: 1.5vmin;
+    bottom: -0.95vmin; left: 6vmin;
+    background: radial-gradient(circle at 90% 10%, var(--bone) 0 1vmin, #fff0 calc(1vmin + 1px) 100%), radial-gradient(circle at 10% 10%, var(--bone) 0 1vmin, #fff0 calc(1vmin + 1px) 100%);
+    border-radius: 1vmin;
+  }
+
+  .skull-cover-toggle .mouth {
+    border: 0.85vmin solid #fff0; border-bottom-color: var(--bone);
+    width: 11.75vmin; left: 2.85vmin; height: 6vmin; top: 11.25vmin;
+    background: radial-gradient(circle at 35% 98%, var(--bone) 0 0.65vmin, #fff0 calc(0.65vmin + 1px) 100%), radial-gradient(circle at 45% 100%, var(--bone) 0 0.65vmin, #fff0 calc(0.65vmin + 1px) 100%), radial-gradient(circle at 55% 100%, var(--bone) 0 0.65vmin, #fff0 calc(0.65vmin + 1px) 100%), radial-gradient(circle at 65% 98%, var(--bone) 0 0.65vmin, #fff0 calc(0.65vmin + 1px) 100%);
+    background-repeat: no-repeat; border-radius: 100%;
+  }
+
+  .skull-cover-toggle .mouth:before,
+  .skull-cover-toggle .mouth:after {
+    content: ""; position: absolute; border-radius: 100%;
+    background: var(--bone); width: 0.7vmin; height: 0.7vmin;
+    left: 0.4vmin; bottom: 0.25vmin;
+  }
+  .skull-cover-toggle .mouth:after { left: 9.05vmin; }
+
+  @keyframes skull-check-on {
+    0% { right: -65%; }
+    25%, 33% { right: 0%; }
+    66%, 80% { right: -50%; }
+    100% { right: -65%; }
+  }
+  @keyframes skull-check-off {
+    0% { right: -65%; }
+    25%, 33% { right: 0%; }
+    66%, 80% { right: -50%; }
+    100% { right: -65%; }
+  }
+
+  .skull-cover-toggle .arm-wrapper {
+    position: absolute; width: 100%; height: 100%;
+    border-radius: 10vmin; overflow: hidden; right: -65%;
+    animation: skull-check-off 1.5s var(--ttf) 0s reverse;
+    --bone: #fff;
+  }
+  .skull-cover-toggle input:checked + label .arm-wrapper {
+    animation: skull-check-on 1.5s var(--ttf) 0s;
+  }
+
+  .skull-cover-toggle .arm {
+    position: absolute; width: 16vmin; height: 5vmin;
+    right: 2%; top: calc(50% - 2.5vmin); border-radius: 0.25vmin;
+  }
+
+  .skull-cover-toggle .bone {
+    background: var(--bone); width: 8vmin; height: 2vmin;
+    position: absolute; transform: rotate(0deg);
+    top: 1.5vmin; right: -4vmin;
+  }
+
+  .skull-cover-toggle .bone:before, .skull-cover-toggle .bone:after,
+  .skull-cover-toggle .big:before, .skull-cover-toggle .big:after {
+    content: ""; background: var(--bone);
+    width: 1.5vmin; height: 1.5vmin; position: absolute;
+    left: -0.5vmin; top: -0.5vmin; border-radius: 100%;
+    box-shadow: 8vmin 0 0 0 var(--bone);
+  }
+  .skull-cover-toggle .bone:after { top: calc(100% - 1vmin); }
+
+  .skull-cover-toggle .arm > .bone + .bone {
+    top: 1.5vmin; left: 0.5vmin; height: 0.85vmin; width: 10.5vmin;
+    box-shadow: 0 1.15vmin 0 0 var(--bone);
+  }
+  .skull-cover-toggle .arm > .bone + .bone:before, .skull-cover-toggle .arm > .bone + .bone:after {
+    box-shadow: 10.15vmin 0 0 0 var(--bone);
+  }
+  .skull-cover-toggle .arm > .bone + .bone:after { top: 100%; }
+
+  .skull-cover-toggle .hand {
+    position: absolute;
+    --balls: var(--bone) 0.5vmin, #fff0 calc(0.5vmin + 1px) 100%;
+    background: radial-gradient(circle at 91% 29%, var(--balls)), radial-gradient(circle at 92% 49%, var(--balls)), radial-gradient(circle at 91% 69%, var(--balls)), radial-gradient(circle at 76% 21%, var(--balls)), radial-gradient(circle at 78% 39%, var(--balls)), radial-gradient(circle at 79% 58%, var(--balls)), radial-gradient(circle at 78% 78%, var(--balls));
+    width: 7vmin; height: 5vmin; left: -7vmin; z-index: 0;
+  }
+
+  .skull-cover-toggle .hand .bone, .skull-cover-toggle .big {
+    width: 3vmin; left: 1.35vmin; height: 0.75vmin;
+    border-radius: 0.5vmin 0 0 0.5vmin;
+  }
+  .skull-cover-toggle .hand .bone:before, .skull-cover-toggle .hand .bone:after,
+  .skull-cover-toggle .big:before, .skull-cover-toggle .big:after {
+    width: 0.8vmin; height: 0.8vmin; top: -0.25vmin; left: 2.25vmin; box-shadow: none;
+  }
+  .skull-cover-toggle .hand .bone:after, .skull-cover-toggle .big:after { top: 0.125vmin; }
+
+  .skull-cover-toggle .hand .bone:nth-child(1) {
+    transform: rotate(5deg) translateY(-1vmin) translateX(0.15vmin);
+    filter: drop-shadow(-3vmin 0vmin 0px var(--bone));
+  }
+  .skull-cover-toggle .hand .bone:nth-child(2) {
+    transform: rotate(0deg) translateX(0.5vmin);
+    filter: drop-shadow(-3vmin 0vmin 0px var(--bone));
+  }
+  .skull-cover-toggle .hand .bone:nth-child(3) {
+    transform: rotate(-2deg) translateY(1.15vmin) translateX(0.5vmin);
+    filter: drop-shadow(-3vmin 0vmin 0px var(--bone));
+  }
+  .skull-cover-toggle .hand .bone:nth-child(4) {
+    transform: rotate(-5deg) translateY(2.3vmin) translateX(0.5vmin);
+    filter: drop-shadow(-3vmin 0vmin 0px var(--bone));
+  }
+
+  .skull-cover-toggle .big {
+    background: var(--bone); height: 1vmin !important;
+    position: absolute; left: -4.25vmin !important; top: 1.15vmin; z-index: 1;
+    filter: drop-shadow(-2.5vmin 0vmin 0px var(--bone)) drop-shadow(0 0 1px #000);
+  }
+
+  /* ============ 分类气泡菜单覆盖层 ============ */
+  .cat-bubble-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 98;
+    background: color-mix(in srgb, var(--page-bg) 92%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .cat-bubble-overlay.show {
+    display: flex;
+    pointer-events: auto;
+  }
+
+  .cat-pill-list {
+    list-style: none;
+    margin: 0;
+    padding: 0 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    row-gap: 12px;
+    width: 100%;
+    max-width: 900px;
+    pointer-events: auto;
+    justify-content: center;
+  }
+
+  .cat-pill-col {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    flex: 0 0 calc(100% / 3);
+    box-sizing: border-box;
+    padding: 0 6px;
+  }
+
+  .cat-pill-link {
+    --pill-bg: var(--page-bg, #fff);
+    --pill-color: var(--deep-text, #111);
+    --hover-bg: var(--primary);
+    --hover-color: var(--page-bg, #fff);
+    width: 100%;
+    min-height: 80px;
+    padding: 1.25rem 1rem;
+    font-size: clamp(1rem, 2.5vw, 1.5rem);
+    font-weight: 600;
+    line-height: 1.2;
+    border-radius: 999px;
+    background: var(--pill-bg);
+    color: var(--pill-color);
+    text-decoration: none;
+    border: 2px solid var(--deep-text, #000);
+    box-shadow: 3px 3px 0 var(--deep-text, #000);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    position: relative;
+    transition: background 0.3s ease, color 0.3s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    will-change: transform;
+    box-sizing: border-box;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  :root.dark .cat-pill-link {
+    border-color: #fff;
+    box-shadow: 3px 3px 0 #fff;
+  }
+
+  .cat-pill-link:hover {
+    background: var(--hover-bg);
+    color: var(--hover-color);
+    transform: rotate(var(--item-rot, 0deg)) scale(1.04);
+  }
+  :root.dark .cat-pill-link:hover {
+    border-color: var(--primary);
+    box-shadow: 3px 3px 0 var(--primary);
+  }
+
+  .cat-pill-link:active {
+    transform: rotate(var(--item-rot, 0deg)) scale(0.96);
+    box-shadow: 1px 1px 0 var(--deep-text, #000);
+  }
+  :root.dark .cat-pill-link:active {
+    box-shadow: 1px 1px 0 #fff;
+  }
+
+  .cat-pill-label {
+    display: inline-block;
+  }
+
+  .cat-pill-count {
+    font-size: 0.6em;
+    opacity: 0.5;
+    font-weight: 400;
+  }
+
+  .cat-pill-col:nth-child(odd) .cat-pill-link {
+    --item-rot: -3deg;
+  }
+  .cat-pill-col:nth-child(even) .cat-pill-link {
+    --item-rot: 3deg;
+  }
+
+  .cat-pill-link:not(.cat-pill-visible) {
+    transform: rotate(var(--item-rot, 0deg)) scale(0) !important;
+  }
+  .cat-pill-link.cat-pill-visible {
+    transform: rotate(var(--item-rot, 0deg)) scale(1);
+  }
+
+  /* 小屏适配 */
+  @media (max-width: 640px) {
+    .cat-pill-list {
+      padding: 0 12px;
+      row-gap: 8px;
+    }
+    .cat-pill-link {
+      min-height: 60px;
+      padding: 0.8rem 0.6rem;
+      font-size: 0.9rem;
+    }
+  }
+</style>
+
+<script is:inline>
+(function() {
+  // 清理可能残留的旧覆盖层（Swup 导航时 overlay 可能被移到 body）
+  var staleOverlay = document.getElementById("cat-bubble-overlay");
+  if (staleOverlay && staleOverlay.parentElement === document.body) {
+    staleOverlay.remove();
+  }
+
+  var isOpen = false;
+
+  function openMenu() {
+    var btn = document.getElementById("cat-bubble-btn");
+    var overlay = document.getElementById("cat-bubble-overlay");
+    if (!btn || !overlay) return;
+
+    // 移到 body 避免父容器 transform 破坏 position:fixed
+    if (overlay.parentElement !== document.body) {
+      overlay.setAttribute("data-original-parent", "true");
+      document.body.appendChild(overlay);
+    }
+
+    isOpen = true;
+    btn.classList.add("open");
+    btn.setAttribute("aria-expanded", "true");
+    overlay.classList.add("show");
+    overlay.setAttribute("aria-hidden", "false");
+
+    var pills = overlay.querySelectorAll(".cat-pill-link");
+    pills.forEach(function(pill, i) {
+      pill.classList.remove("cat-pill-visible");
+      pill.style.opacity = "0";
+      setTimeout(function() {
+        pill.style.transition = "opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)";
+        pill.style.opacity = "1";
+        pill.classList.add("cat-pill-visible");
+      }, i * 60 + 30);
+    });
+  }
+
+  function closeMenu() {
+    var btn = document.getElementById("cat-bubble-btn");
+    var overlay = document.getElementById("cat-bubble-overlay");
+    if (!btn || !overlay) return;
+
+    isOpen = false;
+    btn.classList.remove("open");
+    btn.setAttribute("aria-expanded", "false");
+
+    var pills = overlay.querySelectorAll(".cat-pill-link");
+    pills.forEach(function(pill) {
+      pill.style.transition = "opacity 0.2s ease, transform 0.2s ease";
+      pill.style.opacity = "0";
+      pill.classList.remove("cat-pill-visible");
+    });
+
+    setTimeout(function() {
+      overlay.classList.remove("show");
+      overlay.setAttribute("aria-hidden", "true");
+      // 关闭后移回原处，若原处已不存在则移除自身
+      var tools = document.getElementById("category-tools");
+      if (tools) {
+        tools.after(overlay);
+        overlay.removeAttribute("data-original-parent");
+      } else if (overlay.parentElement === document.body) {
+        overlay.remove();
+      }
+    }, 250);
+  }
+
+  // 初始化封面图开关状态
+  function initCoverToggle() {
+    var cb = document.getElementById("cover-checkbox");
+    if (!cb) return;
+    var stored = localStorage.getItem("hideCovers");
+    if (stored === null) {
+      // 首次访问：默认隐藏封面
+      localStorage.setItem("hideCovers", "true");
+      document.documentElement.setAttribute("data-hide-covers", "true");
+      cb.checked = true;
+    } else if (stored === "true") {
+      cb.checked = true;
+    } else {
+      cb.checked = false;
+    }
+  }
+
+  // 事件委托 - 绑定在 document 上，不受 Swup DOM 替换影响
+  document.addEventListener("change", function(e) {
+    if (e.target && e.target.id === "cover-checkbox") {
+      var active = e.target.checked;
+      localStorage.setItem("hideCovers", String(active));
+      document.documentElement.setAttribute("data-hide-covers", String(active));
+    }
+  });
+
+  document.addEventListener("click", function(e) {
+    var target = e.target;
+    // 气泡按钮点击
+    if (target && (target.id === "cat-bubble-btn" || target.closest("#cat-bubble-btn"))) {
+      if (isOpen) closeMenu();
+      else openMenu();
+      return;
+    }
+    // 覆盖层空白处点击关闭
+    if (target && target.id === "cat-bubble-overlay") {
+      closeMenu();
+    }
+  });
+
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && isOpen) closeMenu();
+  });
+
+  // 初始化
+  initCoverToggle();
+  document.addEventListener("astro:page-load", initCoverToggle);
+  document.addEventListener("swup:content:replace", initCoverToggle);
+})();
+</script>

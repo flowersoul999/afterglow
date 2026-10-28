@@ -1,0 +1,105 @@
+# build output
+dist/
+
+# generated types
+.astro/
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+.vercel
+
+package-lock.json
+bun.lockb
+yarn.lock
+
+# ide
+.idea
+*.iml
+.claude
+
+# docs
+Firefly-docs/
+
+cache/
+package/
+.obsidian/
+.obsidian-cloud-only
+
+# AI 摘要补全脚本（包含 API 密钥，不上传 GitHub）
+scripts/fill-descriptions/index.ts
+
+# AI 工具与临时文件
+.agent
+.agents/*
+# 例外：笔记整理规范技能需要随仓库备份（规范正文见 src/content/posts/编程学习/Python学习笔记/99-笔记整理规范.md）
+!.agents/skills
+.agents/skills/*
+!.agents/skills/note-organizer
+# 其它层级的 .agents（如 src/.agents）仍全部忽略：旧规则是裸 .agents 匹配任意层级，改成 .agents/* 后必须显式补回
+src/.agents
+.mimocode
+.pnpm-store
+note-organizer-workspace
+obsidian-sync-plugin
+src/content/临时收集
+src/.claudian
+src/content/.trash
+src/content/notes
+# 百度网盘同步插件残留的临时文件（二进制，vite 会当依赖加载导致构建失败，2026-10-20 清理）
+*.baiduyun.uploading.cfg
+# 私人笔记归档（2026-10-20 笔记本功能下线，内容只留本地 Obsidian 库，不进仓库）
+src/content/笔记本归档
+src/.copilot
+src/.opencode
+.workbuddy/
+
+.env*
+
+# local tool state
+.wrangler/
+.pnpm-store/
+.zcode/
+.superpowers/
+
+# 本地维护的插件目录（AstrBot BlogWriter 等，独立 git 仓库，不随博客仓库提交）
+/plug-in/
+
+# 本地 AI 工具目录备份（从 src 移出，避免被构建器解析）
+.local-skill-backup/
+
+# TTS 服务本地缓存（部署产物，不入库）
+scripts/TTS服务/cache/
+
+# ===== src/content = Obsidian 库根：新目录默认不进仓库 =====
+# 规则：先忽略 src/content 下的**所有目录**，再逐个放行站点集合目录。
+# 效果：以后在 Obsidian 里于 src/content 下新建文件夹，默认不会被 git 跟踪（不用再单独配）；
+#      若某个新目录**要**上传，照下面格式加一行 !src/content/目录名/ 即可。
+# 注意：已跟踪的文件不受 .gitignore 影响；如果某个目录已经 git add 过，
+#      要先 git rm -r --cached "src/content/xxx" 才会真正从仓库移除（本地文件保留）。
+src/content/*/
+!src/content/文章/
+!src/content/页面/
+!src/content/动态/
+!src/content/影视/
+!src/content/足迹/
+!src/content/相册/
+!src/content/导航/
+!src/content/资源/
+!src/content/友链/
+!src/content/更新日志/
+# 下面这些只留本地（私人 / 草稿），不上传：
+# src/content/学习笔记、临时收集、notes、笔记本归档、.trash

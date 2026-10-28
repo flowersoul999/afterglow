@@ -1,0 +1,32 @@
+---
+import ChangelogGraph from "@components/about/ChangelogGraph.astro";
+import { Icon } from "astro-icon/components";
+import PageTitle from "@/components/common/PageTitle.astro";
+import { siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+if (!siteConfig.pages.changelog) {
+	return Astro.redirect("/404/");
+}
+
+const displayTitle = i18n(I18nKey.changelogTitle);
+const displaySubtitle = i18n(I18nKey.changelogSubtitle);
+---
+
+<MainGridLayout title={displayTitle} description={displaySubtitle}>
+	<div class="flex w-full rounded-(--radius-large) overflow-hidden relative min-h-32">
+		<div class="card-base z-10 px-4 py-6 md:px-9 relative w-full">
+			<div class="mb-6">
+				<PageTitle
+					title={displayTitle}
+					eyebrow="Changelog"
+					description="这个博客的每一次改动"
+				/>
+			</div>
+
+			<ChangelogGraph limit={0} />
+		</div>
+	</div>
+</MainGridLayout>

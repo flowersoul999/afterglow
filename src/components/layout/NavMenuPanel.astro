@@ -1,0 +1,227 @@
+---
+import { Picture } from "astro:assets";
+import * as path from "node:path";
+import type { ImageMetadata } from "astro";
+import { Icon } from "astro-icon/components";
+import { siteConfig } from "@/config";
+import { LinkPresets } from "@/constants/link-presets";
+import { LinkPreset, type NavBarLink } from "@/types/config";
+import { getFallbackFormat, getImageFormats } from "@/utils/image-utils";
+import { url } from "@/utils/url-utils";
+
+interface Props {
+	links: NavBarLink[];
+}
+
+const processedLinks = Astro.props.links.map((link: NavBarLink) => ({
+	...link,
+	children: link.children?.map((child: NavBarLink | LinkPreset): NavBarLink => {
+		if (typeof child === "number") {
+			return LinkPresets[child];
+		}
+		return child;
+	}),
+}));
+
+// Logo
+const navbarTitle = siteConfig.navbar.title || siteConfig.title;
+const logoValue = siteConfig.navbar.logo?.value || "";
+const isLocalSrcLogo =
+	siteConfig.navbar.logo?.type === "image" &&
+	logoValue &&
+	!logoValue.startsWith("/") &&
+	!logoValue.startsWith("http");
+let logoImg: ImageMetadata | null = null;
+
+if (isLocalSrcLogo) {
+	const files = import.meta.glob<ImageMetadata>(
+		"../../**/*.{png,jpg,jpeg,webp,avif,gif,svg}",
+		{ import: "default" },
+	);
+	const normalizedPath = path
+		.normalize(path.join("../../", logoValue))
+		.replace(/\\/g, "/");
+	const file = files[normalizedPath];
+	if (file) logoImg = await file();
+}
+---
+
+<div id="nav-drawer-overlay" class="nav-drawer-overlay" aria-hidden="true"></div>
+
+<div id="nav-menu-panel" class="nav-drawer">
+	<a href={url("/")} class="nav-drawer-brand">
+		{siteConfig.navbar.logo?.type === "icon" ? (
+			<Icon name={siteConfig.navbar.logo.value || "material-symbols:home-pin-outline"} is:inline class="text-[1.5rem] flex-shrink-0" />
+		) : siteConfig.navbar.logo?.type === "image" && logoImg ? (
+			logoImg.format === "svg" ? (
+				<img src={logoImg.src} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="nav-drawer-brand-logo" />
+			) : (
+				<Picture
+					src={logoImg}
+					alt={siteConfig.navbar.logo.alt || siteConfig.title}
+					class="nav-drawer-brand-logo"
+					formats={getImageFormats()}
+					fallbackFormat={getFallbackFormat()}
+					widths={[28, 56]}
+					loading="eager"
+				/>
+			)
+		) : siteConfig.navbar.logo?.type === "image" ? (
+			<img src={url(siteConfig.navbar.logo.value)} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="nav-drawer-brand-logo" />
+		) : siteConfig.navbar.logo?.type === "url" ? (
+			<img src={siteConfig.navbar.logo.value} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="nav-drawer-brand-logo" />
+		) : (
+			<Icon name="material-symbols:home-pin-outline" is:inline class="text-[1.5rem] flex-shrink-0" />
+		)}
+		<span class="nav-drawer-brand-text">{navbarTitle}</span>
+	</a>
+
+	<div class="nav-drawer-header">
+		<span class="nav-drawer-title font-mono uppercase tracking-[0.15em] text-sm font-semibold">Menu</span>
+		<button aria-label="Close menu" id="nav-drawer-close" class="nav-drawer-close-btn">
+			<Icon name="material-symbols:close-rounded" is:inline class="text-[1.5rem]" />
+		</button>
+	</div>
+
+	<nav class="nav-drawer-body">
+		<!-- 宫格导航（移动端）：全部平铺，一眼看完 -->
+		<div class="nav-grid-all">
+			<!-- 独立项合并为一个卡片 -->
+			{(() => {
+				const standalones = processedLinks.filter(l => !l.children || l.children.length === 0);
+				const groups = processedLinks.filter(l => l.children && l.children.length > 0);
+				return (
+					<>
+						{standalones.length > 0 && (
+							<div class="nav-grid-group">
+								<div class="nav-grid-group-items nav-grid-group-items--standalone">
+									{standalones.map((link) => (
+										<a href={link.external ? link.url : url(link.url)} class="nav-grid-cell nav-grid-cell--standalone" target={link.external ? "_blank" : null}>
+											<span class="nav-grid-cell-icon">
+												{link.icon && <Icon name={link.icon} is:inline />}
+											</span>
+											<span class="nav-grid-cell-label">{link.name}</span>
+											{link.external && <Icon name="fa7-solid:arrow-up-right-from-square" is:inline class="nav-grid-cell-external" />}
+										</a>
+									))}
+								</div>
+							</div>
+						)}
+						{groups.map((link) => (
+							<div class="nav-grid-group">
+								<div class="nav-grid-group-title">
+									{link.icon && <Icon name={link.icon} is:inline class="nav-grid-group-icon" />}
+									<span>{link.name}</span>
+								</div>
+								<div class="nav-grid-group-items">
+									{(link.children || []).map((child) => (
+										<a href={child.external ? child.url : url(child.url)} class="nav-grid-cell" target={child.external ? "_blank" : null}>
+											<span class="nav-grid-cell-icon">
+												{child.icon && <Icon name={child.icon} is:inline />}
+											</span>
+											<span class="nav-grid-cell-label">{child.name}</span>
+											{child.external && <Icon name="fa7-solid:arrow-up-right-from-square" is:inline class="nav-grid-cell-external" />}
+										</a>
+									))}
+								</div>
+							</div>
+						))}
+					</>
+				);
+			})()}
+		</div>
+
+		<!-- 列表导航（桌面端，≥769px 由 CSS 控制显示） -->
+		<div class="nav-drawer-list">
+			{processedLinks.map((link, index) => (
+				<div class="nav-drawer-item" style={`--item-index: ${index}`}>
+					{link.children && link.children.length > 0 ? (
+						<div class="mobile-dropdown">
+							<div class="nav-drawer-link group nav-drawer-section-title">
+								<div class="flex items-center gap-3">
+									<span class="nav-drawer-link-text">{link.name}</span>
+								</div>
+							</div>
+							<div class="mobile-submenu mobile-submenu--flat">
+								{(link.children || []).map((child) => (
+									<a href={child.external ? child.url : url(child.url)} class="nav-drawer-sublink group" target={child.external ? "_blank" : null}>
+										<div class="flex items-center gap-3">
+											{child.icon && <Icon name={child.icon} is:inline class="text-[1.1rem]" />}
+											<span>{child.name}</span>
+										</div>
+										{child.external && <Icon name="fa7-solid:arrow-up-right-from-square" is:inline class="text-[0.7rem] text-black/25 dark:text-white/25" />}
+									</a>
+								))}
+							</div>
+						</div>
+					) : (
+						<a href={link.external ? link.url : url(link.url)} class="nav-drawer-link group" target={link.external ? "_blank" : null}>
+							<div class="flex items-center gap-3">
+								{link.icon && <Icon name={link.icon} is:inline class="text-[1.25rem] nav-drawer-icon" />}
+								<span class="nav-drawer-link-text">{link.name}</span>
+							</div>
+							{link.external && <Icon name="fa7-solid:arrow-up-right-from-square" is:inline class="text-[0.7rem] text-black/25 dark:text-white/25" />}
+						</a>
+					)}
+				</div>
+			))}
+		</div>
+	</nav>
+</div>
+
+<script is:inline>
+(function() {
+	var drawerAbortController = null;
+
+	function initNavDrawer() {
+		if (drawerAbortController) drawerAbortController.abort();
+		drawerAbortController = new AbortController();
+		var signal = drawerAbortController.signal;
+
+		var panelEl = document.getElementById('nav-menu-panel');
+		var overlayEl = document.getElementById('nav-drawer-overlay');
+		var menuBtn = document.getElementById('nav-menu-switch');
+		var closeBtn = document.getElementById('nav-drawer-close');
+		if (!panelEl || !overlayEl) return;
+
+		function openDrawer() {
+			panelEl.classList.add('is-open');
+			overlayEl.classList.add('is-open');
+			overlayEl.setAttribute('aria-hidden', 'false');
+			document.body.style.overflow = 'hidden';
+		}
+
+		function closeDrawer() {
+			panelEl.classList.remove('is-open');
+			overlayEl.classList.remove('is-open');
+			overlayEl.setAttribute('aria-hidden', 'true');
+			document.body.style.overflow = '';
+		}
+
+		closeDrawer();
+
+		if (menuBtn) {
+			menuBtn.onclick = function(e) {
+				e.stopPropagation();
+				var isOpen = panelEl.classList.contains('is-open');
+				if (isOpen) { closeDrawer(); } else { openDrawer(); }
+			};
+		}
+
+		if (closeBtn) {
+			closeBtn.onclick = function() { closeDrawer(); };
+		}
+
+		overlayEl.addEventListener('click', function() { closeDrawer(); }, { signal: signal });
+
+		document.addEventListener('keydown', function(e) {
+			if (e.key === 'Escape' && panelEl.classList.contains('is-open')) {
+				closeDrawer();
+			}
+		}, { signal: signal });
+	}
+
+	initNavDrawer();
+	document.addEventListener('astro:page-load', function() { initNavDrawer(); });
+})();
+</script>

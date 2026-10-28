@@ -1,0 +1,164 @@
+/* ===== 右下浮动坞 (Floating Dock) ===== */
+
+.floating-dock {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+.floating-dock > * {
+  pointer-events: auto;
+}
+
+.dock-btn {
+  width: 3.125rem;
+  height: 3.125rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 2px solid var(--primary);
+  background: var(--page-bg);
+  color: var(--primary);
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.dock-btn:hover {
+  background: var(--primary);
+  color: var(--page-bg);
+  border-color: var(--page-bg);
+}
+
+.dock-btn.hide {
+  display: none !important;
+}
+.dock-btn .dock-btn-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 200ms ease-out, opacity 200ms ease-out;
+}
+.dock-btn .dock-btn-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  text-align: center;
+  padding: 0.125rem;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: transform 200ms ease-out 30ms, opacity 200ms ease-out 30ms;
+  pointer-events: none;
+}
+.dock-btn:hover .dock-btn-icon,
+.dock-btn:focus-visible .dock-btn-icon {
+  transform: translateY(-6px);
+  opacity: 0;
+}
+.dock-btn:hover .dock-btn-label,
+.dock-btn:focus-visible .dock-btn-label {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* 展开堆叠 */
+.dock-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.dock-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 0;
+  clip-path: inset(0 0 100% 0);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(0.5rem);
+  transition: max-height 0.25s ease, opacity 0.2s ease, transform 0.25s ease, clip-path 0.25s ease;
+}
+.dock-stack[data-expanded="true"] .dock-buttons {
+  max-height: 50rem;
+  clip-path: inset(0);
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* 抽屉 */
+.dock-drawer {
+  position: fixed;
+  right: 5rem;
+  bottom: 1.25rem;
+  width: 22rem;
+  max-height: 70vh;
+  overflow: auto;
+  background: var(--page-bg);
+  border: 2px solid var(--primary);
+  padding: 1.25rem;
+  z-index: 70;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  color: var(--deep-text);
+}
+.dock-drawer.dock-drawer-closed {
+  opacity: 0;
+  transform: translateX(0.5rem);
+  pointer-events: none;
+}
+.dock-drawer-title {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--content-meta);
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .dock-drawer {
+    right: 0.5rem;
+    left: 0.5rem;
+    bottom: calc(0.75rem + 4.25rem + 0.5rem);
+    width: auto;
+    max-height: 60vh;
+    border: 2px solid #000;
+    border-radius: 1rem;
+    z-index: 71;
+  }
+
+  :root.dark .dock-drawer {
+    border-color: #fff;
+  }
+  .dock-drawer:not(.dock-drawer-closed) {
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+  }
+  .dock-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 65;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .dock-drawer-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}

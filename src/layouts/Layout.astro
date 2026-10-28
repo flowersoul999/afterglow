@@ -1,0 +1,601 @@
+---
+import GoogleAnalytics from "@components/analytics/GoogleAnalytics.astro";
+import MicrosoftClarity from "@components/analytics/MicrosoftClarity.astro";
+import UmamiAnalytics from "@components/analytics/UmamiAnalytics.astro";
+import SearchModal from "@components/controls/SearchModal.svelte";
+import FancyboxManager from "@components/features/FancyboxManager.astro";
+import FontManager from "@components/features/FontManager.astro";
+import MusicManager from "@components/features/MusicManager.astro";
+import PageLoader from "@components/features/PageLoader.astro";
+import SakuraEffect from "@components/features/SakuraEffect.astro";
+import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
+
+import {
+	backgroundWallpaper,
+	commentConfig,
+	expressiveCodeConfig,
+	profileConfig,
+	siteConfig,
+} from "@/config";
+import {
+	BANNER_HEIGHT,
+	BANNER_HEIGHT_EXTEND,
+	BANNER_HEIGHT_HOME,
+	PAGE_WIDTH,
+} from "@/constants/constants";
+import { defaultFavicons } from "@/constants/icon";
+import type { Favicon } from "@/types/config";
+import { getDefaultBackground, isHomePage } from "@/utils/layout-utils";
+import { url } from "@/utils/url-utils";
+
+import "@/styles/main.css";
+import "@rehype-callouts-theme";
+
+interface Props {
+	title?: string;
+	banner?: string;
+	description?: string;
+	lang?: string;
+	setOGTypeArticle?: boolean;
+	postSlug?: string;
+}
+
+let { title, banner, description, lang, setOGTypeArticle, postSlug } =
+	Astro.props;
+
+// apply a class to the body element to decide the height of the banner, only used for initial page load
+// Swup can update the body for each page visit, but it's after the page transition, causing a delay for banner height change
+// so use Swup hooks instead to change the height immediately when a link is clicked
+const isHomePageCheck = isHomePage(Astro.url.pathname);
+
+// defines global css variables
+// why doing this in Layout instead of GlobalStyles: https://github.com/withastro/astro/issues/6728#issuecomment-1502203757
+const configHue = siteConfig.themeColor.hue;
+
+// 获取导航栏透明模式配置
+const navbarTransparentMode =
+	backgroundWallpaper.banner?.navbar?.transparentMode || "semi";
+// 判断是否应该显示顶部高光效果（只在full和semifull模式下显示）
+const shouldShowTopHighlight =
+	navbarTransparentMode === "full" || navbarTransparentMode === "semifull";
+
+if (!banner || typeof banner !== "string" || banner.trim() === "") {
+	banner = getDefaultBackground();
+}
+
+// TODO don't use post cover as banner for now
+banner = getDefaultBackground();
+
+// 原始配置 mode: "none"，不启用 banner
+const enableBanner = false;
+
+let pageTitle: string;
+if (title) {
+	pageTitle = `${title} - ${siteConfig.title}`;
+} else {
+	pageTitle = siteConfig.subtitle
+		? `${siteConfig.title} - ${siteConfig.subtitle}`
+		: siteConfig.title;
+}
+
+let ogImageUrl: string | undefined;
+if (siteConfig.generateOgImages && postSlug) {
+	ogImageUrl = new URL(`/og/${postSlug}.png`, Astro.site).toString();
+}
+
+const favicons: Favicon[] =
+	siteConfig.favicon.length > 0 ? siteConfig.favicon : defaultFavicons;
+
+// const siteLang = siteConfig.lang.replace('_', '-')
+if (!lang) {
+	lang = `${siteConfig.lang}`;
+}
+const siteLang = lang.replace("_", "-");
+
+// 使用固定的banner偏移量，position配置用于图片定位
+---
+
+<!doctype html>
+<html lang={siteLang} class="bg-(--page-bg) text-[14px] md:text-[16px]" style="overflow-x: hidden;">
+  <head>
+    <meta charset="UTF-8" />
+    <style is:inline>
+      body[class~="lg:is-home"] .home-main-grid-wrapper {
+        max-width: none;
+      }
+
+      @media (min-width: 769px) {
+        body[class~="lg:is-home"] #main-content-wrapper {
+          top: 0 !important;
+        }
+
+        body:not([class~="lg:is-home"]) #main-content-wrapper {
+          top: 5.5rem !important;
+        }
+      }
+
+      body[class~="lg:is-home"] #main-grid {
+        gap: 0;
+        grid-template-columns: minmax(0, 1fr);
+        padding-inline: 0;
+      }
+
+      body[class~="lg:is-home"] #main-grid > #left-sidebar-wrapper,
+      body[class~="lg:is-home"] #main-grid > #left-sidebar-dynamic,
+      body[class~="lg:is-home"] #main-grid > #right-sidebar-static,
+      body[class~="lg:is-home"] #main-grid > #right-sidebar-dynamic,
+      body[class~="lg:is-home"] #main-grid > #mobile-bottom-sidebar {
+        display: none;
+      }
+
+      body[class~="lg:is-home"] #main-content-wrapper,
+      body[class~="lg:is-home"] #main-grid > .footer {
+        grid-column: 1 / -1;
+      }
+    </style>
+    {siteConfig.analytics?.googleAnalyticsId && (
+            <GoogleAnalytics analyticsId={siteConfig.analytics.googleAnalyticsId} />
+    )}
+    {siteConfig.analytics?.microsoftClarityId && (
+            <MicrosoftClarity clarityId={siteConfig.analytics.microsoftClarityId} />
+    )}
+    {siteConfig.analytics?.umamiAnalytics?.websiteId && (
+            <UmamiAnalytics
+                websiteId={siteConfig.analytics.umamiAnalytics.websiteId}
+                scriptUrl={siteConfig.analytics.umamiAnalytics.scriptUrl}
+            />
+    )}
+
+    <title>{pageTitle}</title>
+    <meta
+      name="description"
+      content={description || siteConfig.description || pageTitle}
+    />
+    {
+      siteConfig.keywords && siteConfig.keywords.length > 0 && (
+        <meta name="keywords" content={siteConfig.keywords.join(", ")} />
+      )
+    }
+    <meta name="author" content={profileConfig.name} />
+
+    <meta property="og:site_name" content={siteConfig.title} />
+    <meta property="og:url" content={Astro.url} />
+    <meta property="og:title" content={pageTitle} />
+    <meta
+      property="og:description"
+      content={description || siteConfig.description || pageTitle}
+    />
+    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+    {
+      setOGTypeArticle ? (
+        <meta property="og:type" content="article" />
+      ) : (
+        <meta property="og:type" content="website" />
+      )
+    }
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={Astro.url} />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta
+      name="twitter:description"
+      content={description || siteConfig.description || pageTitle}
+    />
+
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- 搜索引擎验证标签 -->
+    <!-- 百度搜索资源平台验证 -->
+    <meta name="baidu-site-verification" content="codeva-lX6hLCrOOy" />
+    <!-- 必应搜索验证 -->
+    <meta name="msvalidate.01" content="63A6A0006140D3F4ABB55B84399CF4D9" />
+    <!-- Google Search Console 验证 -->
+    <meta name="google-site-verification" content="tvwv6vQVhWKlXottwniAcT3JKdgiBN7xLRWoh7zewyY" />
+    {
+      favicons.map((favicon) => (
+        <link
+          rel="icon"
+          href={favicon.src.startsWith("/") ? url(favicon.src) : favicon.src}
+          sizes={favicon.sizes}
+          media={favicon.theme && `(prefers-color-scheme: ${favicon.theme})`}
+        />
+      ))
+    }
+
+    <!-- Set the theme before the page is rendered to avoid a flash -->
+    <script
+      is:inline
+      define:vars={{
+        BANNER_HEIGHT_EXTEND,
+        PAGE_WIDTH,
+        configHue,
+        defaultMode: siteConfig.themeColor.defaultMode ?? "light",
+        darkTheme: expressiveCodeConfig.darkTheme,
+        lightTheme: expressiveCodeConfig.lightTheme,
+        baseUrl: import.meta.env.BASE_URL,
+        walineServerURL: commentConfig.waline?.serverURL || "",
+      }}
+    >
+      // 主题初始化 - 与setting-utils.ts保持一致
+      const LIGHT_MODE = "light";
+      const DARK_MODE = "dark";
+      const SYSTEM_MODE = "system";
+
+      // 获取存储的主题，如果没有则使用默认值
+      const theme = localStorage.getItem("theme") || defaultMode;
+
+      // 获取系统主题
+      function getSystemTheme() {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? DARK_MODE
+          : LIGHT_MODE;
+      }
+
+      // 解析主题（如果是system模式，则获取系统主题）
+      function resolveTheme(themeValue) {
+        if (themeValue === SYSTEM_MODE) {
+          return getSystemTheme();
+        }
+        return themeValue;
+      }
+
+      const resolvedTheme = resolveTheme(theme);
+      const isDark = resolvedTheme === DARK_MODE;
+
+      // 应用主题
+      if (isDark) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+
+      // Set the theme for Expressive Code
+      document.documentElement.setAttribute(
+        "data-theme",
+        isDark ? darkTheme : lightTheme
+      );
+
+      // Load the hue from local storage
+      const hue = localStorage.getItem("hue") || configHue;
+      document.documentElement.style.setProperty("--hue", hue);
+
+      // calculate the --banner-height-extend, which needs to be a multiple of 4 to avoid blurry text
+      // 使用更准确的窗口高度计算
+      function calculateBannerHeightExtend() {
+        let offset = Math.floor(
+          window.innerHeight * (BANNER_HEIGHT_EXTEND / 100)
+        );
+        offset = offset - (offset % 4);
+        document.documentElement.style.setProperty(
+          "--banner-height-extend",
+          `${offset}px`
+        );
+      }
+
+      // 立即设置初始值
+      calculateBannerHeightExtend();
+
+      // 在下一帧重新计算精确值（仅在值变化时更新，避免闪烁）
+      requestAnimationFrame(() => {
+        const oldValue = parseInt(
+          document.documentElement.style.getPropertyValue(
+            "--banner-height-extend"
+          )
+        );
+        calculateBannerHeightExtend();
+        const newValue = parseInt(
+          document.documentElement.style.getPropertyValue(
+            "--banner-height-extend"
+          )
+        );
+        // 如果值变化了，再更新一次确保准确
+        if (Math.abs(oldValue - newValue) > 4) {
+          // 如果有明显变化，延迟一帧再更新，避免闪烁
+          requestAnimationFrame(calculateBannerHeightExtend);
+        }
+      });
+
+      // 初始化水波纹动画状态 - 在 html 元素上设置属性，CSS 会立即生效
+      (function applyWavesEnabled() {
+        const wavesEnabled = localStorage.getItem("wavesEnabled");
+        if (wavesEnabled !== null) {
+          document.documentElement.setAttribute("data-waves-enabled", wavesEnabled);
+        }
+      })();
+
+      // 初始化横幅标题显示状态 - 在 html 元素上设置属性，CSS 会立即生效
+      (function applyBannerTitleEnabled() {
+        const bannerTitleEnabled = localStorage.getItem("bannerTitleEnabled");
+        if (bannerTitleEnabled !== null) {
+          document.documentElement.setAttribute("data-banner-title-enabled", bannerTitleEnabled);
+        }
+      })();
+
+      // 文章列表首屏视图：提前写入 data-article-view，避免 Svelte 水合前闪单列
+      (function applyArticleListView() {
+        try {
+          var saved = localStorage.getItem("postListLayout");
+          if (saved === "grid" || saved === "list") {
+            document.documentElement.setAttribute("data-article-view", saved);
+          }
+        } catch (_) {}
+      })();
+
+      // Initialize hide-covers state before first paint
+      (function applyHideCovers() {
+        const hideCovers = localStorage.getItem("hideCovers");
+        // 默认隐藏封面（首次访问或明确设置为 true）
+        if (hideCovers !== "false") {
+          document.documentElement.setAttribute("data-hide-covers", "true");
+        }
+
+        // ===== 说说页面评论系统 =====
+        (function() {
+          if (window.__momentsCommentHandler) return;
+          window.__momentsCommentHandler = true;
+          window.__momentsCommentState = { loadedComments: {}, walineInit: null };
+
+          function loadWalineComment(section, commentPath) {
+            var state = window.__momentsCommentState;
+            if (state.loadedComments[commentPath]) return;
+            state.loadedComments[commentPath] = true;
+            var inner = section.querySelector('.comment-section-inner');
+            if (!inner) return;
+            var containerId = 'waline-' + commentPath.replace(/[^a-zA-Z0-9]/g, '-');
+            var walineContainer = document.createElement('div');
+            walineContainer.id = containerId;
+            walineContainer.style.opacity = '0';
+            walineContainer.style.transition = 'opacity 0.3s ease';
+            inner.appendChild(walineContainer);
+
+            function initWaline(init) {
+              init({ el: '#' + containerId, serverURL: walineServerURL, path: commentPath, lang: 'zh-CN', dark: 'html.dark', wordLimit: [2, 300], pageview: false, comment: true });
+              setTimeout(function() {
+                var skeleton = inner.querySelector('.comment-loading');
+                if (skeleton) { skeleton.style.transition = 'opacity 0.3s ease'; skeleton.style.opacity = '0'; setTimeout(function() { skeleton.remove(); }, 300); }
+                walineContainer.style.opacity = '1';
+              }, 100);
+            }
+
+            if (!document.querySelector('link[href*="waline"]')) {
+              var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'https://unpkg.com/@waline/client@v3/dist/waline.css'; document.head.appendChild(link);
+            }
+
+            if (state.walineInit) {
+              initWaline(state.walineInit);
+            } else {
+              import('https://unpkg.com/@waline/client@v3/dist/waline.js').then(function(mod) {
+                state.walineInit = mod.init;
+                initWaline(state.walineInit);
+              }).catch(function(err) {
+                console.error('[Waline] 加载失败:', err);
+                var skeleton = inner.querySelector('.comment-loading');
+                if (skeleton) skeleton.remove();
+                walineContainer.style.opacity = '1';
+                walineContainer.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--content-meta);font-size:0.8125rem;">评论加载失败</div>';
+              });
+            }
+          }
+
+          document.addEventListener('click', function(e) {
+            var btn = e.target.closest('.comment-toggle-btn');
+            if (!btn) return;
+            var momentId = btn.dataset.momentId;
+            var commentPath = btn.dataset.commentPath;
+            if (!momentId || !commentPath) return;
+
+            // 调用评论弹窗
+            if (window.__commentModal && window.__commentModal.open) {
+              window.__commentModal.open(momentId, commentPath);
+            }
+          });
+        })();
+      })();
+    </script>
+    <style
+      define:vars={{
+        configHue,
+        "page-width": `${siteConfig.pageWidth ?? PAGE_WIDTH}rem`,
+      }}
+    ></style>
+    <!-- defines global css variables. This will be applied to <html> <body> and some other elements idk why -->
+
+    <slot name="head" />
+
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={profileConfig.name}
+      href={`${Astro.site}rss.xml`}
+    />
+
+    <!-- Font Manager -->
+    {siteConfig.font.enable && siteConfig.font.selected?.includes("aazongyiyuan") && (
+      <link rel="preload" href="/fonts/AaZongYiYuan/AaZongYiYuan-2.woff2" as="font" type="font/woff2" crossorigin />
+    )}
+    <FontManager />
+  </head>
+  <body
+    class="min-h-screen"
+    class:list={[
+      {
+        "lg:is-home": isHomePageCheck,
+        "enable-banner": enableBanner,
+        "enable-card-border": siteConfig.card?.border,
+      },
+      ...(siteConfig.font.enable && siteConfig.font.selected
+        ? (Array.isArray(siteConfig.font.selected)
+            ? siteConfig.font.selected
+            : [siteConfig.font.selected]
+          ).map((fontId) => `font-${fontId}-enabled`)
+        : []),
+    ]}
+  >
+
+    <PageLoader />
+    <div id="progress-bar"></div>
+    <div id="banner-overlay-container" hidden aria-hidden="true"></div>
+    <div id="banner-dim-container" hidden aria-hidden="true"></div>
+
+    <!-- 页面顶部渐变高光效果 - 只在full和semifull模式下显示 -->
+    {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
+    <ConfigCarrier />
+    <MusicManager />
+    <slot />
+
+
+
+    <!-- Sakura Effect -->
+    <SakuraEffect />
+
+    <!-- Fancybox Manager -->
+    <FancyboxManager />
+
+    <!-- Search Modal -->
+    <SearchModal client:idle />
+  </body>
+</html>
+
+<style
+  is:global
+  define:vars={{
+    "banner-height-home": `${BANNER_HEIGHT_HOME}vh`,
+    "banner-height": `${BANNER_HEIGHT}vh`,
+  }}
+>
+  @reference "../styles/main.css";
+
+  @layer components {
+    .enable-banner #wallpaper-wrapper {
+      height: var(--banner-height-home);
+      transform: translateY(var(--banner-height-extend));
+    }
+
+    .enable-banner #banner {
+      height: var(--banner-height-home);
+      transform: translateY(0);
+    }
+
+    .enable-banner #main-grid {
+      transform: translateY(var(--banner-height-extend));
+    }
+
+    .enable-banner #top-row {
+      height: calc(var(--banner-height-home) - 4.5rem);
+      @apply transition-all duration-300;
+    }
+  }
+
+  @layer utilities {
+    .enable-banner #sidebar-sticky {
+      top: calc(1rem - var(--banner-height-extend)) !important;
+    }
+    .enable-banner #left-sidebar-sticky {
+      top: calc(1rem - var(--banner-height-extend)) !important;
+    }
+    .enable-banner #right-sidebar-sticky {
+      top: calc(1rem - var(--banner-height-extend)) !important;
+    }
+  }
+
+  /* 滚动时隐藏/显示导航栏 - 使用 fixed 定位 */
+  #navbar-wrapper {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* 非全宽模式下限制导航栏宽度 */
+  #navbar-wrapper:not([data-full-width="true"]) #navbar > div {
+    max-width: var(--page-width);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (max-width: 1023px) {
+    #navbar-wrapper:not([data-full-width="true"]) #navbar > div {
+      max-width: 100%;
+    }
+  }
+
+  #navbar-wrapper.navbar-hidden {
+    transform: translateY(-100%);
+  }
+
+  #navbar-wrapper.navbar-visible {
+    transform: translateY(0);
+  }
+
+  @media (max-width: 1023px) {
+    body.enable-banner:not(.lg\:is-home) #main-grid {
+      transform: none !important;
+    }
+
+    body.enable-banner:not(.lg\:is-home) #top-row {
+      height: auto !important;
+    }
+
+    body.enable-banner:not(.lg\:is-home) #sidebar-sticky,
+    body.enable-banner:not(.lg\:is-home) #left-sidebar-sticky,
+    body.enable-banner:not(.lg\:is-home) #right-sidebar-sticky {
+      top: 1rem !important;
+    }
+  }
+</style>
+
+<script>
+  import { initScrollHandler } from "@/utils/scroll-handler";
+  import { updateMainGridCols } from "@/utils/grid-layout-utils";
+  import { updateSidebarComponentsVisibility } from "@/utils/sidebar-utils";
+  import { showBanner, initBannerResize } from "@/utils/banner-utils";
+  import { initPanelCloseHandlers } from "@/utils/panel-utils";
+  import { initCustomScrollbar } from "@/utils/scrollbar-utils";
+  import { initTabTitleInteraction } from "@/utils/tab-title-controller";
+  import { initSwupLifecycle } from "@/utils/swup-lifecycle-controller";
+  import { initThemeListener } from "@/utils/setting-utils";
+  import { initIconLoader } from "@/utils/icon-loader";
+  import { initPageLoader } from "@/utils/page-loader-controller.js";
+
+  // Immediate initialization (before DOMContentLoaded)
+  initPanelCloseHandlers();
+  initSwupLifecycle();
+  initScrollHandler();
+  initBannerResize();
+  initTabTitleInteraction();
+
+  // Home layout constraint removal
+  function applyHomeLayoutOnLoad() {
+    const mainGrid = document.getElementById("main-grid");
+    if (!mainGrid) return;
+    const isHome = document.body.classList.contains("lg:is-home");
+    if (!isHome) return;
+    const parentWrapper = mainGrid.parentElement;
+    if (parentWrapper) {
+      parentWrapper.style.maxWidth = "none";
+      mainGrid.style.paddingLeft = "0";
+      mainGrid.style.paddingRight = "0";
+    }
+  }
+
+  // DOMContentLoaded initialization
+  function onReady() {
+    showBanner();
+    initCustomScrollbar();
+    updateMainGridCols();
+    updateSidebarComponentsVisibility();
+    initThemeListener();
+    initIconLoader();
+    initPageLoader();
+    applyHomeLayoutOnLoad();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", onReady);
+  } else {
+    onReady();
+  }
+</script>

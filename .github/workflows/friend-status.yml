@@ -1,0 +1,25 @@
+name: 友链状态检测
+on:
+  schedule:
+    - cron: "17 5 * * *"   # 每天 5:17（避开整点）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/友链状态检测/index.mjs
+      - name: 提交结果
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/friends-status.json
+          git diff --cached --quiet || git commit -m "chore: 更新友链状态检测结果"
+          git push

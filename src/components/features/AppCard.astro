@@ -1,0 +1,49 @@
+---
+export interface Props {
+	title: string;
+	imgurl: string;
+	desc: string;
+	tags?: string[];
+}
+
+const { title, imgurl, desc, tags = [] } = Astro.props;
+
+const tagLabels: Record<string, string> = {
+	AI: "AI",
+	工具: "工具",
+	效率: "效率",
+};
+
+const primaryTag = tags[0] || "应用";
+const tagLabel = tagLabels[primaryTag] || primaryTag;
+
+const initial = title.trim().slice(0, 1);
+---
+
+<div
+  class="app-card-link"
+  title={desc}
+  role="button"
+  tabindex="0"
+>
+  {/* 顶部标签：胶带样式 */}
+  <span class="app-card-tab">{tagLabel}</span>
+
+  {/* 头像 */}
+  <div class="app-card-avatar" data-initial={initial}>
+    <span class="app-card-avatar__face" aria-hidden="true"></span>
+    <img
+      alt={title}
+      class="app-card-avatar__img"
+      data-src={imgurl}
+    />
+  </div>
+
+  {/* 名字 */}
+  <h3 class="app-card-name">{title}</h3>
+
+  {/* 介绍框 */}
+  <div class="app-card-intro">
+    <p class="app-card-intro__text">{desc}</p>
+  </div>
+</div>

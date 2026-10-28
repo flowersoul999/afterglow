@@ -1,0 +1,203 @@
+---
+import WidgetLayout from "@/components/common/WidgetLayout.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { getSortedPosts } from "@/utils/content-utils";
+
+interface Props {
+	class?: string;
+	style?: string;
+	weeks?: number;
+}
+
+const { class: className, style, weeks = 20 } = Astro.props;
+
+// 获取所有文章
+const posts = await getSortedPosts();
+
+// 收集所有文章发布日期（去重）
+const publishDates = new Set<string>();
+posts.forEach((post) => {
+	const dateStr = post.data.published.toISOString().split("T")[0];
+	publishDates.add(dateStr);
+});
+
+// 生成最近 weeks 周的数据
+const today = new Date();
+const startDate = new Date(today);
+startDate.setDate(startDate.getDate() - (weeks * 7 - 1));
+
+// 转换为日期字符串集合
+const dateSet = publishDates;
+
+// 生成网格数据
+const cells: { date: string; count: number; level: number }[] = [];
+const currentDate = new Date(startDate);
+
+while (currentDate <= today) {
+	const dateStr = currentDate.toISOString().split("T")[0];
+	const count = dateSet.has(dateStr) ? 1 : 0;
+	cells.push({
+		date: dateStr,
+		count,
+		level: count > 0 ? Math.min(4, count) : 0,
+	});
+	currentDate.setDate(currentDate.getDate() + 1);
+}
+
+// 星期标签
+const dayLabels = ["一", "二", "三", "四", "五", "六", "日"];
+
+const totalUpdates = cells.reduce((acc, c) => acc + c.count, 0);
+const activeDays = cells.filter((c) => c.count > 0).length;
+
+const label = i18n(I18nKey.siteHeatmap);
+---
+
+<WidgetLayout name={label} id="site-heatmap" class={className} style={style}>
+	<div class="heatmap">
+		<div class="heatmap-header">
+			<span class="heatmap-stats">
+				<span class="stat-item">
+					<strong>{totalUpdates}</strong> 篇更新
+				</span>
+				<span class="stat-item">
+					<strong>{activeDays}</strong> 天活跃
+				</span>
+			</span>
+		</div>
+		<div class="heatmap-container">
+			<div class="day-labels">
+				{dayLabels.map((d) => (
+					<span class="day-label">{d}</span>
+				))}
+			</div>
+			<div class="heatmap-grid" style={`--cols: ${weeks};`}>
+				{cells.map((cell) => (
+					<div
+						class={`heat-cell level-${cell.level}`}
+						data-date={cell.date}
+						data-count={cell.count}
+						title={`${cell.date}: ${cell.count > 0 ? "有更新" : "无更新"}`}
+					/>
+				))}
+			</div>
+		</div>
+		<div class="heatmap-legend">
+			<span class="legend-text">少</span>
+			<div class="legend-cells">
+				<div class="heat-cell level-0" />
+				<div class="heat-cell level-1" />
+				<div class="heat-cell level-2" />
+				<div class="heat-cell level-3" />
+				<div class="heat-cell level-4" />
+			</div>
+			<span class="legend-text">多</span>
+		</div>
+	</div>
+</WidgetLayout>
+
+<style>
+	.heatmap {
+		padding: 0;
+	}
+
+	.heatmap-header {
+		display: flex;
+		justify-content: flex-end;
+		align-items: center;
+		margin-bottom: 0.5rem;
+	}
+
+	.heatmap-stats {
+		display: flex;
+		gap: 0.75rem;
+		font-size: 0.7rem;
+		color: var(--content-meta);
+	}
+
+	.heatmap-stats strong {
+		color: var(--text-color);
+		font-weight: 600;
+	}
+
+	.heatmap-container {
+		display: flex;
+		gap: 0.25rem;
+	}
+
+	.day-labels {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+		padding-top: 0;
+	}
+
+	.day-label {
+		height: 10px;
+		font-size: 0.55rem;
+		color: var(--content-meta);
+		line-height: 10px;
+	}
+
+	.heatmap-grid {
+		display: grid;
+		grid-template-columns: repeat(var(--cols), 1fr);
+		grid-auto-rows: 10px;
+		gap: 2px;
+	}
+
+	.heat-cell {
+		width: 10px;
+		height: 10px;
+		border-radius: 2px;
+		transition: transform 0.15s ease;
+	}
+
+	.heat-cell:hover {
+		transform: scale(1.3);
+	}
+
+	.level-0 {
+		background: color-mix(in srgb, var(--line-divider) 40%, transparent);
+	}
+
+	.level-1 {
+		background: color-mix(in srgb, var(--primary) 25%, transparent);
+	}
+
+	.level-2 {
+		background: color-mix(in srgb, var(--primary) 50%, transparent);
+	}
+
+	.level-3 {
+		background: color-mix(in srgb, var(--primary) 75%, transparent);
+	}
+
+	.level-4 {
+		background: var(--primary);
+	}
+
+	.heatmap-legend {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.25rem;
+		margin-top: 0.5rem;
+	}
+
+	.legend-text {
+		font-size: 0.6rem;
+		color: var(--content-meta);
+	}
+
+	.legend-cells {
+		display: flex;
+		gap: 2px;
+	}
+
+	.legend-cells .heat-cell {
+		width: 8px;
+		height: 8px;
+	}
+</style>

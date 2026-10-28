@@ -1,0 +1,375 @@
+---
+import { getCollection } from "astro:content";
+import type { MarkdownHeading } from "astro";
+import { Icon } from "astro-icon/components";
+import Search from "@/components/controls/Search.svelte";
+import MusicPlayer from "@/components/features/MusicPlayer.astro";
+import PostDirectoryList from "@/components/widget/PostDirectoryList.astro";
+import { musicPlayerConfig } from "@/config/musicConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { getCategoryList, getTagList } from "@/utils/content-utils";
+import { getCategoryUrl, getTagUrl } from "@/utils/url-utils";
+
+interface Props {
+	headings?: MarkdownHeading[];
+}
+
+const { headings: _headings = [] } = Astro.props;
+const tags = await getTagList();
+const categories = await getCategoryList();
+
+// Fetch announcement data
+const ziyuanEntries = await getCollection("ziyuan");
+const announcementEntry = ziyuanEntries.find((e) => e.id === "announcement");
+const announcementData = announcementEntry?.data;
+const announcementContent = announcementData?.content ?? "暂无公告";
+const announcementLink =
+	announcementData && "link" in announcementData
+		? announcementData.link
+		: undefined;
+
+// Fetch music playlist from bangumi (same source as music page)
+// 播放列表改由音乐管理器按需拉取（/music-playlist.json）
+---
+
+<div class="floating-dock" id="floating-dock">
+  <!-- 可展开堆叠 -->
+  <div class="dock-stack" id="dock-stack" data-expanded="false">
+    <div class="dock-buttons">
+      <!-- 标签 -->
+      <button class="dock-btn" id="dock-tags-btn" aria-label={i18n(I18nKey.tags)} type="button">
+        <span class="dock-btn-icon"><Icon name="material-symbols:label-outline" is:inline class="text-2xl" /></span>
+        <span class="dock-btn-label">标签</span>
+      </button>
+
+      <!-- 分类 -->
+      <button class="dock-btn" id="dock-categories-btn" aria-label={i18n(I18nKey.categories)} type="button">
+        <span class="dock-btn-icon"><Icon name="material-symbols:folder-outline" is:inline class="text-2xl" /></span>
+        <span class="dock-btn-label">分类</span>
+      </button>
+
+      <!-- 公告 -->
+      <button class="dock-btn" id="dock-announcement-btn" aria-label="公告" type="button">
+        <span class="dock-btn-icon"><Icon name="material-symbols:campaign-outline-rounded" is:inline class="text-2xl" /></span>
+        <span class="dock-btn-label">公告</span>
+      </button>
+
+      <!-- 音乐 -->
+      {musicPlayerConfig.showInNavbar !== false && (
+        <button class="dock-btn" id="dock-music-btn" aria-label={i18n(I18nKey.music)} type="button">
+          <span class="dock-btn-icon"><Icon name="material-symbols:music-note-rounded" is:inline class="text-2xl" /></span>
+          <span class="dock-btn-label">音乐</span>
+        </button>
+      )}
+
+
+      <!-- 亮暗色切换 -->
+      <button class="dock-btn" id="dock-theme-btn" aria-label="Theme" type="button">
+        <span class="dock-btn-icon dock-theme-icon-light"><Icon name="material-symbols:wb-sunny-outline-rounded" is:inline class="text-2xl" /></span>
+        <span class="dock-btn-icon dock-theme-icon-dark" style="display:none"><Icon name="material-symbols:dark-mode-outline-rounded" is:inline class="text-2xl" /></span>
+        <span class="dock-btn-label">主题</span>
+      </button>
+
+      <!-- 回首页 -->
+      <button class="dock-btn dock-btn-home hide" id="dock-home-btn" aria-label={i18n(I18nKey.home)} type="button">
+        <span class="dock-btn-icon"><Icon name="material-symbols:home-outline-rounded" is:inline class="text-2xl" /></span>
+        <span class="dock-btn-label">首页</span>
+      </button>
+    </div>
+
+    <!-- 展开/收起切换 -->
+    <button class="dock-btn dock-toggle" id="dock-toggle-btn" aria-label="Toggle" type="button">
+      <span class="dock-btn-icon">
+        <Icon name="material-symbols:more-horiz" is:inline class="text-2xl dock-icon-collapsed" />
+        <Icon name="material-symbols:close" is:inline class="text-2xl dock-icon-expanded hidden" />
+      </span>
+      <span class="dock-btn-label" id="dock-toggle-label">展开</span>
+    </button>
+  </div>
+
+  <!-- 回到顶部 -->
+  <button class="dock-btn dock-btn-top hide" id="dock-top-btn" aria-label="Top" type="button">
+    <span class="dock-btn-icon"><Icon name="material-symbols:keyboard-arrow-up-rounded" is:inline class="text-2xl" /></span>
+    <span class="dock-btn-label">Top</span>
+  </button>
+
+  <!-- 返回书架（仅在书籍详情页显示） -->
+  <button class="dock-btn hide" id="dock-bookshelf-btn" aria-label="Back to bookshelf" type="button">
+    <span class="dock-btn-icon"><Icon name="material-symbols:arrow-back-rounded" is:inline class="text-2xl" /></span>
+    <span class="dock-btn-label">书架</span>
+  </button>
+
+  <!-- 全部文章（文章页显示） -->
+  <button class="dock-btn hide dock-btn-posts" id="dock-posts-btn" aria-label="全部文章" type="button">
+    <span class="dock-btn-icon"><Icon name="material-symbols:list-alt-outline" is:inline class="text-2xl" /></span>
+    <span class="dock-btn-label">文章</span>
+  </button>
+
+  <!-- 目录（文章页显示） -->
+  <button class="dock-btn hide dock-btn-toc" id="dock-toc-btn" aria-label="TOC" type="button">
+    <span class="dock-btn-icon"><Icon name="material-symbols:format-list-bulleted" is:inline class="text-2xl" /></span>
+    <span class="dock-btn-label">目录</span>
+  </button>
+</div>
+
+<!-- 移动端抽屉遮罩 -->
+<div class="dock-drawer-overlay" id="dock-drawer-overlay"></div>
+
+<!-- 标签抽屉 -->
+<div class="dock-drawer dock-drawer-closed" id="dock-drawer-tags">
+  <div class="dock-drawer-title">[ {i18n(I18nKey.tags)} ]</div>
+  <div class="dock-tags-list">
+    {tags.map((t) => (
+      <a href={getTagUrl(t.name)} class="dock-tag-item">
+        <span class="dock-tag-name"># {t.name.trim()}</span>
+        <span class="dock-tag-count">{t.count}</span>
+      </a>
+    ))}
+  </div>
+</div>
+
+<!-- 分类抽屉 -->
+<div class="dock-drawer dock-drawer-closed" id="dock-drawer-categories">
+  <div class="dock-drawer-title">[ {i18n(I18nKey.categories)} ]</div>
+  <div class="dock-tags-list">
+    {categories.map((c) => (
+      <a href={getCategoryUrl(c.name)} class="dock-tag-item">
+        <span class="dock-tag-name"># {c.name.trim()}</span>
+        <span class="dock-tag-count">{c.count}</span>
+      </a>
+    ))}
+  </div>
+</div>
+
+<!-- 公告抽屉 -->
+<div class="dock-drawer dock-drawer-closed" id="dock-drawer-announcement">
+  <div class="dock-drawer-title">[ 公告 ]</div>
+  <div class="px-1">
+    <p class="text-sm leading-relaxed mb-3" style="color: var(--deep-text);">{announcementContent}</p>
+    {announcementLink?.enable !== false && announcementLink?.url ? (
+      <a href={announcementLink.url} target={announcementLink.external ? "_blank" : "_self"} rel={announcementLink.external ? "noopener noreferrer" : undefined} class="dock-tag-item inline-flex" style="padding: 0.25rem 0.75rem; font-size: 0.8rem;">
+        {announcementLink.text || "了解更多"}
+      </a>
+    ) : null}
+  </div>
+</div>
+
+{musicPlayerConfig.showInNavbar !== false && (
+<div class="dock-drawer dock-drawer-closed" id="dock-drawer-music">
+  <div class="dock-drawer-title">[ {i18n(I18nKey.music)} ]</div>
+  <MusicPlayer />
+</div>
+)}
+
+<!-- Search 组件（创建 #search-panel，由 dock 按钮触发） -->
+<Search client:load />
+
+<!-- TOC 抽屉 -->
+<div class="dock-drawer dock-drawer-closed" id="dock-drawer-toc">
+  <div class="dock-drawer-title">[ contents ]</div>
+  <div id="dock-toc-content" class="text-sm leading-relaxed relative">
+    <div id="dock-toc-indicator" class="toc-active-indicator"></div>
+  </div>
+</div>
+
+<!-- 全部文章抽屉 -->
+<div class="dock-drawer dock-drawer-closed" id="dock-drawer-posts">
+  <div class="dock-drawer-title">[ 全部文章 ]</div>
+  <PostDirectoryList />
+</div>
+
+<script>
+  let _dockAbort: AbortController | null = null;
+
+  // 重新绑定所有事件（支持 Swup 页面切换后重新初始化）
+  function bindDockEvents() {
+    // 清理上一次绑定的全局监听器
+    if (_dockAbort) _dockAbort.abort();
+    _dockAbort = new AbortController();
+    const signal = _dockAbort.signal;
+
+    const stack = document.getElementById("dock-stack");
+    const toggleBtn = document.getElementById("dock-toggle-btn");
+    if (!stack || !toggleBtn) return;
+
+    const collapsedIcon = toggleBtn.querySelector(".dock-icon-collapsed");
+    const expandedIcon = toggleBtn.querySelector(".dock-icon-expanded");
+    const toggleLabel = document.getElementById("dock-toggle-label");
+
+    function setExpanded(expanded: boolean) {
+      stack!.setAttribute("data-expanded", String(expanded));
+      collapsedIcon?.classList.toggle("hidden", expanded);
+      expandedIcon?.classList.toggle("hidden", !expanded);
+      if (toggleLabel) toggleLabel.textContent = expanded ? "收起" : "展开";
+    }
+
+    function closeAllDrawers() {
+      document.querySelectorAll(".dock-drawer").forEach((d) => d.classList.add("dock-drawer-closed"));
+      document.getElementById("dock-drawer-overlay")?.classList.remove("active");
+    }
+
+    function openDrawer(drawer: Element) {
+      drawer.classList.remove("dock-drawer-closed");
+      document.getElementById("dock-drawer-overlay")?.classList.add("active");
+    }
+
+    toggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setExpanded(stack.getAttribute("data-expanded") !== "true");
+    });
+
+    // 搜索
+    document.getElementById("dock-search-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const searchPanel = document.getElementById("search-panel");
+      if (searchPanel) {
+        searchPanel.classList.remove("float-panel-closed");
+        const input = searchPanel.querySelector("input") as HTMLInputElement;
+        if (input) setTimeout(() => input.focus(), 100);
+      }
+    });
+
+    // 标签 & 音乐 & TOC & 文章 抽屉
+    const drawerMap: Record<string, string> = {
+      "dock-tags-btn": "dock-drawer-tags",
+      "dock-categories-btn": "dock-drawer-categories",
+      "dock-announcement-btn": "dock-drawer-announcement",
+      "dock-music-btn": "dock-drawer-music",
+      "dock-toc-btn": "dock-drawer-toc",
+      "dock-posts-btn": "dock-drawer-posts",
+    };
+    Object.entries(drawerMap).forEach(([btnId, drawerId]) => {
+      const btn = document.getElementById(btnId);
+      const drawer = document.getElementById(drawerId);
+      if (!btn || !drawer) return;
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = !drawer.classList.contains("dock-drawer-closed");
+        closeAllDrawers();
+        if (!isOpen) openDrawer(drawer);
+      });
+    });
+
+    // 点击遮罩关闭
+    document.getElementById("dock-drawer-overlay")?.addEventListener("click", () => {
+      closeAllDrawers();
+      setExpanded(false);
+    });
+
+    // 点击外部关闭
+    document.addEventListener("click", (e) => {
+      const target = e.target as Node;
+      if (!target) return;
+      const isInDrawer = document.querySelector(".dock-drawer:not(.dock-drawer-closed)")?.contains(target);
+      const isInDock = document.getElementById("floating-dock")?.contains(target);
+      if (!isInDrawer && !isInDock) {
+        closeAllDrawers();
+        setExpanded(false);
+      }
+    }, { signal });
+
+    // 主题切换已移至事件委托（见脚本底部）
+
+    // 亮暗色切换
+    function updateDockThemeIcon() {
+      const isDark = document.documentElement.classList.contains("dark");
+      const lightIcon = document.querySelector(".dock-theme-icon-light") as HTMLElement;
+      const darkIcon = document.querySelector(".dock-theme-icon-dark") as HTMLElement;
+      if (lightIcon) lightIcon.style.display = isDark ? "none" : "";
+      if (darkIcon) darkIcon.style.display = isDark ? "" : "none";
+    }
+
+    document.getElementById("dock-theme-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isDark = document.documentElement.classList.contains("dark");
+      const next = isDark ? "light" : "dark";
+      localStorage.setItem("theme", next);
+      if (next === "dark") {
+        document.documentElement.classList.add("dark");
+        document.documentElement.setAttribute("data-theme", "one-dark-pro");
+      } else {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.setAttribute("data-theme", "one-light");
+      }
+      updateDockThemeIcon();
+    });
+
+    updateDockThemeIcon();
+    window.addEventListener("theme-change", updateDockThemeIcon);
+
+    // 回顶
+    document.getElementById("dock-top-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.scroll({ top: 0, behavior: "smooth" });
+    });
+
+    // 回首页
+    document.getElementById("dock-home-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.location.href = "/";
+    });
+
+    // 返回书架
+    document.getElementById("dock-bookshelf-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.location.href = "/books/";
+    });
+
+    // TOC 懒加载
+    document.getElementById("dock-toc-btn")?.addEventListener("click", () => {
+      import("@/utils/tocUtils").then(({ TOCManager }) => {
+        try {
+          new TOCManager({
+            contentId: "dock-toc-content",
+            indicatorId: "dock-toc-indicator",
+            maxLevel: 3,
+            scrollOffset: 80,
+          }).init();
+        } catch (err) {
+          console.error("TOC init failed:", err);
+        }
+      });
+    });
+
+    // 更新可见性
+    function updateVisibility() {
+      const scrolled = window.scrollY > 200;
+      document.getElementById("dock-top-btn")?.classList.toggle("hide", !scrolled);
+      const isHome = window.location.pathname === "/" || window.location.pathname === "";
+      document.getElementById("dock-home-btn")?.classList.toggle("hide", isHome);
+      const isPost = /\/posts?\//.test(window.location.pathname);
+      // 文章页显示全部文章 + 目录按钮
+      document.getElementById("dock-posts-btn")?.classList.toggle("hide", !isPost);
+      document.getElementById("dock-toc-btn")?.classList.toggle("hide", !isPost);
+      // 书籍详情页显示返回书架按钮
+      const isBookDetail = /\/books\/book\//.test(window.location.pathname);
+      document.getElementById("dock-bookshelf-btn")?.classList.toggle("hide", !isBookDetail);
+    }
+    updateVisibility();
+    window.addEventListener("scroll", updateVisibility, { passive: true, signal });
+
+    // 页面切换后重新绑定
+    document.addEventListener("astro:page-load", () => bindDockEvents(), { signal });
+    document.addEventListener("swup:content:replaced", () => bindDockEvents(), { signal });
+  }
+
+  // 初始化
+  bindDockEvents();
+
+  // 主题切换事件委托（注册在 document 上，不受 Swup DOM 替换影响）
+  document.addEventListener("click", (e) => {
+    const themeBtn = (e.target as HTMLElement)?.closest?.("#sun-moon-theme-btn");
+    if (!themeBtn) return;
+    const isDark = document.documentElement.classList.contains("dark");
+    const next = isDark ? "light" : "dark";
+    localStorage.setItem("theme", next);
+    if (next === "dark") {
+      document.documentElement.classList.add("dark");
+      document.documentElement.setAttribute("data-theme", "one-dark-pro");
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.setAttribute("data-theme", "one-light");
+    }
+  });
+</script>

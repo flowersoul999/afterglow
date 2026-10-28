@@ -1,0 +1,265 @@
+/* ===== 设计令牌：颜色 =====
+   所有颜色色度归零，仅保留明度变化（极简中性灰阶）
+   --primary 为中性深灰，仅作点缀。 */
+
+:root {
+  --primary: oklch(0.30 0 0);
+  --page-bg: oklch(1 0 0);
+  --card-bg: transparent;
+  --card-bg-transparent: transparent;
+
+  --btn-content: oklch(0.25 0 0);
+  --btn-regular-bg: transparent;
+  --btn-regular-bg-hover: oklch(0.94 0 0);
+  --btn-regular-bg-active: oklch(0.90 0 0);
+
+  --btn-plain-bg-hover: oklch(0.94 0 0);
+  --btn-plain-bg-active: oklch(0.90 0 0);
+
+  --btn-card-bg-hover: oklch(0.96 0 0);
+  --btn-card-bg-active: oklch(0.92 0 0);
+
+  --enter-btn-bg: transparent;
+  --enter-btn-bg-hover: oklch(0.94 0 0);
+  --enter-btn-bg-active: oklch(0.90 0 0);
+
+  --deep-text: oklch(0.10 0 0);
+  --title-active: oklch(0.30 0 0);
+
+  --line-divider: oklch(0.85 0 0);
+  --line-color: oklch(0.85 0 0);
+  --border: oklch(0.80 0 0);
+  --meta-divider: oklch(0.75 0 0);
+  --content-meta: oklch(0.45 0 0);
+
+  --inline-code-bg: oklch(0.95 0 0);
+  --inline-code-color: oklch(0.20 0 0);
+  --selection-bg: oklch(0.85 0 0);
+  --codeblock-bg: oklch(0.97 0 0);
+  --codeblock-topbar-bg: oklch(0.93 0 0);
+
+  --license-block-bg: oklch(0.97 0 0);
+
+  --link-underline: oklch(0.85 0 0);
+  --link-hover: oklch(0.50 0 0);
+  --link-active: oklch(0.30 0 0);
+
+  --float-panel-bg: oklch(1 0 0);
+
+  /* 导航栏：胶囊底 + 滑动高亮块（当前项与悬停项共用一块，反色显示） */
+  --navbar-bg: oklch(0.925 0 0);
+  --navbar-highlight-bg: oklch(0 0 0);
+  --navbar-highlight-text: oklch(1 0 0);
+
+  --scrollbar-bg-light: rgba(0, 0, 0, 0.4);
+  --scrollbar-bg-hover-light: rgba(0, 0, 0, 0.5);
+  --scrollbar-bg-active-light: rgba(0, 0, 0, 0.6);
+
+  --scrollbar-bg-dark: rgba(255, 255, 255, 0.4);
+  --scrollbar-bg-hover-dark: rgba(255, 255, 255, 0.5);
+  --scrollbar-bg-active-dark: rgba(255, 255, 255, 0.6);
+
+  --scrollbar-bg: var(--scrollbar-bg-light);
+  --scrollbar-bg-hover: var(--scrollbar-bg-hover-light);
+  --scrollbar-bg-active: var(--scrollbar-bg-active-light);
+
+  --display-light-icon: 1;
+  --display-dark-icon: 0;
+
+  --admonitions-color-tip: oklch(0.55 0 0);
+  --admonitions-color-note: oklch(0.55 0 0);
+  --admonitions-color-important: oklch(0.55 0 0);
+  --admonitions-color-warning: oklch(0.55 0 0);
+  --admonitions-color-caution: oklch(0.40 0 0);
+
+  --toc-badge-bg: transparent;
+  --toc-btn-hover: oklch(0.94 0 0);
+  --toc-btn-active: oklch(0.90 0 0);
+  --toc-width: 14rem;
+  --toc-item-active: oklch(0.20 0 0);
+
+  --color-selection-bar: linear-gradient(to right, oklch(0.20 0 0), oklch(0.50 0 0), oklch(0.80 0 0));
+
+  --guestbook-panel: transparent;
+  --guestbook-surface: transparent;
+  --guestbook-editor-bg: #F7F7F7;
+  --guestbook-editor-text: #171717;
+  --guestbook-editor-muted: #666666;
+  --guestbook-editor-line: #D6D6D6;
+  --guestbook-editor-hover: #EAEAEA;
+  --guestbook-focus: #3D3D3D;
+  --guestbook-send-bg: #171717;
+  --guestbook-send-text: #FFFFFF;
+  --guestbook-link: #22C55E;
+  --guestbook-overlay: rgb(0 0 0 / 0.58);
+  --guestbook-bubble: #262626;
+  --guestbook-bubble-text: #FFFFFF;
+  --guestbook-admin-bubble: #FFFFFF;
+  --guestbook-admin-text: #111111;
+  --guestbook-muted: var(--content-meta);
+  --guestbook-line: var(--line-divider);
+  --guestbook-danger: var(--admonitions-color-caution);
+  --guestbook-success: var(--admonitions-color-tip);
+  --guestbook-avatar-size: 2.625rem;
+  --guestbook-chat-height: min(74vh, 47.5rem);
+  --guestbook-chat-min-height: 37.5rem;
+  --guestbook-chat-max-width: 90rem;
+  --guestbook-sidebar-width: 18rem;
+  --guestbook-viewport-offset: 4.75rem;
+  --guestbook-mobile-dock-clearance: 6.25rem;
+}
+
+/* 暗色主题：纯黑底 + 白前景，所有色块去饱和 */
+:root.dark {
+  --primary: oklch(0.98 0 0);
+  --page-bg: oklch(0.08 0 0);
+  --card-bg: transparent;
+  --card-bg-transparent: transparent;
+
+  --deep-text: oklch(0.90 0 0);
+  --title-active: oklch(0.80 0 0);
+
+  --btn-content: oklch(0.85 0 0);
+  --btn-regular-bg: transparent;
+  --btn-regular-bg-hover: oklch(0.18 0 0);
+  --btn-regular-bg-active: oklch(0.22 0 0);
+
+  --btn-plain-bg-hover: oklch(0.18 0 0);
+  --btn-plain-bg-active: oklch(0.22 0 0);
+
+  --btn-card-bg-hover: oklch(0.16 0 0);
+  --btn-card-bg-active: oklch(0.20 0 0);
+
+  --line-divider: oklch(0.25 0 0);
+  --line-color: oklch(0.25 0 0);
+  --border: oklch(0.32 0 0);
+  --meta-divider: oklch(0.35 0 0);
+  --content-meta: oklch(0.65 0 0);
+
+  --inline-code-bg: oklch(0.18 0 0);
+  --inline-code-color: oklch(0.85 0 0);
+  --selection-bg: oklch(0.30 0 0);
+  --codeblock-bg: oklch(0.12 0 0);
+  --codeblock-topbar-bg: oklch(0.18 0 0);
+
+  --license-block-bg: oklch(0.12 0 0);
+
+  --link-underline: oklch(0.30 0 0);
+  --link-hover: oklch(0.65 0 0);
+  --link-active: oklch(0.80 0 0);
+
+  --float-panel-bg: oklch(0.10 0 0);
+
+  /* 导航栏（暗色）：胶囊换深灰，高亮块反成白底黑字 */
+  --navbar-bg: oklch(0.19 0 0);
+  --navbar-highlight-bg: oklch(1 0 0);
+  --navbar-highlight-text: oklch(0 0 0);
+
+  --scrollbar-bg: var(--scrollbar-bg-dark);
+  --scrollbar-bg-hover: var(--scrollbar-bg-hover-dark);
+  --scrollbar-bg-active: var(--scrollbar-bg-active-dark);
+
+  --display-light-icon: 0;
+  --display-dark-icon: 1;
+
+  --admonitions-color-tip: oklch(0.75 0 0);
+  --admonitions-color-note: oklch(0.75 0 0);
+  --admonitions-color-important: oklch(0.75 0 0);
+  --admonitions-color-warning: oklch(0.75 0 0);
+  --admonitions-color-caution: oklch(0.85 0 0);
+
+  --toc-badge-bg: transparent;
+  --toc-btn-hover: oklch(0.18 0 0);
+  --toc-btn-active: oklch(0.22 0 0);
+  --toc-item-active: oklch(0.85 0 0);
+
+  --color-selection-bar: linear-gradient(to right, oklch(0.85 0 0), oklch(0.55 0 0), oklch(0.25 0 0));
+
+  --guestbook-panel: transparent;
+  --guestbook-surface: transparent;
+  --guestbook-editor-bg: #2D2D2D;
+  --guestbook-editor-text: #FFFFFF;
+  --guestbook-editor-muted: #B8B8B8;
+  --guestbook-editor-line: #555555;
+  --guestbook-editor-hover: #262626;
+  --guestbook-focus: #D6D6D6;
+  --guestbook-send-bg: #FFFFFF;
+  --guestbook-send-text: #111111;
+  --guestbook-link: #22C55E;
+  --guestbook-overlay: rgb(0 0 0 / 0.72);
+  --guestbook-bubble: #262626;
+  --guestbook-bubble-text: #FFFFFF;
+  --guestbook-admin-bubble: #FFFFFF;
+  --guestbook-admin-text: #111111;
+  --guestbook-muted: var(--content-meta);
+  --guestbook-line: var(--line-divider);
+  --guestbook-danger: var(--admonitions-color-caution);
+  --guestbook-success: var(--admonitions-color-tip);
+}
+
+/* ===== 文章列表 / 置顶轮播 ===== */
+/* 数值照抄参考站 variables.styl:47-52 —— 浅色用深值（0.62/0.42），
+   暗色才用浅值（0.78/0.75）。此前两站弄反，浅色下竖杠与分类文字过亮 */
+:root {
+	--article-pinned-accent: oklch(0.52 0.2 25);
+	--article-title-marker: oklch(0.62 0.16 190);
+	--article-category-lightness: 0.42;
+	--article-category-chroma: 0.13;
+}
+
+:root.dark {
+	--article-pinned-accent: oklch(0.72 0.16 25);
+	--article-title-marker: oklch(0.78 0.15 190);
+	--article-category-lightness: 0.75;
+	--article-category-chroma: 0.13;
+}
+
+/* ===== 标签关系图谱 ===== */
+:root {
+	--tag-graph-surface: #fafafa;
+	--tag-graph-text: #18181b;
+	--tag-graph-muted: #52525b;
+	--tag-graph-tooltip-bg: rgba(24, 24, 27, 0.94);
+	--tag-graph-tooltip-text: #fafafa;
+	--tag-graph-tooltip-border: rgba(255, 255, 255, 0.16);
+	--tag-graph-node-1: #d84f4b;
+	--tag-graph-node-2: #3f7cac;
+	--tag-graph-node-3: #4f9d8f;
+	--tag-graph-node-4: #d39b2a;
+	--tag-graph-node-5: #8a68a6;
+	--tag-graph-node-6: #b86b43;
+	--tag-graph-node-7: #668f3f;
+	--tag-graph-node-8: #8a7470;
+}
+
+:root.dark {
+	--tag-graph-surface: #17181c;
+	--tag-graph-text: #f4f4f5;
+	--tag-graph-muted: #d4d4d8;
+	--tag-graph-tooltip-bg: rgba(9, 9, 11, 0.94);
+	--tag-graph-tooltip-text: #fafafa;
+	--tag-graph-tooltip-border: rgba(255, 255, 255, 0.18);
+	--tag-graph-node-1: #e25552;
+	--tag-graph-node-2: #5c91c2;
+	--tag-graph-node-3: #59aaa0;
+	--tag-graph-node-4: #e0ae3a;
+	--tag-graph-node-5: #a57abc;
+	--tag-graph-node-6: #d17a4e;
+	--tag-graph-node-7: #7bac54;
+	--tag-graph-node-8: #ad9189;
+}
+
+/* ===== 知识图谱（/categories/ 图谱页） ===== */
+:root {
+	/* 选中态强调色：dock 图标点亮、详情面板里的标签描边都用它，
+	   刻意不用 --primary，避免和全站主色抢视觉 */
+	--graph-chip-checked: oklch(0.55 0.12 190);
+	/* 移动端 dock 的实色底：图谱页那条竖条要和 mobile-dock 同底色，
+	   局部变量继承不出去，所以提到 token 层 */
+	--mobile-dock-surface: #e7e7e7;
+}
+
+:root.dark {
+	--graph-chip-checked: oklch(0.75 0.12 190);
+	--mobile-dock-surface: #181818;
+}

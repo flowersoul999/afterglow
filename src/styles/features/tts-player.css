@@ -1,0 +1,126 @@
+/* ===== 文章朗读播放条（ArticleTtsPlayer） ===== */
+
+.tts-player__trigger {
+  display: inline-flex;
+  align-items: center;
+}
+
+.tts-player__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: oklch(0.62 0.19 260);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.tts-player__button:hover {
+  color: oklch(0.55 0.21 260);
+  background: transparent;
+}
+
+.tts-player__button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.tts-player {
+  position: fixed;
+  left: 50%;
+  bottom: 4.75rem;
+  transform: translateX(-50%);
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(94vw, 680px);
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-divider);
+  background: var(--float-panel-bg);
+  color: var(--deep-text);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.tts-player__control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  border: none;
+  background: var(--btn-regular-bg);
+  color: var(--btn-content);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.tts-player__control:hover {
+  background: color-mix(in oklab, var(--deep-text) 12%, transparent);
+}
+
+.tts-player__timeline {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.tts-player__seek {
+  width: clamp(90px, 24vw, 220px);
+  accent-color: var(--primary);
+}
+
+.tts-player__time {
+  font-size: 0.72rem;
+  color: var(--content-meta);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tts-player__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  color: var(--content-meta);
+}
+
+.tts-player__select {
+  border: 1px solid var(--line-divider);
+  border-radius: 0.5rem;
+  background: var(--btn-regular-bg);
+  color: var(--btn-content);
+  padding: 0.15rem 0.3rem;
+  font-size: 0.72rem;
+  max-width: 7.5rem;
+}
+
+.tts-player__notice {
+  font-size: 0.72rem;
+  color: var(--content-meta);
+  max-width: 12rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 767px) {
+  .tts-player {
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 4.5rem;
+    transform: none;
+    max-width: none;
+    border-radius: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .tts-player__seek {
+    width: 38vw;
+  }
+}

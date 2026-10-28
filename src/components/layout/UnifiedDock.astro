@@ -1,0 +1,407 @@
+---
+import { Icon } from "astro-icon/components";
+import Search from "@/components/controls/Search.svelte";
+import MusicPlayer from "@/components/features/MusicPlayer.astro";
+import PostDirectoryList from "@/components/widget/PostDirectoryList.astro";
+import { musicPlayerConfig } from "@/config/musicConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+
+interface Props {
+	headings?: unknown;
+}
+
+// 音乐播放列表不再内联进页面（站长 2026-10-05）：
+// 统一走 /music-playlist.json + utils/music-playlist.ts，由播放管理器按需拉取
+
+// 「全部文章」目录只在**文章阅读页**渲染（站长 2026-10-05：其他页面都不需要）：
+// 它给每页背了约 250KB 的 HTML（365 篇的标题/链接/slug），非文章页一律不带。
+// 悬浮坞在 #swup-container 内，SPA 导航时它随容器一起被 Swup 换新（内联脚本也会重跑），
+// 所以这里用服务端判断就够了，不需要客户端补拉。
+// 文章详情：/posts/<slug>/（可多级 slug）；/posts/ 与 /posts/2/ 是列表页分页，排除
+const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
+	Astro.url.pathname,
+);
+---
+
+<div class="ud-dock" id="unified-dock" aria-label="快捷工具">
+  <button class="ud-btn hide" id="ud-toc-btn" type="button" aria-label="目录">
+    <Icon name="material-symbols:format-list-bulleted" is:inline />
+    <span class="ud-tooltip">目录</span>
+  </button>
+  <button class="ud-btn hide" id="ud-posts-btn" type="button" aria-label="文章">
+    <Icon name="material-symbols:list-alt-outline" is:inline />
+    <span class="ud-tooltip">文章</span>
+  </button>
+  <button class="ud-btn hide" id="ud-comment-btn" type="button" aria-label="评论">
+    <Icon name="material-symbols:chat-bubble-outline-rounded" is:inline />
+    <span class="ud-tooltip">评论</span>
+  </button>
+
+  <div class="ud-stack" id="ud-stack" data-expanded="false">
+    {musicPlayerConfig.showInNavbar !== false && (
+      <button class="ud-btn" id="ud-music-btn" type="button" aria-label="音乐">
+        <Icon name="material-symbols:music-note-rounded" is:inline />
+        <span class="ud-tooltip">音乐</span>
+      </button>
+    )}
+    <button class="ud-btn ud-btn--theme" id="ud-theme-btn" type="button" aria-label="主题">
+      <span class="ud-theme-light"><Icon name="material-symbols:wb-sunny-outline-rounded" is:inline /></span>
+      <span class="ud-theme-dark" style="display:none"><Icon name="material-symbols:dark-mode-outline-rounded" is:inline /></span>
+      <span class="ud-tooltip">主题</span>
+    </button>
+  </div>
+
+  <button class="ud-btn ud-btn--toggle" id="ud-toggle-btn" type="button" aria-label="展开">
+    <Icon name="material-symbols:more-horiz" is:inline class="ud-icon-collapsed" />
+    <Icon name="material-symbols:close" is:inline class="ud-icon-expanded" style="display:none" />
+    <span class="ud-tooltip" id="ud-toggle-label">展开</span>
+  </button>
+
+  <button class="ud-btn hide" id="ud-top-btn" type="button" aria-label="回顶部">
+    <Icon name="material-symbols:keyboard-arrow-up-rounded" is:inline />
+    <span class="ud-tooltip">回顶部</span>
+  </button>
+
+  <button class="ud-btn hide" id="ud-friends-plus-btn" type="button" aria-label="加友链">
+    <Icon name="material-symbols:add-rounded" is:inline />
+    <span class="ud-tooltip">加友链</span>
+  </button>
+</div>
+
+<div class="dock-drawer-overlay" id="dock-drawer-overlay"></div>
+
+{musicPlayerConfig.showInNavbar !== false && (
+<div class="dock-drawer dock-drawer-closed" id="dock-drawer-music">
+  <div class="dock-drawer-title">[ {i18n(I18nKey.music)} ]</div>
+  <MusicPlayer />
+</div>
+)}
+
+<Search client:load />
+
+<div class="dock-drawer dock-drawer-closed" id="dock-drawer-toc">
+  <div class="dock-drawer-title">[ contents ]</div>
+  <div id="dock-toc-content" class="text-sm leading-relaxed relative">
+    <div id="dock-toc-indicator" class="toc-active-indicator"></div>
+  </div>
+</div>
+
+<div class="dock-drawer dock-drawer-closed" id="dock-drawer-posts">
+  <div class="dock-drawer-title">[ 全部文章 ]</div>
+  {isPostDetailPage && <PostDirectoryList />}
+</div>
+
+<style>
+.ud-dock {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+.ud-dock > * {
+  pointer-events: auto;
+}
+
+@media (max-width: 768px) {
+  .ud-dock {
+    right: 0.75rem;
+    bottom: 0.75rem;
+    display: none;
+  }
+  .ud-btn--theme {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  #ud-toc-btn,
+  #ud-posts-btn {
+    display: none !important;
+  }
+}
+
+.ud-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 规格对齐参考站 FloatingDock 的 .dock-btn：50×50、圆角 1.25rem、
+     2px 深色描边、纯色底、无阴影无毛玻璃、悬停反色 */
+  width: 3.125rem;
+  height: 3.125rem;
+  padding: 0;
+  border-radius: 1.25rem;
+  border: 2px solid var(--deep-text);
+  background: var(--page-bg);
+  color: var(--deep-text);
+  cursor: pointer;
+  transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.ud-btn:hover {
+  background: var(--deep-text);
+  color: var(--page-bg);
+  border-color: var(--page-bg);
+}
+.ud-btn:active {
+  transform: scale(0.96);
+}
+.ud-btn.hide {
+  display: none;
+}
+.ud-btn :global(svg) {
+  font-size: 1.875rem;
+  flex-shrink: 0;
+}
+
+/* 收起时整列按钮不占位，避免在悬浮坞里多留一道 0.75rem 间距 */
+.ud-stack:not([data-expanded="true"]) {
+  display: none;
+}
+
+.ud-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+.ud-stack .ud-btn {
+  display: none;
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.28s cubic-bezier(0.22,1,0.36,1), transform 0.32s cubic-bezier(0.22,1,0.36,1);
+}
+.ud-stack[data-expanded="true"] .ud-btn {
+  display: inline-flex;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.ud-stack[data-expanded="true"] .ud-btn.hide {
+  display: none;
+}
+.ud-stack[data-expanded="true"] .ud-btn:nth-child(1) { transition-delay: 30ms; }
+.ud-stack[data-expanded="true"] .ud-btn:nth-child(2) { transition-delay: 60ms; }
+.ud-stack[data-expanded="true"] .ud-btn:nth-child(3) { transition-delay: 90ms; }
+.ud-stack[data-expanded="true"] .ud-btn:nth-child(4) { transition-delay: 120ms; }
+.ud-stack[data-expanded="true"] .ud-btn:nth-child(5) { transition-delay: 150ms; }
+
+.ud-tooltip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  background: transparent;
+  border: none;
+  border-radius: 1.25rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.ud-btn:hover .ud-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+.ud-btn:hover :global(svg) {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+.ud-btn :global(svg) {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ud-stack .ud-btn {
+    transition: none;
+  }
+}
+</style>
+
+<script>
+  let _udAbort: AbortController | null = null;
+
+  function bindUnifiedDock() {
+    if (_udAbort) _udAbort.abort();
+    _udAbort = new AbortController();
+    const signal = _udAbort.signal;
+
+    const stack = document.getElementById("ud-stack");
+    const toggleBtn = document.getElementById("ud-toggle-btn");
+    if (!stack || !toggleBtn) return;
+
+    const collapsedIcon = toggleBtn.querySelector(".ud-icon-collapsed") as HTMLElement | null;
+    const expandedIcon = toggleBtn.querySelector(".ud-icon-expanded") as HTMLElement | null;
+    const toggleLabel = document.getElementById("ud-toggle-label") as HTMLElement | null;
+
+    function setExpanded(expanded: boolean) {
+      stack!.setAttribute("data-expanded", String(expanded));
+      if (collapsedIcon) collapsedIcon.style.display = expanded ? "none" : "";
+      if (expandedIcon) expandedIcon.style.display = expanded ? "" : "none";
+      if (toggleLabel) toggleLabel.textContent = expanded ? "收起" : "展开";
+      toggleBtn?.setAttribute("aria-label", expanded ? "收起" : "展开");
+    }
+
+    function closeAllDrawers() {
+      document.querySelectorAll(".dock-drawer").forEach((d) => d.classList.add("dock-drawer-closed"));
+      document.getElementById("dock-drawer-overlay")?.classList.remove("active");
+    }
+
+    function openDrawer(drawer: Element) {
+      drawer.classList.remove("dock-drawer-closed");
+      document.getElementById("dock-drawer-overlay")?.classList.add("active");
+    }
+
+    toggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setExpanded(stack.getAttribute("data-expanded") !== "true");
+    });
+
+    const udThemeBtn = document.getElementById("ud-theme-btn") as HTMLElement | null;
+    const udThemeLight = udThemeBtn?.querySelector(".ud-theme-light") as HTMLElement | null;
+    const udThemeDark = udThemeBtn?.querySelector(".ud-theme-dark") as HTMLElement | null;
+
+    function updateUnifiedThemeIcons() {
+      const isDark = document.documentElement.classList.contains("dark");
+      if (udThemeLight) udThemeLight.style.display = isDark ? "none" : "";
+      if (udThemeDark) udThemeDark.style.display = isDark ? "" : "none";
+    }
+
+    function toggleUnifiedTheme() {
+      const isDark = document.documentElement.classList.contains("dark");
+      const next = isDark ? "light" : "dark";
+      localStorage.setItem("theme", next);
+      if (next === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+      updateUnifiedThemeIcons();
+      window.dispatchEvent(new CustomEvent("theme-change"));
+    }
+
+    udThemeBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleUnifiedTheme();
+    });
+
+    updateUnifiedThemeIcons();
+    window.addEventListener("theme-change", updateUnifiedThemeIcons, { signal });
+
+    const drawerMap: Record<string, string> = {
+      "ud-music-btn": "dock-drawer-music",
+      "ud-toc-btn": "dock-drawer-toc",
+      "ud-posts-btn": "dock-drawer-posts",
+    };
+    Object.entries(drawerMap).forEach(([btnId, drawerId]) => {
+      const btn = document.getElementById(btnId);
+      const drawer = document.getElementById(drawerId);
+      if (!btn || !drawer) return;
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isOpen = !drawer.classList.contains("dock-drawer-closed");
+        closeAllDrawers();
+        if (!isOpen) openDrawer(drawer);
+      });
+    });
+
+    document.getElementById("dock-drawer-overlay")?.addEventListener("click", () => {
+      closeAllDrawers();
+      setExpanded(false);
+    });
+
+    document.addEventListener("click", (e) => {
+      const target = e.target as Node;
+      if (!target) return;
+      const isInDrawer = document.querySelector(".dock-drawer:not(.dock-drawer-closed)")?.contains(target);
+      const isInDock = document.getElementById("unified-dock")?.contains(target);
+      if (!isInDrawer && !isInDock) {
+        closeAllDrawers();
+        setExpanded(false);
+      }
+    }, { signal });
+
+    document.getElementById("ud-top-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.scroll({ top: 0, behavior: "smooth" });
+    });
+
+    document.getElementById("ud-friends-plus-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const target = document.querySelector('.comment-container, #waline, #tcomment, .giscus, #post-comments');
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.getElementById("ud-comment-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const target = document.getElementById("scissor-divider") || document.getElementById("post-comments");
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    document.getElementById("ud-toc-btn")?.addEventListener("click", () => {
+      import("@/utils/tocUtils").then(({ TOCManager }) => {
+        try {
+          new TOCManager({
+            contentId: "dock-toc-content",
+            indicatorId: "dock-toc-indicator",
+            maxLevel: 3,
+            scrollOffset: 80,
+          }).init();
+        } catch (err) {
+          console.error("TOC init failed:", err);
+        }
+      });
+    });
+
+    function updateVisibility() {
+      const scrolled = window.scrollY > 200;
+      document.getElementById("ud-top-btn")?.classList.toggle("hide", !scrolled);
+      const isPost = /\/posts?\//.test(window.location.pathname);
+      const isPostDetail = /\/posts\/.+\//.test(window.location.pathname);
+      document.getElementById("ud-posts-btn")?.classList.toggle("hide", !isPost);
+      document.getElementById("ud-toc-btn")?.classList.toggle("hide", !isPostDetail);
+      document.getElementById("ud-comment-btn")?.classList.toggle("hide", !isPostDetail);
+      const isFriends = /\/friends\/?$/.test(window.location.pathname);
+      document.getElementById("ud-friends-plus-btn")?.classList.toggle("hide", !isFriends);
+    }
+
+    function syncWithMobileDock() {
+      if (window.innerWidth > 768) {
+        const ud = document.getElementById("unified-dock");
+        if (ud) (ud as HTMLElement).style.display = "";
+        return;
+      }
+      const mobileDock = document.getElementById("mobile-dock");
+      const unifiedDock = document.getElementById("unified-dock");
+      if (!mobileDock || !unifiedDock) return;
+      const isHidden = mobileDock.classList.contains("is-hidden");
+      (unifiedDock as HTMLElement).style.display = isHidden ? "flex" : "none";
+    }
+
+    updateVisibility();
+    syncWithMobileDock();
+    window.addEventListener("scroll", () => { updateVisibility(); syncWithMobileDock(); }, { passive: true, signal });
+    const mobileDockEl = document.getElementById("mobile-dock");
+    if (mobileDockEl) {
+      new MutationObserver(syncWithMobileDock).observe(mobileDockEl, { attributes: true, attributeFilter: ["class"] });
+    }
+    window.addEventListener("resize", syncWithMobileDock, { passive: true, signal });
+    document.addEventListener("astro:page-load", () => bindUnifiedDock(), { signal });
+    document.addEventListener("swup:content:replaced", () => bindUnifiedDock(), { signal });
+  }
+
+  bindUnifiedDock();
+</script>

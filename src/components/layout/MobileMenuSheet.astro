@@ -1,0 +1,219 @@
+---
+import { getCollection } from "astro:content";
+import { Icon } from "astro-icon/components";
+import { commentConfig, navCategoryConfig } from "@/config";
+import { profileConfig } from "@/config/profileConfig";
+import { siteConfig } from "@/config/siteConfig";
+import { getNavCategoryLinks } from "@/utils/nav-categories";
+
+const allPosts = await getCollection("posts", ({ data }) => {
+	return import.meta.env.PROD ? data.draft !== true : true;
+});
+const postCount = allPosts.length;
+
+// 「分类」分组：与桌面导航栏同一个数据源（文章目录），不手维护
+const navCategories = siteConfig.pages.categories
+	? await getNavCategoryLinks(navCategoryConfig)
+	: [];
+
+const startDate = new Date(siteConfig.siteStartDate || Date.now());
+const now = new Date();
+const siteDays = Math.max(
+	1,
+	Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)),
+);
+
+const walineServerURL =
+	commentConfig.type === "waline" ? commentConfig.waline?.serverURL || "" : "";
+
+const groups = [
+	{
+		icon: "material-symbols:public",
+		label: "网站导航",
+		url: "/projects/",
+		single: true,
+	},
+	{
+		icon: "material-symbols:article-outline-rounded",
+		label: "文章",
+		children: [
+			{
+				icon: "material-symbols:article-outline",
+				label: "文章列表",
+				url: "/posts/",
+			},
+			// 知识图谱（原「分类」三视图页已被 /categories/ 的四层图谱取代）
+			...(siteConfig.pages.categories
+				? [
+						{
+							icon: "material-symbols:hub-outline",
+							label: "图谱",
+							url: "/categories/",
+						},
+					]
+				: []),
+			{ icon: "material-symbols:archive", label: "归档", url: "/archive/" },
+		],
+	},
+	// 分类：子项来自文章目录（标了 count/depth 的会在下面渲染成徽标与缩进）
+	...(navCategories.length > 0
+		? [
+				{
+					icon: "material-symbols:folder-outline",
+					label: "分类",
+					children: navCategories.map((category) => ({
+						icon: category.icon,
+						label: category.name,
+						url: category.url,
+						count: category.count,
+						depth: category.depth,
+					})),
+				},
+			]
+		: []),
+	{
+		icon: "material-symbols:local-cafe",
+		label: "动态",
+		children: [
+			{
+				icon: "material-symbols:chat-bubble-outline",
+				label: "说说",
+				url: "/moments/",
+			},
+			{
+				icon: "material-symbols:photo-album-outline",
+				label: "相册",
+				url: "/album/",
+			},
+			{ icon: "material-symbols:chat", label: "留言板", url: "/guestbook/" },
+			{ icon: "material-symbols:public", label: "朋友圈", url: "/circle/" },
+		],
+	},
+	{
+		icon: "material-symbols:camera-outdoor",
+		label: "记录",
+		children: [
+			{ icon: "material-symbols:book-5", label: "书架", url: "/books/" },
+			{ icon: "material-symbols:movie", label: "影视", url: "/movies-games/" },
+			{
+				icon: "material-symbols:location-on",
+				label: "足迹",
+				url: "/life/places/",
+			},
+			{
+				icon: "material-symbols:history",
+				label: "更新日志",
+				url: "/changelog/",
+			},
+		],
+	},
+	{
+		icon: "material-symbols:info",
+		label: "关于",
+		children: [
+			{ icon: "material-symbols:person", label: "关于", url: "/about/" },
+			{ icon: "material-symbols:group", label: "友链", url: "/friends/" },
+			{ icon: "material-symbols:favorite", label: "赞助", url: "/sponsor/" },
+		],
+	},
+];
+---
+
+<div class="menu-sheet-overlay" id="menu-sheet-overlay" aria-hidden="true"></div>
+
+<div class="menu-sheet" id="menu-sheet" role="dialog" aria-label="菜单">
+  <div class="menu-sheet__header">
+    <span class="menu-sheet__header-title">菜单</span>
+    <button class="menu-sheet__close" id="menu-sheet-close" aria-label="关闭" type="button">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6.4 19L5 17.6L10.6 12L5 6.4L6.4 5L12 10.6L17.6 5L19 6.4L13.4 12L19 17.6L17.6 19L12 13.4L6.4 19Z" fill="currentColor"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="menu-sheet__nav" aria-label="主导航">
+    {groups.map((group, gi) => (
+      group.single ? (
+        <a
+          href={group.url}
+          class="menu-sheet__row"
+          target={(group as any).external ? "_blank" : undefined}
+          rel={(group as any).external ? "noopener" : undefined}
+        >
+          <span class="menu-sheet__row-icon"><Icon name={group.icon} /></span>
+          <span class="menu-sheet__row-label">{group.label}</span>
+          {(group as any).external && <span class="menu-sheet__row-external"><Icon name="material-symbols:open-in-new-rounded" /></span>}
+        </a>
+      ) : (
+        <details class="menu-sheet__group">
+          <summary class="menu-sheet__group-header">
+            <span class="menu-sheet__row-icon"><Icon name={group.icon} /></span>
+            <span class="menu-sheet__row-label">{group.label}</span>
+            <span class="menu-sheet__chevron"><Icon name="material-symbols:expand-more-rounded" /></span>
+          </summary>
+          <div class="menu-sheet__group-body">
+            {(group.children ?? []).map((child) => (
+              <a href={child.url} class="menu-sheet__subrow" target={(child as any).external ? "_blank" : undefined} rel={(child as any).external ? "noopener" : undefined}>
+                <span class="menu-sheet__subrow-icon">{child.icon && <Icon name={child.icon} />}</span>
+                <span
+                  class="menu-sheet__subrow-label"
+                  style={((child as any).depth ?? 1) > 1 ? `padding-left: ${Math.min((child as any).depth - 1, 2) * 0.85}rem` : undefined}
+                >
+                  {child.label}
+                </span>
+                {typeof (child as any).count === "number" && <span class="menu-sheet__subrow-count">{(child as any).count}</span>}
+                {(child as any).external && <span class="menu-sheet__subrow-external"><Icon name="material-symbols:open-in-new-rounded" /></span>}
+              </a>
+            ))}
+          </div>
+        </details>
+      )
+    ))}
+  </nav>
+</div>
+
+<script is:inline define:vars={{ walineServerURL }}>
+(function() {
+  if (walineServerURL) {
+    fetch(walineServerURL + "/api/comment?type=count")
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var count = typeof data === "number" ? data : (data && data.data);
+        if (count !== undefined) {
+          var el = document.getElementById("menu-sheet-comment-count");
+          if (el) el.textContent = count;
+        }
+      })
+      .catch(function() {});
+  }
+})();
+</script>
+
+<script is:inline>
+(function() {
+  function closeAllDetails() {
+    document.querySelectorAll('#menu-sheet details[open]').forEach(function(d) { d.removeAttribute('open'); });
+  }
+  // 一次只能打开一个
+  document.querySelectorAll('#menu-sheet details').forEach(function(detail) {
+    detail.addEventListener('toggle', function() {
+      if (this.open) {
+        document.querySelectorAll('#menu-sheet details[open]').forEach(function(other) {
+          if (other !== detail) other.removeAttribute('open');
+        });
+      }
+    });
+  });
+  // 每次打开卡片时全部收起
+  var sheet = document.getElementById('menu-sheet');
+  if (sheet) {
+    new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        if (m.attributeName === 'class' && sheet.classList.contains('is-open')) {
+          closeAllDetails();
+        }
+      });
+    }).observe(sheet, { attributes: true, attributeFilter: ['class'] });
+  }
+})();
+</script>

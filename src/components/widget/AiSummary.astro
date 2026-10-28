@@ -1,0 +1,166 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface Props {
+	description: string;
+	descriptionSource?: "manual" | "ai" | string;
+}
+
+const { description, descriptionSource } = Astro.props;
+
+const isAI = descriptionSource !== "manual";
+const sourceLabel = isAI ? "AI 摘要" : "人工编写";
+---
+
+<div
+  id="ai-summary"
+  class="ai-summary card-base rounded-xl mb-6 onload-animation"
+>
+  <div class="ai-summary-inner">
+    <div class="ai-summary-header">
+      <div class="ai-summary-icon">
+        {isAI ? (
+          <>
+            <img src="/assets/images/emoji/openai-dark.png" alt="" class="ai-icon-img ai-icon-light" width="20" height="20" />
+            <img src="/assets/images/emoji/openai-light.png" alt="" class="ai-icon-img ai-icon-dark" width="20" height="20" />
+          </>
+        ) : (
+          <Icon name="material-symbols:edit-note-rounded" class="text-lg" />
+        )}
+      </div>
+      <span class="ai-summary-label">{sourceLabel}</span>
+    </div>
+    <p id="ai-summary-text" class="ai-summary-text" data-full-text={description}>
+    </p>
+  </div>
+</div>
+
+<script is:inline>
+  (function typewriter() {
+    const el = document.getElementById("ai-summary-text");
+    if (!el) return;
+
+    const fullText = el.getAttribute("data-full-text") || "";
+    if (!fullText) return;
+
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    if (prefersReducedMotion) {
+      el.textContent = fullText;
+      return;
+    }
+
+    let hasRun = false;
+    const speed = 45; // ms per character
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && !hasRun) {
+            hasRun = true;
+            observer.unobserve(el);
+            startTyping();
+          }
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    observer.observe(el);
+
+    function startTyping() {
+      let i = 0;
+      el.textContent = "";
+
+      function tick() {
+        if (i < fullText.length) {
+          el.textContent += fullText.charAt(i);
+          i++;
+          const delay =
+            fullText.charAt(i - 1) === "。" ||
+            fullText.charAt(i - 1) === "！" ||
+            fullText.charAt(i - 1) === "？" ||
+            fullText.charAt(i - 1) === "…"
+              ? speed * 3
+              : fullText.charAt(i - 1) === "，" ||
+                  fullText.charAt(i - 1) === "、"
+                ? speed * 2
+                : speed;
+          setTimeout(tick, delay);
+        }
+      }
+
+      tick();
+    }
+  })();
+</script>
+
+<style>
+  .ai-summary {
+    border: 1px solid color-mix(in srgb, var(--line-divider) 86%, transparent);
+    background: color-mix(in srgb, var(--card-bg) 94%, transparent);
+    overflow: hidden;
+  }
+
+  .ai-summary-inner {
+    padding: 1rem 1.25rem;
+  }
+
+  .ai-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.625rem;
+  }
+
+  .ai-summary-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    color: var(--primary);
+  }
+
+  .ai-icon-img {
+    display: block;
+    object-fit: contain;
+  }
+
+  .ai-icon-light {
+    display: block;
+  }
+
+  .ai-icon-dark {
+    display: none;
+  }
+
+  :global(html.dark) .ai-icon-light {
+    display: none;
+  }
+
+  :global(html.dark) .ai-icon-dark {
+    display: block;
+  }
+
+  .ai-summary-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--primary);
+  }
+
+  .ai-summary-text {
+    font-size: 0.925rem;
+    line-height: 1.75;
+    color: var(--deep-text);
+    min-height: 1.75em;
+  }
+
+  :global(html.dark) .ai-summary-text {
+    color: var(--deep-text);
+  }
+</style>

@@ -1,0 +1,654 @@
+# PagesCMS 配置 - 团子和蛋糕的博客
+# 基于 PagesCMS 官方 schema 编写
+# 文档: https://pagescms.org/docs/configuration/
+
+media:
+  # 站点静态资源 - 上传封面、头像等小图到仓库
+  - name: assets
+    label: 站点资源
+    input: public/assets
+    output: /assets
+    categories: [image]
+
+content:
+  # ============================================================
+  # 📝 博客文章
+  # ============================================================
+  - name: blog-posts
+    label: 📝 博客文章
+    type: group
+    items:
+      - name: posts
+        label: 📝 博客文章
+        type: collection
+        path: src/content/文章
+        format: yaml-frontmatter
+        filename:
+          template: "{year}-{month}-{day}-{primary}.md"
+          field: create
+        # PagesCMS 的 exclude 按名称精确匹配（不支持 glob），排除图片子目录
+        exclude: ["images", "assets"]
+        view:
+          primary: title
+          fields: [title, published, tags, draft, pinned]
+          sort: ["published desc", "title asc"]
+          search: [title, description, tags]
+          default:
+            sort: published
+            order: desc
+        fields:
+          - name: title
+            label: 标题
+            type: string
+            required: true
+            description: 文章标题
+
+          - name: published
+            label: 发布时间
+            type: date
+            required: true
+            options:
+              time: false
+              format: yyyy-MM-dd
+
+          - name: updated
+            label: 更新时间
+            type: date
+            options:
+              time: false
+              format: yyyy-MM-dd
+
+          - name: draft
+            label: 草稿
+            type: boolean
+            default: false
+
+          - name: description
+            label: 文章摘要
+            type: text
+            description: 简短描述，留空则自动截取正文
+
+          - name: image
+            label: 封面图
+            type: image
+            description: 文章封面图片路径
+
+          - name: tags
+            label: 标签
+            type: select
+            options:
+              multiple: true
+              creatable: true
+              values:
+                - { label: 前端, value: 前端 }
+                - { label: Java, value: Java }
+                - { label: 数据库, value: 数据库 }
+                - { label: SpringBoot, value: SpringBoot }
+                - { label: 使用文档, value: 使用文档 }
+                - { label: Vue, value: Vue }
+                - { label: Web基础, value: Web基础 }
+                - { label: MySQL, value: MySQL }
+                - { label: Maven, value: Maven }
+                - { label: HTML, value: HTML }
+                - { label: CSS, value: CSS }
+                - { label: JavaScript, value: JavaScript }
+                - { label: MyBatis, value: MyBatis }
+                - { label: 音乐, value: 音乐 }
+                - { label: 日常, value: 日常 }
+                - { label: 博客, value: 博客 }
+                - { label: 宝塔面板, value: 宝塔面板 }
+                - { label: 教程, value: 教程 }
+
+          - name: lang
+            label: 语言
+            type: select
+            options:
+              values:
+                - { label: 中文, value: "" }
+                - { label: English, value: en }
+                - { label: 日本語, value: ja }
+                - { label: 繁體中文, value: zh_TW }
+                - { label: Русский, value: ru }
+
+          - name: pinned
+            label: 置顶
+            type: boolean
+            default: false
+
+          - name: author
+            label: 作者
+            type: string
+            description: 覆盖默认作者名（通常留空）
+
+          - name: sourceLink
+            label: 原文链接
+            type: string
+            description: 转载/翻译文章的原始出处
+
+          - name: licenseName
+            label: 许可协议名称
+            type: string
+            description: 如 CC BY-NC-SA 4.0
+
+          - name: licenseUrl
+            label: 许可协议链接
+            type: string
+
+          - name: comment
+            label: 启用评论
+            type: boolean
+            default: true
+
+          - name: order
+            label: 排序权重
+            type: number
+            description: 同一天、同一目录内的排序，数字越大越靠前（与发布日期同向，跨天序号才能连续）；留空则排在该目录最后
+
+          # 内部字段：主题生成上一篇/下一篇链接用，CMS 中不可见但保留
+          - name: descriptionSource
+            label: 摘要来源
+            type: string
+            hidden: true
+            description: 手动/AI 摘要标记（manual 或 ai），主题读取
+
+          - name: prevTitle
+            label: 上一篇标题
+            type: string
+            hidden: true
+          - name: prevSlug
+            label: 上一篇路径
+            type: string
+            hidden: true
+          - name: nextTitle
+            label: 下一篇标题
+            type: string
+            hidden: true
+          - name: nextSlug
+            label: 下一篇路径
+            type: string
+            hidden: true
+
+          - name: body
+            label: 正文
+            type: rich-text
+            required: true
+
+  # ============================================================
+  # 💬 动态
+  # ============================================================
+  - name: moments-group
+    label: 💬 动态
+    type: group
+    items:
+      - name: moments
+        label: 💬 动态
+        type: collection
+        path: src/content/动态
+        format: yaml-frontmatter
+        filename:
+          template: "{year}-{month}-{day}.md"
+          field: create
+        view:
+          primary: published
+          fields: [published, location, tags]
+          sort: ["published desc"]
+        fields:
+          - name: published
+            label: 时间
+            type: date
+            required: true
+            description: 动态发布时间（存量文件两种日期格式均兼容）
+            options:
+              time: true
+              format: "yyyy-MM-dd HH:mm:ss"
+
+          - name: author
+            label: 作者
+            type: string
+
+          - name: avatar
+            label: 头像
+            type: string
+            description: 头像图片路径（图床 URL 或 /assets/... 路径）
+
+          - name: tags
+            label: 标签
+            type: select
+            options:
+              multiple: true
+              creatable: true
+              values:
+                - { label: 日常, value: 日常 }
+                - { label: 宝宝, value: 宝宝 }
+                - { label: 感悟, value: 感悟 }
+                - { label: coc, value: coc }
+                - { label: 想法, value: 想法 }
+                - { label: 跑步, value: 跑步 }
+                - { label: 反思, value: 反思 }
+                - { label: 电影, value: 电影 }
+                - { label: 开发, value: 开发 }
+
+          - name: images
+            label: 图片（已废弃）
+            type: imgbed
+            list: true
+            options:
+              media: false
+            description: 2026-10-21 起动态图片改写进正文，请直接粘贴到「内容」里；此字段仅为兼容存量数据保留，之后会下线。
+
+          - name: location
+            label: 位置
+            type: string
+
+          - name: device
+            label: 设备
+            type: string
+
+          - name: pinned
+            label: 置顶
+            type: boolean
+            default: false
+
+          - name: id
+            label: ID
+            type: uuid
+            hidden: true
+
+          - name: body
+            label: 内容
+            type: rich-text
+            required: true
+            description: 正文。图片请以 Markdown 语法直接贴在正文里（![](图片地址)），这样 Obsidian 里也能看到。
+
+  # ============================================================
+  # 🔗 友链
+  # ============================================================
+  - name: links-apps
+    label: 🔗 友链
+    type: group
+    items:
+      - name: friends
+        label: 🔗 友情链接
+        type: collection
+        path: src/content/友链
+        format: yaml-frontmatter
+        filename:
+          template: "{primary}.md"
+          field: create
+        view:
+          primary: title
+          fields: [title, siteurl, enabled, weight]
+          sort: ["weight desc"]
+        fields:
+          - name: title
+            label: 站点名
+            type: string
+            required: true
+
+          - name: imgurl
+            label: 头像链接
+            type: string
+            required: true
+
+          - name: desc
+            label: 站点描述
+            type: string
+            required: true
+
+          - name: siteurl
+            label: 站点链接
+            type: string
+            required: true
+
+          - name: tags
+            label: 标签
+            type: string
+            list: true
+
+          - name: weight
+            label: 权重
+            type: number
+            default: 0
+            description: 数字越大越靠前
+
+          - name: enabled
+            label: 启用
+            type: boolean
+            default: true
+
+          - name: added
+            label: 添加日期
+            type: date
+            options:
+              time: false
+              format: yyyy-MM-dd
+
+          - name: group
+            label: 分组
+            type: select
+            default: other
+            options:
+              values:
+                - { label: 我的朋友们, value: friend }
+                - { label: 其他所有人, value: other }
+
+
+      - name: tombstones
+        label: 🪦 友链墓碑
+        type: collection
+        path: src/content/友链/墓碑
+        format: yaml-frontmatter
+        filename:
+          template: "{primary}.md"
+          field: create
+        view:
+          primary: title
+          fields: [title, note]
+          sort: ["title asc"]
+        fields:
+          - name: title
+            label: 站点名
+            type: string
+            required: true
+
+          - name: avatar
+            label: 头像链接
+            type: string
+
+          - name: note
+            label: 备注
+            type: string
+            description: 下线原因、时间等
+
+  # ============================================================
+  # 🌱 生活记录
+  # ============================================================
+  - name: life-content
+    label: 🌱 生活记录
+    type: group
+    items:
+      # 足迹（life/places 子目录）
+      - name: life-places
+        label: 📍 足迹
+        type: collection
+        path: src/content/足迹
+        format: yaml-frontmatter
+        filename:
+          template: "{year}-{month}-{day}.md"
+          field: create
+        view:
+          primary: date
+          fields: [province, city, date]
+          sort: ["date desc"]
+        fields:
+          - name: date
+            label: 日期
+            type: date
+            options:
+              time: false
+              format: yyyy-MM-dd
+
+          - name: id
+            label: ID
+            type: string
+            description: 唯一标识（通常自动生成）
+
+          - name: province
+            label: 省份
+            type: string
+
+          - name: city
+            label: 城市
+            type: string
+
+          - name: experience
+            label: 体验
+            type: text
+
+          - name: visitCount
+            label: 访问次数
+            type: number
+            default: 1
+
+          - name: lat
+            label: 纬度
+            type: number
+
+          - name: lng
+            label: 经度
+            type: number
+
+          # 高德坐标搜索辅助字段（自定义字段 amap-geocode）：
+          # 保存时由服务端展开为顶层 lat/lng 并删除本字段
+          - name: amap-coords
+            label: 坐标搜索
+            type: amap-geocode
+            fields:
+              - name: lat
+                label: 纬度
+                type: number
+              - name: lng
+                label: 经度
+                type: number
+
+          - name: url
+            label: 关联链接
+            type: string
+
+          - name: urlLabel
+            label: 链接文字
+            type: string
+
+          - name: tags
+            label: 标签
+            type: string
+            list: true
+
+          - name: photos
+            label: 照片
+            type: imgbed
+            list: true
+            options:
+              media: false
+
+          - name: body
+            label: 备注
+            type: text
+
+  # ============================================================
+  # 📦 其他内容
+  # ============================================================
+  - name: other-content
+    label: 📦 其他内容
+    type: group
+    items:
+      - name: album
+        label: 🖼️ 相册
+        type: collection
+        path: src/content/相册
+        format: yaml-frontmatter
+        filename:
+          template: "{year}-{month}-{day}-{primary}.md"
+          field: create
+        view:
+          primary: title
+          fields: [title, date, tags, draft]
+          sort: ["date desc"]
+        fields:
+          - name: title
+            label: 相册名
+            type: string
+            required: true
+
+          - name: subtitle
+            label: 副标题
+            type: string
+
+          - name: cover
+            label: 封面图
+            type: string
+
+          - name: date
+            label: 日期
+            type: date
+            required: true
+            options:
+              time: false
+              format: yyyy-MM-dd
+
+          - name: location
+            label: 地点
+            type: string
+
+          - name: tags
+            label: 标签
+            type: string
+            list: true
+
+          - name: draft
+            label: 草稿
+            type: boolean
+            default: false
+
+          - name: imgbedFolder
+            label: 图床文件夹
+            type: string
+            description: 填"blog/album/xxx"后从 CloudFlare ImgBed 动态加载图片
+
+          - name: photos
+            label: 照片列表
+            type: imgbed
+            list: true
+            options:
+              media: false
+            description: 照片 URL 列表（优先使用图床）
+
+          - name: body
+            label: 描述
+            type: text
+
+      - name: daohang
+        label: 🧭 导航链接
+        type: collection
+        path: src/content/导航
+        format: yaml-frontmatter
+        filename:
+          template: "{primary}.md"
+          field: create
+        view:
+          primary: name
+          fields: [name, url]
+          sort: ["name asc"]
+        fields:
+          - name: name
+            label: 名称
+            type: string
+            required: true
+
+          - name: url
+            label: 链接
+            type: string
+            required: true
+
+          - name: icon
+            label: 图标链接
+            type: string
+
+          - name: description
+            label: 描述
+            type: string
+
+          - name: tags
+            label: 标签
+            type: string
+            list: true
+            description: 同一分类里出现的标签会变成标题行上的子标签；留空则该分类不显示那一排
+
+          - name: body
+            label: 备注
+            type: text
+
+      # 资源/公告（ziyuan 集合的 union 拆分：公告形态）
+      - name: ziyuan-resource
+        label: 📢 公告/资源
+        type: collection
+        path: src/content/资源
+        format: yaml-frontmatter
+        filename:
+          template: "{year}-{month}-{day}-{primary}.md"
+          field: create
+        exclude: ["quote.md"]
+        view:
+          primary: title
+        fields:
+          - name: title
+            label: 标题
+            type: string
+            required: true
+
+          - name: content
+            label: 内容
+            type: text
+            required: true
+            description: 公告/资源内容
+
+          - name: closable
+            label: 可关闭
+            type: boolean
+            default: true
+
+          - name: link
+            label: 链接
+            type: object
+            fields:
+              - name: enable
+                label: 启用
+                type: boolean
+                default: true
+              - name: text
+                label: 按钮文字
+                type: string
+              - name: url
+                label: 链接地址
+                type: string
+              - name: external
+                label: 新窗口打开
+                type: boolean
+                default: false
+
+      # 每日一言（ziyuan 集合的 union 拆分：语录形态）
+      - name: ziyuan-quote
+        label: 💬 每日一言
+        type: collection
+        path: src/content/资源
+        format: yaml-frontmatter
+        filename:
+          template: "{year}-{month}-{day}-{primary}.md"
+          field: create
+        exclude: ["announcement.md"]
+        view:
+          primary: title
+        fields:
+          - name: title
+            label: 标题
+            type: string
+            required: true
+
+          - name: quotes
+            label: 名言列表
+            type: object
+            list:
+              min: 1
+            fields:
+              - name: text
+                label: 内容
+                type: text
+                required: true
+              - name: author
+                label: 作者
+                type: string
+                required: true
+
+settings:
+  content:
+    merge: false

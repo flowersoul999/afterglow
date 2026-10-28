@@ -1,0 +1,22 @@
+/* ===== 全局基础重置 ===== */
+@reference "tailwindcss";
+
+/* 平滑滚动 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 文字选中颜色 */
+::selection {
+  background-color: var(--selection-bg);
+}
+
+/* 极简模式：顶部高光禁用 */
+.top-gradient-highlight {
+  display: none;
+}
+
+/* 全局文本元素颜色过渡 */
+h1, h2, h3, h4, h5, h6, p, a, span, li, ul, ol, blockquote, code, pre, table, th, td, strong {
+  @apply transition-colors duration-150;
+}

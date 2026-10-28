@@ -1,0 +1,172 @@
+/* ============================================
+ * 抖音热搜小组件
+ * ============================================ */
+
+.douyin-hot-widget {
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.3s ease;
+}
+
+:root.dark .douyin-hot-widget {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: #181818;
+  box-shadow: none;
+}
+
+.douyin-hot-widget:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 20px 4px rgba(0, 0, 0, 0.08);
+}
+
+:root.dark .douyin-hot-widget:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 20px 4px rgba(0, 0, 0, 0.4);
+}
+
+.douyin-hot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.625rem;
+}
+
+.douyin-hot-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--deep-text);
+}
+
+.douyin-hot-icon {
+  color: #fe2c55;
+  flex-shrink: 0;
+}
+
+.douyin-hot-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--content-meta);
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.douyin-hot-refresh:hover {
+  background: var(--btn-plain-bg-hover);
+  color: var(--primary);
+}
+
+/* 列表 */
+.douyin-hot-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.douyin-hot-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0;
+  border-bottom: 1px solid var(--line-divider);
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s ease;
+}
+
+.douyin-hot-item:hover {
+  background: var(--btn-plain-bg-hover);
+}
+
+.douyin-hot-item:last-child {
+  border-bottom: none;
+}
+
+.douyin-hot-rank {
+  flex-shrink: 0;
+  width: 1.25rem;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--content-meta);
+}
+
+.douyin-hot-rank--top .douyin-hot-rank {
+  color: #fe2c55;
+}
+
+.douyin-hot-item-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.douyin-hot-word {
+  font-size: 0.8125rem;
+  color: var(--deep-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.douyin-hot-value {
+  font-size: 0.6875rem;
+  color: var(--content-meta);
+  line-height: 1;
+}
+
+.douyin-hot-thumb {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.25rem;
+  object-fit: cover;
+  border: 1px solid var(--line-divider);
+}
+
+/* 骨架屏 */
+.douyin-hot-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.douyin-hot-skeleton {
+  height: 0.875rem;
+  border-radius: 0.25rem;
+  background: linear-gradient(90deg, var(--line-divider) 25%, transparent 50%, var(--line-divider) 75%);
+  background-size: 200% 100%;
+  animation: douyinShimmer 1.5s infinite;
+}
+
+.douyin-hot-skeleton:nth-child(1) { width: 80%; animation-delay: 0s; }
+.douyin-hot-skeleton:nth-child(2) { width: 65%; animation-delay: 0.1s; }
+.douyin-hot-skeleton:nth-child(3) { width: 90%; animation-delay: 0.2s; }
+.douyin-hot-skeleton:nth-child(4) { width: 70%; animation-delay: 0.3s; }
+.douyin-hot-skeleton:nth-child(5) { width: 55%; animation-delay: 0.4s; }
+
+@keyframes douyinShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 错误状态 */
+.douyin-hot-error {
+  text-align: center;
+  padding: 0.75rem;
+  cursor: pointer;
+}

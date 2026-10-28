@@ -1,0 +1,139 @@
+/* ===== 设计令牌：断点、容器、间距 ===== */
+
+:root {
+  /* 断点 */
+  --breakpoint-xs: 320px;
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+
+  /* 容器宽度 */
+  --container-xs: 100%;
+  --container-sm: 100%;
+  --container-md: 100%;
+  --container-lg: 1024px;
+  --container-xl: 1280px;
+  --container-2xl: 1536px;
+
+  /* 间距 */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.25rem;
+  --spacing-2xl: 1.5rem;
+  --spacing-3xl: 2rem;
+  --spacing-4xl: 2.5rem;
+  --spacing-5xl: 3rem;
+
+  --widget-gap-mobile: var(--spacing-md);
+  --widget-gap-tablet: var(--spacing-lg);
+  --widget-gap-desktop: var(--spacing-xl);
+
+  --sidebar-width-mobile: 100%;
+  --sidebar-width-tablet: 100%;
+  --sidebar-width-desktop: 100%;
+
+  /* 边框半径 */
+  --radius-large: 0;
+  --radius-medium: 0.5rem;
+  --radius-small: 0.25rem;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-full: 9999px;
+
+  /* 间距（guestbook 等组件使用） */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+
+  /* 控件尺寸 */
+  --control-size: 2.75rem;
+
+  /* 阴影（极简模式下全部置零） */
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+  --shadow-navbar: none;
+  --shadow-navbar-dark: none;
+  --shadow-button: none;
+  --shadow-button-dark: none;
+
+  /* 透明度 */
+  --opacity-0: 0;
+  --opacity-5: 0.05;
+  --opacity-10: 0.1;
+  --opacity-20: 0.2;
+  --opacity-25: 0.25;
+  --opacity-30: 0.3;
+  --opacity-40: 0.4;
+  --opacity-50: 0.5;
+  --opacity-55: 0.55;
+  --opacity-60: 0.6;
+  --opacity-70: 0.7;
+  --opacity-75: 0.75;
+  --opacity-80: 0.8;
+  --opacity-85: 0.85;
+  --opacity-90: 0.9;
+  --opacity-95: 0.95;
+  --opacity-100: 1;
+
+  /* 模糊效果（极简模式下不再使用） */
+  --blur-sm: 0px;
+  --blur-md: 0px;
+  --blur-lg: 0px;
+  --blur-xl: 0px;
+  --blur-2xl: 0px;
+  --blur-3xl: 0px;
+
+  /* 变换 */
+  --translate-xs: 0.125rem;
+  --translate-sm: 0.25rem;
+  --translate-md: 0.5rem;
+  --translate-lg: 0.75rem;
+  --translate-xl: 1rem;
+  --translate-2xl: 1.5rem;
+  --translate-3xl: 2rem;
+
+  --scale-95: 0.95;
+  --scale-98: 0.98;
+  --scale-100: 1;
+  --scale-105: 1.05;
+  --scale-110: 1.1;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --container-width: var(--container-sm);
+    --widget-gap: 1rem;
+    --sidebar-width: 100%;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1279px) {
+  :root {
+    --container-width: var(--container-md);
+    --widget-gap: 1.25rem;
+    --sidebar-width: 100%;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --container-width: var(--container-lg);
+    --widget-gap: 1.5rem;
+    --sidebar-width: 100%;
+  }
+}

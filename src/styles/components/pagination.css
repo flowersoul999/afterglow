@@ -1,0 +1,43 @@
+/* ===== 分页控件 ===== */
+@reference "tailwindcss";
+
+/* 响应式分页样式 */
+.device-mobile .pagination-info {
+  @apply text-xs;
+}
+.device-tablet .pagination-info {
+  @apply text-sm;
+}
+.device-desktop .pagination-info {
+  @apply text-base;
+}
+
+/* 分页信息 */
+.pagination-info {
+  @apply text-sm text-(--text-secondary) text-center mb-2;
+}
+
+/* 分页控件 - 粗边框 */
+.pagination-btn,
+.pagination-page {
+  border: 2px solid var(--primary) !important;
+  font-weight: 700 !important;
+  background: var(--page-bg) !important;
+  color: var(--primary) !important;
+}
+.pagination-btn:hover,
+.pagination-page:hover {
+  background: var(--primary) !important;
+  color: var(--page-bg) !important;
+}
+.pagination-current {
+  border: 2px solid var(--primary) !important;
+  font-weight: 700 !important;
+  background: var(--primary) !important;
+  color: var(--page-bg) !important;
+}
+.pagination-btn.disabled,
+.pagination-btn[disabled] {
+  opacity: 0.3 !important;
+  pointer-events: none !important;
+}

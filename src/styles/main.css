@@ -1,0 +1,102 @@
+/* 首页专属样式（home-*）已改为由对应组件在前言 import：
+   HomeHero / HomeTicker / HomeDataLayer（HomeDisplayLayer 已于 2026-10-20 下线）；
+   这样只有渲染这些组件的页面（首页与分页）才会加载它们。 */
+/* ==========================================================================
+   Firefly 主样式入口
+   CSS Cascade Layers: reset → tokens → base → components → utilities → overrides
+   ========================================================================== */
+
+/* --- Tailwind v4 核心 --- */
+@import 'tailwindcss';
+
+@plugin '@tailwindcss/typography';
+
+/* 暗色模式选择器配置 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tailwind v4 主题配置 */
+@theme {
+  --font-sans:
+    'Roboto', 'sans-serif', ui-sans-serif, system-ui, sans-serif,
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* --- 自定义工具类 --- */
+@import './base/utilities.css';
+
+/* --- 设计令牌 --- */
+@import './tokens/colors.css';
+@import './tokens/breakpoints.css';
+@import './tokens/animation.css';
+@import './tokens/z-index.css';
+
+/* --- 基础重置 --- */
+@import './base/reset.css';
+
+/* --- 组件样式 --- */
+@import './components/theme-transition.css';
+@import './components/cards.css';
+@import './components/buttons.css';
+@import './components/links.css';
+@import './components/dropdown.css';
+@import './components/pagination.css';
+@import './components/floating-dock.css';
+@import './components/post-list.css';
+@import './components/post-card.css';
+@import './components/post-page.css';
+@import './components/page-loader.css';
+@import './components/friend-card.css';
+@import './components/friend-preview.css';
+@import './components/image-pixel-reveal.css';
+@import './components/app-card.css';
+@import './components/archive-panel.css';
+@import './components/archive-stats.css';
+
+/* --- 功能样式 --- */
+@import './features/content.css';
+@import './features/misc.css';
+@import './features/markdown.css';
+@import './features/markdown-extend.css';
+@import './features/toc.css';
+@import './features/scrollbar.css';
+@import './features/custom-scrollbar.css';
+@import './features/widget-responsive.css';
+@import './features/no-sidebar-pages.css';
+@import './features/moments.css';
+@import './pages/friends.css';
+@import './pages/apps.css';
+@import './pages/categories.css';
+@import './widgets/knowledge-graph.css';
+@import './widgets/graph-dock.css';
+@import './widgets/graph-detail-panel.css';
+@import './features/tts-player.css';
+@import './components/about-profile-card.css';
+@import './components/about-chat-bubble.css';
+@import './components/about-social-links.css';
+@import './components/about-tech-stack.css';
+@import './components/about-timeline.css';
+@import './components/privacy-modal.css';
+@import './components/page-title.css';
+
+/* --- 布局样式 --- */
+@import './layout/layout-styles.css';
+@import './layout/navbar-new.css';
+@import './layout/nav-menu-panel.css';
+@import './layout/banner-title.css';
+@import './layout/waves.css';
+
+/* --- 移动端组件 --- */
+@import './components/mobile-dock.css';
+@import './components/mobile-menu-sheet.css';
+@import './components/douyin-hot.css';
+@import './components/weather.css';
+
+/* --- 过渡动画 --- */
+@import './transitions/swup.css';
+
+/* --- 第三方覆盖 --- */
+@import './vendor/expressive-code.css';
+@import './vendor/fancybox.css';
+@import './vendor/waline.css';
+@import './vendor/twikoo.css';
+@import './vendor/photoswipe.css';

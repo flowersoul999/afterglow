@@ -1,0 +1,155 @@
+/* ============================================
+   友链页 — 网格
+   2026-09-30：卡片改成「头像 + 名字」一行后，列数从固定 3 列改成自适应多列
+   （4/5 宽度下宽屏约 5 列，对齐站长给的参考图）
+   ============================================ */
+
+.friends-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+	align-items: start;
+	gap: 0.75rem 1rem;
+	padding-top: 1rem;
+	padding-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+	.friends-grid {
+		grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+		gap: 0.5rem 0.75rem;
+	}
+}
+
+/* apps 页筛选共用（apps.astro 在卡片可见时添加此类） */
+.animate-fade-in-up {
+	animation: fadeInUp 0.4s ease-out both;
+}
+
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* ============================================
+   友链墓碑（纪念下线的友链）
+   ============================================ */
+.tombstone-section {
+	margin-top: 3rem;
+}
+
+.tombstone-title {
+	margin: 0;
+	font-size: 1.12rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	color: var(--deep-text);
+}
+
+.tombstone-desc {
+	margin-top: 0.35rem;
+	margin-bottom: 1rem;
+	font-size: 0.9375rem;
+	line-height: 1.65;
+	color: color-mix(in oklch, var(--deep-text) 60%, transparent);
+}
+
+.tombstone-desc blockquote {
+	margin: 0;
+	padding-left: 0.85rem;
+	border-left: 3px solid color-mix(in oklch, var(--primary) 30%, transparent);
+}
+
+.tombstone-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+	line-height: 1;
+}
+
+.tombstone-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	white-space: nowrap;
+	color: color-mix(in oklch, var(--deep-text) 65%, transparent);
+	text-decoration-line: underline;
+	text-decoration-color: color-mix(in oklch, var(--deep-text) 30%, transparent);
+	text-underline-offset: 4px;
+	transition: color 200ms ease, text-decoration-color 200ms ease, transform 200ms ease;
+}
+
+.tombstone-item:hover {
+	color: var(--primary);
+	text-decoration-color: var(--primary);
+	transform: translateY(-2px);
+}
+
+.tombstone-avatar {
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+/* 区块计数徽标（蓝色字体 + 淡蓝毛玻璃底） */
+.friend-group-badge {
+	display: inline-flex;
+	align-items: center;
+	white-space: nowrap;
+	flex-shrink: 0;
+	align-self: center;
+	padding: 0.2rem 0.55rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in oklch, var(--friend-badge-blue) 15%, transparent);
+	background: color-mix(in oklch, var(--friend-badge-blue) 8%, transparent);
+	color: var(--friend-badge-blue);
+	font-size: 0.875rem;
+	font-weight: 600;
+	backdrop-filter: blur(8px);
+}
+
+.friend-group-badge {
+	--friend-badge-blue: oklch(0.55 0.18 0.26);
+}
+
+:root.dark .friend-group-badge {
+	--friend-badge-blue: oklch(0.72 0.16 0.26);
+}
+
+/* 区块标题（emoji + 主标题 + 副句 + 计数徽标，参考站 group-header 结构） */
+.friend-group-head {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 1rem;
+	margin-bottom: 1rem;
+}
+
+.friend-group-title {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	margin: 0;
+	font-size: 1.12rem;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	color: var(--deep-text);
+}
+
+.friend-group-desc {
+	margin: 0.2rem 0 0;
+	font-size: 0.9375rem;
+	color: color-mix(in oklch, var(--deep-text) 56%, transparent);
+}
+
+.tombstone-name {
+	font-size: 0.9375rem;
+	font-weight: 500;
+}

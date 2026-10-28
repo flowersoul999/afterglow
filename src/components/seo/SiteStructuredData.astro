@@ -1,0 +1,75 @@
+---
+import { homeConfig, siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+
+interface Props {
+	includeProfilePage?: boolean;
+}
+
+const { includeProfilePage = false } = Astro.props;
+
+const siteUrl = new URL("/", Astro.site).toString();
+const aboutUrl = new URL("/about/", Astro.site).toString();
+const fallbackOg = "/assets/ziyuan/tx.webp";
+const imageUrl = new URL(fallbackOg, Astro.site).toString();
+const sameAs = (homeConfig.links || [])
+	.filter((link) => /^https?:\/\//i.test(link.url))
+	.map((link) => link.url);
+
+const structuredData = {
+	"@context": "https://schema.org",
+	"@graph": [
+		{
+			"@type": "WebSite",
+			"@id": `${siteUrl}#website`,
+			url: siteUrl,
+			name: siteConfig.title,
+			description: siteConfig.description,
+			inLanguage: siteConfig.lang.replace("_", "-"),
+			publisher: { "@id": `${siteUrl}#organization` },
+		},
+		{
+			"@type": ["Person", "Author"],
+			"@id": `${siteUrl}#person`,
+			name: homeConfig.name,
+			url: aboutUrl,
+			description: siteConfig.description,
+			image: imageUrl,
+			jobTitle: homeConfig.occupation,
+			knowsAbout: siteConfig.keywords,
+			sameAs,
+		},
+		{
+			"@type": "Organization",
+			"@id": `${siteUrl}#organization`,
+			name: siteConfig.title,
+			url: siteUrl,
+			logo: {
+				"@type": "ImageObject",
+				"@id": `${siteUrl}#logo`,
+				url: imageUrl,
+			},
+			sameAs,
+		},
+		...(includeProfilePage
+			? [
+					{
+						"@type": "ProfilePage",
+						"@id": `${aboutUrl}#profilepage`,
+						url: aboutUrl,
+						name: `${i18n(I18nKey.aboutSitePrefix)} ${homeConfig.name}`,
+						isPartOf: { "@id": `${siteUrl}#website` },
+						mainEntity: { "@id": `${siteUrl}#person` },
+					},
+				]
+			: []),
+	],
+};
+---
+
+<script
+	is:inline
+	type="application/ld+json"
+	set:html={JSON.stringify(structuredData).replace(/</g, "\u003c")}
+/>

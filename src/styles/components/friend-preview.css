@@ -1,0 +1,105 @@
+/* ============================================
+   友链悬浮大图预览 — portal 单例，卡旁浮出白边圆角大图
+   适配亮/暗色，复用 float-panel 令牌
+   ============================================ */
+
+:root {
+	--friend-preview-border: #fff;
+	--friend-preview-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+:root.dark {
+	--friend-preview-border: rgba(255, 255, 255, 0.92);
+	--friend-preview-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+#friend-preview {
+	position: fixed;
+	left: 0;
+	top: 0;
+	z-index: 60;
+	display: flex;
+	flex-direction: column;
+	width: min(360px, 42vw);
+	overflow: hidden;
+	border-radius: 16px;
+	border: 2px solid var(--friend-preview-border);
+	background: var(--float-panel-bg);
+	box-shadow: var(--friend-preview-shadow);
+	pointer-events: none;
+	opacity: 0;
+	transform: scale(0.97);
+	transform-origin: center center;
+	/* 悬浮要「立刻」出图：淡入压到 80ms（原 200ms 明显有拖影感）。
+	   截图已在页面空闲时预加载，图本身不再有等待 */
+	transition: opacity 80ms ease-out, transform 80ms ease-out;
+	will-change: transform, opacity;
+}
+
+#friend-preview.is-visible {
+	opacity: 1;
+	transform: scale(1);
+}
+
+#friend-preview .friend-preview__media {
+	width: 100%;
+	aspect-ratio: 16 / 10;
+	overflow: hidden;
+}
+
+#friend-preview img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+/* 站点名 + 描述：与截图一起立刻显示，不再只靠卡片原生 title 提示 */
+#friend-preview .friend-preview__info {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	padding: 0.5rem 0.75rem 0.625rem;
+}
+
+#friend-preview .friend-preview__title {
+	margin: 0;
+	color: var(--deep-text);
+	font-size: 0.8125rem;
+	font-weight: 800;
+	line-height: 1.4;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+#friend-preview .friend-preview__desc {
+	display: -webkit-box;
+	margin: 0;
+	color: var(--content-meta);
+	font-size: 0.75rem;
+	line-height: 1.5;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	line-clamp: 2;
+}
+
+/* 移动端不触发：手指无 hover，浮层挡画面 */
+@media (max-width: 768px) {
+	#friend-preview {
+		display: none !important;
+	}
+}
+
+/* 尊重减少动画偏好：仅淡入，不缩放 */
+@media (prefers-reduced-motion: reduce) {
+	#friend-preview {
+		transform: none;
+		transition: opacity 150ms ease;
+	}
+
+	#friend-preview.is-visible {
+		transform: none;
+	}
+}

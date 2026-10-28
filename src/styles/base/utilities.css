@@ -1,0 +1,31 @@
+/* ===== 自定义工具类（按钮/链接展开动画） ===== */
+/* 用分组选择器替代 @utility：避免 lightningcss minify 的 Unknown at rule 警告。
+   .scale-animation / .link / .link-lg 需要此动画（原 @apply expand-animation），
+   直接在选择器组里合并声明，行为一致 */
+
+.expand-animation,
+.scale-animation,
+.link,
+.link-lg {
+  position: relative;
+  z-index: 0;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    scale: 0.85;
+    z-index: -10;
+    transition: all 0.15s ease-out;
+  }
+  &:hover::before {
+    background-color: var(--btn-plain-bg-hover);
+    scale: 1;
+  }
+  &:active::before {
+    background-color: var(--btn-plain-bg-active);
+  }
+  &:active {
+    background: none;
+  }
+}

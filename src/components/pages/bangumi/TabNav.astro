@@ -1,0 +1,104 @@
+---
+interface Tab {
+	id: string;
+	name: string;
+	count?: number;
+}
+
+interface Props {
+	tabs: Tab[];
+	activeTab: string;
+}
+
+const { tabs, activeTab } = Astro.props;
+---
+
+<div class="bangumi-tabs-wrapper mb-6">
+	<nav class="flex gap-1 p-1 bg-[var(--btn-regular-bg)] dark:bg-[var(--card-bg)] rounded-xl border border-[var(--line-divider)] overflow-x-auto scrollbar-hide" aria-label="Tabs">
+		{tabs.map((tab) => (
+			<button
+				class:list={[
+					"bangumi-tab flex items-center gap-1.5 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ease-[var(--ease-standard)] flex-shrink-0",
+					{
+						"bg-[var(--card-bg)] dark:bg-[var(--btn-regular-bg)] text-[var(--primary)] shadow-sm": tab.id === activeTab,
+						"text-[var(--content-meta)] hover:text-[var(--deep-text)] dark:hover:text-[var(--title-active)] hover:bg-[var(--btn-card-bg-hover)]": tab.id !== activeTab
+					}
+				]}
+				data-tab={tab.id}
+				type="button"
+			>
+				<span>{tab.name}</span>
+				{tab.count !== undefined && (
+					<span class:list={[
+						"text-[10px] font-semibold px-1.5 py-0.5 rounded-full tabular-nums",
+						{
+							"bg-[var(--primary)]/10 text-[var(--primary)]": tab.id === activeTab,
+							"bg-[var(--btn-regular-bg)] text-[var(--content-meta)]": tab.id !== activeTab
+						}
+					]}>
+						{tab.count}
+					</span>
+				)}
+			</button>
+		))}
+	</nav>
+</div>
+
+<script>
+	function initTabNavigation() {
+		const tabButtons = document.querySelectorAll('.bangumi-tab');
+		const sections = document.querySelectorAll('[data-section]');
+
+		tabButtons.forEach(button => {
+			const newButton = button.cloneNode(true) as HTMLButtonElement;
+			if (button.parentNode) {
+				button.parentNode.replaceChild(newButton, button);
+			}
+		});
+
+		const newTabButtons = document.querySelectorAll('.bangumi-tab');
+
+		newTabButtons.forEach(button => {
+			button.addEventListener('click', (event) => {
+				const currentButton = event.currentTarget as HTMLButtonElement;
+				const targetTab = currentButton.dataset.tab;
+
+				newTabButtons.forEach(btn => {
+					btn.classList.remove('bg-[var(--card-bg)]', 'dark:bg-[var(--btn-regular-bg)]', 'text-[var(--primary)]', 'shadow-sm');
+					btn.classList.add('text-[var(--content-meta)]', 'hover:text-[var(--deep-text)]', 'dark:hover:text-[var(--title-active)]', 'hover:bg-[var(--btn-card-bg-hover)]');
+					const countSpan = btn.querySelector('span:last-child');
+					if (countSpan) {
+						countSpan.classList.remove('bg-[var(--primary)]/10', 'text-[var(--primary)]');
+						countSpan.classList.add('bg-[var(--btn-regular-bg)]', 'text-[var(--content-meta)]');
+					}
+				});
+
+				currentButton.classList.remove('text-[var(--content-meta)]', 'hover:text-[var(--deep-text)]', 'dark:hover:text-[var(--title-active)]', 'hover:bg-[var(--btn-card-bg-hover)]');
+				currentButton.classList.add('bg-[var(--card-bg)]', 'dark:bg-[var(--btn-regular-bg)]', 'text-[var(--primary)]', 'shadow-sm');
+				const activeCountSpan = currentButton.querySelector('span:last-child');
+				if (activeCountSpan) {
+					activeCountSpan.classList.remove('bg-[var(--btn-regular-bg)]', 'text-[var(--content-meta)]');
+					activeCountSpan.classList.add('bg-[var(--primary)]/10', 'text-[var(--primary)]');
+				}
+
+				sections.forEach(section => {
+					const htmlSection = section as HTMLElement;
+					if (htmlSection.dataset.section === targetTab) {
+						htmlSection.classList.remove('hidden');
+					} else {
+						htmlSection.classList.add('hidden');
+					}
+				});
+			});
+		});
+	}
+
+	document.addEventListener('astro:page-load', initTabNavigation);
+	document.addEventListener('swup:content:replaced', initTabNavigation);
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initTabNavigation);
+	} else {
+		initTabNavigation();
+	}
+</script>

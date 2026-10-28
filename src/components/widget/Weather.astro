@@ -1,0 +1,156 @@
+---
+interface Props {
+	class?: string;
+	style?: string;
+}
+const { class: className, style } = Astro.props;
+---
+
+<div class:list={["weather-widget", className]} style={style}>
+  <div class="weather-card" id="weather-main">
+    <div class="weather-loading">
+      <div class="weather-loading-icon">☁️</div>
+      <span class="weather-loading-text">获取天气中...</span>
+    </div>
+  </div>
+  <div class="weather-error" id="weather-error" style="display:none">
+    <span class="weather-error-text" id="weather-error-text">天气加载失败</span>
+  </div>
+</div>
+
+<script is:inline>
+(function() {
+  var WEATHER_API = "https://uapis.cn/api/v1/misc/weather";
+  var CACHE_KEY = "__weatherCache_v2";
+  var WEATHER_TTL = 30 * 60 * 1000;
+
+  function getCached(key, ttl) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      if (data.time > Date.now() - ttl) return data.value;
+    } catch(e) {}
+    return null;
+  }
+
+  function setCache(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify({ value: value, time: Date.now() }));
+    } catch(e) {}
+  }
+
+  function showError(msg) {
+    var main = document.getElementById("weather-main");
+    var err = document.getElementById("weather-error");
+    var errText = document.getElementById("weather-error-text");
+    if (main) main.style.display = "none";
+    if (err) err.style.display = "";
+    if (errText) errText.textContent = msg || "天气加载失败";
+  }
+
+  function esc(t) {
+    var d = document.createElement("div");
+    d.textContent = t;
+    return d.innerHTML;
+  }
+
+  function renderWeather(data) {
+    var main = document.getElementById("weather-main");
+    if (!main || !data) return;
+
+    var temp = data.temperature != null ? Math.round(data.temperature) : "--";
+    var desc = data.weather || "未知";
+    var city = data.city || data.district || "未知";
+    var tempMax = data.temp_max != null ? Math.round(data.temp_max) : "--";
+    var tempMin = data.temp_min != null ? Math.round(data.temp_min) : "--";
+    var aqi = data.aqi;
+    var aqiCategory = data.aqi_category || "";
+
+    // 构建右上角信息
+    var rightTop = "高 " + tempMax + "° 低 " + tempMin + "°";
+    var rightBottom = "";
+    if (aqi != null && aqiCategory) {
+      rightBottom = "AQI: " + aqi + " (" + aqiCategory + ")";
+    }
+
+    // 构建右下角轮播内容
+    var slides = [];
+    slides.push({ text: rightTop, cls: "" });
+    if (rightBottom) slides.push({ text: rightBottom, cls: " weather-slide--aqi" });
+    if (data.alerts && data.alerts.length > 0) {
+      for (var i = 0; i < data.alerts.length; i++) {
+        var alert = data.alerts[i];
+        var level = alert.level || "";
+        var title = "⚠️ " + (alert.title || alert.type || "气象预警");
+        var alertCls = " weather-slide--alert";
+        if (level.indexOf("红") !== -1) alertCls += " weather-slide--red";
+        else if (level.indexOf("橙") !== -1) alertCls += " weather-slide--orange";
+        else if (level.indexOf("黄") !== -1) alertCls += " weather-slide--yellow";
+        else if (level.indexOf("蓝") !== -1) alertCls += " weather-slide--blue";
+        slides.push({ text: title, cls: alertCls });
+      }
+    }
+
+    var html = '';
+    // 左上：图标 + 标题
+    html += '<div class="weather-header">';
+    html += '  <img class="weather-header-icon" src="/assets/images/emoji/13428669372241106.gif" alt="" />';
+    html += '  <span class="weather-header-title">天气预报</span>';
+    html += '</div>';
+
+    // 主体：左侧温度 + 右侧轮播
+    html += '<div class="weather-body">';
+    html += '  <div class="weather-left">';
+    html += '    <span class="weather-temp">' + temp + '°</span>';
+    html += '    <span class="weather-location">' + esc(city) + '，' + esc(desc) + '</span>';
+    html += '  </div>';
+    html += '  <div class="weather-right" id="weather-slides">';
+    for (var s = 0; s < slides.length; s++) {
+      html += '    <span class="weather-slide' + slides[s].cls + (s === 0 ? ' is-active' : '') + '">' + esc(slides[s].text) + '</span>';
+    }
+    html += '  </div>';
+    html += '</div>';
+
+    main.innerHTML = html;
+
+    // 启动轮播
+    if (slides.length > 1) {
+      var idx = 0;
+      var slideEls = main.querySelectorAll('.weather-slide');
+      if (window.__weatherSlideInterval) clearInterval(window.__weatherSlideInterval);
+      window.__weatherSlideInterval = setInterval(function() {
+        slideEls[idx].classList.remove('is-active');
+        idx = (idx + 1) % slides.length;
+        slideEls[idx].classList.add('is-active');
+      }, 3000);
+    }
+  }
+
+  function fetchWeather() {
+    var cached = getCached(CACHE_KEY, WEATHER_TTL);
+    if (cached) {
+      renderWeather(cached);
+      return;
+    }
+
+    fetch(WEATHER_API + "?extended=true&forecast=true&hourly=false&minutely=false&indices=false&lang=zh")
+      .then(function(r) { return r.json(); })
+      .then(function(res) {
+        if (res && res.weather) {
+          renderWeather(res);
+          setCache(CACHE_KEY, res);
+        } else if (res && res.message) {
+          showError(res.message);
+        } else {
+          showError("天气数据获取失败");
+        }
+      })
+      .catch(function() {
+        showError("网络请求失败");
+      });
+  }
+
+  fetchWeather();
+})();
+</script>

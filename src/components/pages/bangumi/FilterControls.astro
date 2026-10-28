@@ -1,0 +1,121 @@
+---
+interface Filter {
+	value: string;
+	label: string;
+	count?: number;
+}
+
+interface Props {
+	filters: Filter[];
+	activeFilter: string;
+	sectionId: string;
+}
+
+const { filters, activeFilter, sectionId } = Astro.props;
+---
+
+<div class="bangumi-filter-wrapper flex flex-wrap gap-2 mb-5">
+	{filters.map((filter) => (
+		<button
+			class:list={[
+				"bangumi-filter-btn flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ease-[var(--ease-standard)] border flex-shrink-0",
+				{
+					"bg-[var(--primary)] text-white border-[var(--primary)] shadow-sm": filter.value === activeFilter,
+					"bg-[var(--card-bg)] dark:bg-[var(--card-bg)] text-[var(--content-meta)] border-[var(--line-divider)] hover:border-[var(--primary)]/30 hover:text-[var(--deep-text)] dark:hover:text-[var(--title-active)]": filter.value !== activeFilter
+				}
+			]}
+			data-filter={filter.value}
+			data-section={sectionId}
+			type="button"
+		>
+			<span>{filter.label}</span>
+			{filter.count !== undefined && (
+				<span class:list={[
+					"text-[10px] font-semibold tabular-nums transition-colors duration-200",
+					{
+						"text-white/80": filter.value === activeFilter,
+						"text-[var(--content-meta)]": filter.value !== activeFilter
+					}
+				]}>
+					({filter.count})
+				</span>
+			)}
+		</button>
+	))}
+</div>
+
+<script is:inline define:vars={{ sectionId }}>
+	function initFilterControls() {
+		const filterButtons = document.querySelectorAll(`[data-section="${sectionId}"].bangumi-filter-btn`);
+
+		filterButtons.forEach(button => {
+			const newButton = button.cloneNode(true);
+			if (button.parentNode) {
+				button.parentNode.replaceChild(newButton, button);
+			}
+		});
+
+		const newFilterButtons = document.querySelectorAll(`[data-section="${sectionId}"].bangumi-filter-btn`);
+
+		newFilterButtons.forEach(button => {
+			button.addEventListener('click', function() {
+				const filter = this.dataset.filter;
+				const currentSectionId = this.dataset.section;
+
+				const sectionButtons = document.querySelectorAll(`[data-section="${currentSectionId}"].bangumi-filter-btn`);
+				sectionButtons.forEach(btn => {
+					btn.classList.remove('bg-[var(--primary)]', 'text-white', 'border-[var(--primary)]', 'shadow-sm');
+					btn.classList.add('bg-[var(--card-bg)]', 'dark:bg-[var(--card-bg)]', 'text-[var(--content-meta)]', 'border-[var(--line-divider)]', 'hover:border-[var(--primary)]/30', 'hover:text-[var(--deep-text)]', 'dark:hover:text-[var(--title-active)]');
+					const countSpan = btn.querySelector('span:last-child');
+					if (countSpan) {
+						countSpan.classList.remove('text-white/80');
+						countSpan.classList.add('text-[var(--content-meta)]');
+					}
+				});
+
+				this.classList.remove('bg-[var(--card-bg)]', 'dark:bg-[var(--card-bg)]', 'text-[var(--content-meta)]', 'border-[var(--line-divider)]', 'hover:border-[var(--primary)]/30', 'hover:text-[var(--deep-text)]', 'dark:hover:text-[var(--title-active)]');
+				this.classList.add('bg-[var(--primary)]', 'text-white', 'border-[var(--primary)]', 'shadow-sm');
+				const activeCountSpan = this.querySelector('span:last-child');
+				if (activeCountSpan) {
+					activeCountSpan.classList.remove('text-[var(--content-meta)]');
+					activeCountSpan.classList.add('text-white/80');
+				}
+
+				const items = document.querySelectorAll(`[data-item-section="${currentSectionId}"]`);
+				items.forEach(item => {
+					const itemStatus = item.dataset.itemStatus;
+					if (filter === 'all' || itemStatus === filter) {
+						item.classList.remove('hidden');
+						item.style.display = 'block';
+					} else {
+						item.classList.add('hidden');
+						item.style.display = 'none';
+					}
+				});
+
+				updatePagination(currentSectionId);
+			});
+		});
+	}
+
+	function updatePagination(sectionId) {
+		const visibleItems = document.querySelectorAll(`[data-item-section="${sectionId}"]:not(.hidden)`);
+		const pagination = document.querySelector(`[data-pagination-section="${sectionId}"]`);
+
+		if (pagination) {
+			const event = new CustomEvent('updatePagination', {
+				detail: { visibleCount: visibleItems.length }
+			});
+			pagination.dispatchEvent(event);
+		}
+	}
+
+	document.addEventListener('astro:page-load', initFilterControls);
+	document.addEventListener('swup:content:replaced', initFilterControls);
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initFilterControls);
+	} else {
+		initFilterControls();
+	}
+</script>

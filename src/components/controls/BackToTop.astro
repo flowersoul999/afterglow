@@ -1,0 +1,43 @@
+---
+import FloatingButton from "@/components/common/FloatingButton.astro";
+---
+
+<!-- There can't be a filter on parent element, or it will break `fixed` -->
+<FloatingButton
+  id="back-to-top-btn"
+  icon="material-symbols:keyboard-arrow-up-rounded"
+  ariaLabel="Back to Top"
+  onclick="backToTop()"
+  class="hide" 
+/>
+
+<script is:raw is:inline>
+  function backToTop() {
+    window.scroll({ top: 0, behavior: "smooth" });
+  }
+
+  // Singleton guard — only initialize once across all Swup navigations
+  if (!window.__backToTopInited) {
+    window.__backToTopInited = true;
+
+    function updateVisibility() {
+      var btn = document.getElementById("back-to-top-btn");
+      if (!btn) return;
+      var scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      if (scrollTop > 200) {
+        btn.classList.remove("hide");
+      } else {
+        btn.classList.add("hide");
+      }
+    }
+
+    window.addEventListener("scroll", updateVisibility, { passive: true });
+
+    // Initial check
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", updateVisibility);
+    } else {
+      updateVisibility();
+    }
+  }
+</script>

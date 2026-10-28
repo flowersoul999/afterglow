@@ -1,0 +1,33 @@
+/* ===== 设计令牌：动画与性能 ===== */
+
+:root {
+  /* 缓动曲线 */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-decelerate: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-accelerate: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  --ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);
+
+  /* 持续时间 */
+  --duration-fast: 100ms;
+  --duration-normal: 150ms;
+  --duration-medium: 200ms;
+  --duration-slow: 250ms;
+  --duration-slower: 300ms;
+
+  /* 延迟 */
+  --delay-none: 0ms;
+  --delay-short: 30ms;
+  --delay-medium: 60ms;
+  --delay-long: 90ms;
+  --delay-longer: 120ms;
+
+  /* 过渡延迟 */
+  --content-delay: 150ms;
+
+  /* 性能优化 */
+  --gpu-transform: translateZ(0);
+  --gpu-backface: hidden;
+  --animation-fill-mode: both;
+  --animation-timing: var(--ease-standard);
+  --animation-duration: var(--duration-medium);
+}

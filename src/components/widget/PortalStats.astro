@@ -1,0 +1,292 @@
+---
+import { Icon } from "astro-icon/components";
+import { commentConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import {
+	getCategoryList,
+	getSortedPosts,
+	getTagList,
+} from "@/utils/content-utils";
+
+interface Props {
+	class?: string;
+	style?: string;
+}
+
+const { class: className, style } = Astro.props;
+
+const posts = await getSortedPosts();
+const categories = await getCategoryList();
+const tags = await getTagList();
+
+let totalWords = 0;
+for (const post of posts) {
+	if (post.body) {
+		const text = post.body
+			.replace(/```[\s\S]*?```/g, "")
+			.replace(/`[^`]*`/g, "")
+			.replace(/\s+/g, " ")
+			.trim();
+		const cn = text.match(/[\u4e00-\u9fa5]/g) || [];
+		const en = text.match(/[a-zA-Z]/g) || [];
+		totalWords += cn.length + en.length;
+	}
+}
+
+const postCount = posts.length;
+const categoryCount = categories.length;
+const tagCount = tags.length;
+const wordCountFormatted = totalWords.toLocaleString();
+
+const walineServerURL = commentConfig.waline?.serverURL || "";
+
+const textLine1 = `${i18n(I18nKey.siteStatsVisitorPrefix)}${i18n(I18nKey.siteStatsLoading)}${i18n(I18nKey.siteStatsVisitorSuffix)}`;
+const textLine2 = `${i18n(I18nKey.siteStatsPageViewPrefix)}${i18n(I18nKey.siteStatsLoading)}${i18n(I18nKey.siteStatsPageViewSuffix)}`;
+---
+
+<div class={className} style={style}>
+	<div class="text-reveal-card relative w-full overflow-hidden cursor-pointer select-none"
+		id="text-reveal-container"
+		data-posts={postCount}
+		data-categories={categoryCount}
+		data-tags={tagCount}
+		data-words={totalWords}
+		data-waline-url={walineServerURL}
+	>
+		<div class="stars-container absolute inset-0 z-10 pointer-events-none overflow-hidden [mask-image:radial-gradient(ellipse_at_center,rgba(0,0,0,0.8)_20%,transparent_70%)]" id="stars-container"></div>
+
+		<div class="relative flex flex-col items-center justify-center py-14">
+			<div class="reveal-base text-center">
+				<p class="text-xl sm:text-2xl font-bold text-neutral-300 dark:text-neutral-600 leading-relaxed" id="text-line-1"
+					data-visitor-prefix={i18n(I18nKey.siteStatsVisitorPrefix)}
+					data-visitor-suffix={i18n(I18nKey.siteStatsVisitorSuffix)}
+				>
+					{textLine1}
+				</p>
+				<p class="text-base sm:text-lg font-bold text-neutral-300 dark:text-neutral-600 mt-2 leading-relaxed" id="text-line-2"
+					data-pageview-prefix={i18n(I18nKey.siteStatsPageViewPrefix)}
+					data-pageview-suffix={i18n(I18nKey.siteStatsPageViewSuffix)}
+				>
+					{textLine2}
+				</p>
+			</div>
+
+			<div class="reveal-overlay absolute inset-0 z-20 pointer-events-none will-change-transform"
+				style="clip-path: inset(0 100% 0 0);">
+				<div class="absolute inset-0 flex flex-col items-center justify-center bg-(--page-bg)">
+					<div class="flex items-center gap-2 text-xl sm:text-2xl font-bold text-neutral-800 dark:text-neutral-100 leading-relaxed" id="reveal-line-1">
+						<Icon name="material-symbols:article-outline" class="text-xl sm:text-2xl" />
+						<span>{i18n(I18nKey.siteStatsPostCount)} {postCount}</span>
+					</div>
+					<div class="flex items-center gap-3 text-base sm:text-lg font-bold text-neutral-600 dark:text-neutral-300 mt-2 leading-relaxed flex-wrap justify-center" id="reveal-line-2">
+						<span class="inline-flex items-center gap-1"><Icon name="material-symbols:folder-outline" class="text-base sm:text-lg" />{i18n(I18nKey.siteStatsCategoryCount)} {categoryCount}</span>
+						<span class="text-neutral-400 dark:text-neutral-500">·</span>
+						<span class="inline-flex items-center gap-1"><Icon name="material-symbols:label-outline" class="text-base sm:text-lg" />{i18n(I18nKey.siteStatsTagCount)} {tagCount}</span>
+						<span class="text-neutral-400 dark:text-neutral-500">·</span>
+						<span class="inline-flex items-center gap-1"><Icon name="material-symbols:description-rounded" class="text-base sm:text-lg" />{i18n(I18nKey.siteStatsTotalWords)} {wordCountFormatted}</span>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="reveal-cursor absolute top-0 bottom-0 w-[4px] z-30 pointer-events-none opacity-0 will-change-transform"
+			style="left: 0%; background: linear-gradient(to bottom, transparent, var(--primary), transparent);">
+		</div>
+	</div>
+</div>
+
+<style is:global>
+	.star {
+		position: absolute;
+		width: 2px;
+		height: 2px;
+		background-color: black;
+		border-radius: 50%;
+		pointer-events: none;
+		box-shadow: 0 0 4px 1px rgba(0,0,0,0.4);
+	}
+	:root.dark .star {
+		background-color: rgba(255,255,255,0.6);
+		box-shadow: 0 0 3px 1px rgba(255,255,255,0.3);
+	}
+</style>
+
+<script is:inline>
+(function() {
+	var isMobile = window.innerWidth < 1024;
+
+	function initStars() {
+		if (isMobile) return;
+		var containers = document.querySelectorAll('.stars-container');
+		containers.forEach(function(container) {
+			if (container.dataset.starsInitialized) return;
+			container.dataset.starsInitialized = 'true';
+
+			var starCount = 100;
+			for (var i = 0; i < starCount; i++) {
+				var star = document.createElement('span');
+				star.className = 'star';
+				var startX = Math.random() * 100;
+				var startY = Math.random() * 100;
+				star.style.left = startX + '%';
+				star.style.top = startY + '%';
+				star.style.opacity = '1';
+				star.dataset.startX = String(startX);
+				star.dataset.startY = String(startY);
+				star.dataset.moveX = String((Math.random() * 8 - 4));
+				star.dataset.moveY = String((Math.random() * 8 - 4));
+				star.dataset.speed = String(Math.random() * 10 + 20);
+				star.dataset.delay = String(Math.random() * 5);
+				container.appendChild(star);
+			}
+		});
+	}
+
+	function animateStars() {
+		if (isMobile) return;
+		var stars = document.querySelectorAll('.star');
+		var now = Date.now() / 1000;
+		stars.forEach(function(star) {
+			var startX = parseFloat(star.dataset.startX || '0');
+			var startY = parseFloat(star.dataset.startY || '0');
+			var moveX = parseFloat(star.dataset.moveX || '0');
+			var moveY = parseFloat(star.dataset.moveY || '0');
+			var speed = parseFloat(star.dataset.speed || '20');
+			var delay = parseFloat(star.dataset.delay || '0');
+			var t = (now + delay) % speed / speed;
+			var x = startX + moveX * Math.sin(t * Math.PI * 2);
+			var y = startY + moveY * Math.sin(t * Math.PI * 2);
+			var isDark = document.documentElement.classList.contains('dark');
+			var minOpacity = isDark ? 0.2 : 0.4;
+			var maxOpacity = isDark ? 0.6 : 1.0;
+			var opacity = minOpacity + (maxOpacity - minOpacity) * Math.abs(Math.sin(t * Math.PI * 2));
+			star.style.left = x + '%';
+			star.style.top = y + '%';
+			star.style.opacity = String(opacity);
+		});
+		requestAnimationFrame(animateStars);
+	}
+
+	function initTextReveal() {
+		var cards = document.querySelectorAll('.text-reveal-card');
+		cards.forEach(function(card) {
+			if (card.dataset.revealInitialized) return;
+			card.dataset.revealInitialized = 'true';
+
+			var overlay = card.querySelector('.reveal-overlay');
+			var cursor = card.querySelector('.reveal-cursor');
+			if (!overlay || !cursor) return;
+
+			var targetPercentage = 0;
+			var currentPercentage = 0;
+			var isMouseOver = false;
+			var left = 0;
+			var localWidth = 0;
+
+			function updateRect() {
+				var rect = card.getBoundingClientRect();
+				left = rect.left;
+				localWidth = rect.width;
+			}
+			updateRect();
+			window.addEventListener('resize', updateRect);
+
+			function animate() {
+				var ease = isMouseOver ? 0.3 : 0.08;
+				var diff = targetPercentage - currentPercentage;
+				currentPercentage += diff * ease;
+
+				if (!isMouseOver && Math.abs(diff) < 0.5) {
+					currentPercentage = 0;
+				}
+
+				var clipValue = 'inset(0 ' + (100 - currentPercentage) + '% 0 0)';
+				overlay.style.clipPath = clipValue;
+
+				var rotateDeg = (currentPercentage - 50) * 0.1;
+				cursor.style.left = currentPercentage + '%';
+				cursor.style.transform = 'translateX(-50%) rotate(' + rotateDeg + 'deg)';
+				cursor.style.opacity = currentPercentage > 0 ? '1' : '0';
+
+				requestAnimationFrame(animate);
+			}
+			requestAnimationFrame(animate);
+
+			function mouseMoveHandler(e) {
+				e.preventDefault();
+				var relativeX = e.clientX - left;
+				targetPercentage = (relativeX / localWidth) * 100;
+				targetPercentage = Math.max(0, Math.min(100, targetPercentage));
+			}
+
+			function mouseLeaveHandler() {
+				isMouseOver = false;
+				targetPercentage = 0;
+			}
+
+			function mouseEnterHandler() {
+				isMouseOver = true;
+				updateRect();
+			}
+
+			card.addEventListener('mousemove', mouseMoveHandler);
+			card.addEventListener('mouseleave', mouseLeaveHandler);
+			card.addEventListener('mouseenter', mouseEnterHandler);
+		});
+	}
+
+	function fetchStats() {
+		var card = document.getElementById('text-reveal-container');
+		if (!card) return;
+		var walineUrl = card.dataset.walineUrl || '';
+		if (!walineUrl) return;
+
+		var textLine1 = document.getElementById('text-line-1');
+		var textLine2 = document.getElementById('text-line-2');
+
+		fetch(walineUrl + '/api/comment?type=count&url=/')
+			.then(function(r) { return r.json(); })
+			.then(function(data) {
+				var count = typeof data === 'number' ? data : (data && data.data ? data.data : null);
+				if (count != null) {
+					var pv = Number(count).toLocaleString();
+					if (textLine1) {
+						var prefix1 = textLine1.dataset.visitorPrefix || '您是造访本站的第 ';
+						var suffix1 = textLine1.dataset.visitorSuffix || ' 位旅人，很高兴与你相遇。';
+						textLine1.textContent = prefix1 + pv + suffix1;
+					}
+				}
+				if (textLine2) {
+					var prefix2 = textLine2.dataset.pageviewPrefix || '小破站访问量为 ';
+					var suffix2 = textLine2.dataset.pageviewSuffix || '';
+					textLine2.textContent = prefix2 + (count != null ? Number(count).toLocaleString() : '--') + suffix2;
+				}
+			})
+			.catch(function() {
+				if (textLine1) {
+					var prefix1 = textLine1.dataset.visitorPrefix || '您是造访本站的第 ';
+					var suffix1 = textLine1.dataset.visitorSuffix || ' 位旅人，很高兴与你相遇。';
+					textLine1.textContent = prefix1 + '--' + suffix1;
+				}
+				if (textLine2) {
+					var prefix2 = textLine2.dataset.pageviewPrefix || '小破站访问量为 ';
+					var suffix2 = textLine2.dataset.pageviewSuffix || '';
+					textLine2.textContent = prefix2 + '--' + suffix2;
+				}
+			});
+	}
+
+	initStars();
+	animateStars();
+	initTextReveal();
+	fetchStats();
+
+	document.addEventListener('astro:page-load', function() {
+		initStars();
+		animateStars();
+		initTextReveal();
+		fetchStats();
+	});
+})();
+</script>

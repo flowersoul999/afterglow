@@ -1,0 +1,153 @@
+---
+import { sakuraConfig } from "@/config";
+
+const config = sakuraConfig;
+---
+
+{sakuraConfig?.enable && (
+  <script is:inline define:vars={{ sakuraConfig: config }}>
+    (function () {
+      // 单例保护：已初始化则跳过
+      if (window.__fireflySakuraInited) return;
+      window.__fireflySakuraInited = true;
+
+      var FLAKE = '🪰';
+      var STORAGE_KEY = 'firefly_sakura_enabled';
+      var S = window.__fireflySakura = window.__fireflySakura || {
+        canvas: null, ctx: null, flakeList: null,
+        animationId: null, frameCount: 0, enabled: true,
+        resizeHandler: null
+      };
+
+      // 恢复持久化的开关状态
+      var saved = localStorage.getItem(STORAGE_KEY);
+      S.enabled = saved === null ? true : saved === 'true';
+
+      class Flake {
+        constructor(xRange, yRange, size, speed, driftRange, startY) {
+          this.xRange = xRange;
+          this.yRange = yRange;
+          this.size = size;
+          this.speed = speed;
+          this.driftRange = driftRange;
+          this.startY = startY;
+          this.y = typeof startY === 'number' ? startY : (-size * 2);
+          this.x = xRange[0] + Math.random() * (xRange[1] - xRange[0]);
+          this.fallSpeed = speed[0] + Math.random() * (speed[1] - speed[0]);
+          this.drift = driftRange[0] + Math.random() * (driftRange[1] - driftRange[0]);
+        }
+        reset() {
+          this.x = this.xRange[0] + Math.random() * (this.xRange[1] - this.xRange[0]);
+          this.y = typeof this.startY === 'number' ? this.startY : (-this.size * 2);
+          this.fallSpeed = this.speed[0] + Math.random() * (this.speed[1] - this.speed[0]);
+          this.drift = this.driftRange[0] + Math.random() * (this.driftRange[1] - this.driftRange[0]);
+        }
+        update() {
+          this.y += this.fallSpeed;
+          this.x += this.drift;
+          if (this.y > this.yRange[1] + this.size || this.x > this.xRange[1] + this.size || this.x < this.xRange[0] - this.size) {
+            this.reset();
+          }
+        }
+        draw(ctx) {
+          ctx.font = this.size + 'px serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(FLAKE, this.x, this.y);
+        }
+      }
+
+      class FlakeList {
+        constructor() { this.list = []; }
+        push(f) { this.list.push(f); }
+        update() { for (var i = 0; i < this.list.length; i++) this.list[i].update(); }
+        draw(ctx) { for (var i = 0; i < this.list.length; i++) this.list[i].draw(ctx); }
+      }
+
+      function createCanvas() {
+        if (S.canvas && S.canvas.parentNode) return; // 已存在且挂载
+        S.canvas = document.createElement('canvas');
+        S.canvas.id = 'canvas_sakura';
+        S.canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100';
+        document.body.appendChild(S.canvas);
+        S.ctx = S.canvas.getContext('2d', { alpha: true });
+        S.canvas.width = window.innerWidth;
+        S.canvas.height = window.innerHeight;
+      }
+
+      function createFlakes() {
+        S.flakeList = new FlakeList();
+        var n = 12, half = 6, baseSz = 15, sz = baseSz * 1.1;
+        var w = S.canvas ? S.canvas.width : window.innerWidth;
+        var h = S.canvas ? S.canvas.height : window.innerHeight;
+        for (var i = 0; i < n; i++) {
+          S.flakeList.push(new Flake(
+            [0, w],
+            [0, h],
+            sz,
+            [0.4, 1.2],
+            [-0.3, 0.3],
+            i < half ? (-sz * 2 - Math.random() * h * 0.5) : (Math.random() * h)
+          ));
+        }
+      }
+
+      function animate() {
+        if (!S.enabled || !S.ctx || !S.canvas || !S.flakeList) return;
+        // 检查 canvas 是否仍在 DOM 中（Swup 可能移除了它）
+        if (!S.canvas.parentNode) {
+          document.body.appendChild(S.canvas);
+        }
+        S.frameCount = (S.frameCount + 1) % 3;
+        if (S.frameCount === 0) {
+          S.ctx.clearRect(0, 0, S.canvas.width, S.canvas.height);
+          S.flakeList.update();
+          S.flakeList.draw(S.ctx);
+        }
+        S.animationId = requestAnimationFrame(animate);
+      }
+
+      function start() {
+        if (S.canvas && S.canvas.parentNode) return;
+        createCanvas();
+        createFlakes();
+        animate();
+      }
+
+      function stop() {
+        if (S.animationId) { cancelAnimationFrame(S.animationId); S.animationId = null; }
+        if (S.canvas && S.canvas.parentNode) { S.canvas.parentNode.removeChild(S.canvas); }
+        S.canvas = null; S.ctx = null; S.flakeList = null;
+      }
+
+      // 全局开关
+      window.toggleSakura = function () {
+        S.enabled = !S.enabled;
+        localStorage.setItem(STORAGE_KEY, S.enabled ? 'true' : 'false');
+        if (S.enabled) { start(); }
+        else { stop(); }
+        return S.enabled;
+      };
+      window.getSakuraEnabled = function () { return S.enabled; };
+
+      if (!S.resizeHandler) {
+        S.resizeHandler = function () {
+          if (S.canvas) { S.canvas.width = window.innerWidth; S.canvas.height = window.innerHeight; }
+        };
+        window.addEventListener('resize', S.resizeHandler);
+      }
+
+      // 延迟初始化
+      setTimeout(function () {
+        if (S.enabled) start();
+      }, 300);
+
+      // Swup 导航时暂停动画，避免后台持续渲染
+      document.addEventListener('swup:content:replaced', function () { stop(); });
+      document.addEventListener('swup:visit:start', function () { stop(); });
+      document.addEventListener('swup:page:view', function () {
+        setTimeout(function () { if (S.enabled) start(); }, 300);
+      });
+    })();
+  </script>
+)}

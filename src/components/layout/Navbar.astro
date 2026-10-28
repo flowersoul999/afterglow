@@ -1,0 +1,412 @@
+---
+import { Picture } from "astro:assets";
+import * as path from "node:path";
+import type { ImageMetadata } from "astro";
+import { Icon } from "astro-icon/components";
+import { navBarConfig, siteConfig } from "@/config";
+import { type NavBarLink } from "@/types/config";
+import { getFallbackFormat, getImageFormats } from "@/utils/image-utils";
+import { resolveNavLinks } from "@/utils/nav-categories";
+import { url } from "@/utils/url-utils";
+import DropdownMenu from "./DropdownMenu.astro";
+import NavbarProfileCard from "./NavbarProfileCard.astro";
+
+const navbarTitle = siteConfig.navbar.title || siteConfig.title;
+const navbarWidthFull = siteConfig.navbar.widthFull ?? false;
+
+// 「分类」等动态菜单的子项在这里注入（配置里只有按钮），
+// 数据来自文章目录，新加分类文件夹后无需改配置
+const links: NavBarLink[] = await resolveNavLinks(navBarConfig.links);
+
+// Logo
+const logoValue = siteConfig.navbar.logo?.value || "";
+const isLocalSrcLogo =
+	siteConfig.navbar.logo?.type === "image" &&
+	logoValue &&
+	!logoValue.startsWith("/") &&
+	!logoValue.startsWith("http");
+let logoImg: ImageMetadata | null = null;
+
+if (isLocalSrcLogo) {
+	const files = import.meta.glob<ImageMetadata>(
+		"../../**/*.{png,jpg,jpeg,webp,avif,gif,svg}",
+		{ import: "default" },
+	);
+	const normalizedPath = path
+		.normalize(path.join("../../", logoValue))
+		.replace(/\\/g, "/");
+	const file = files[normalizedPath];
+	if (file) logoImg = await file();
+}
+---
+
+<div id="navbar" class="z-50" data-full-width={String(navbarWidthFull)} style="margin-top: 10px;">
+	<NavbarProfileCard />
+
+	<div class="navbar-segments">
+		<!-- 左段：logo + 标题（滚动收缩成球） -->
+		<div class="navbar-seg navbar-seg--left">
+			<a href={url("/")} class="navbar-logo scale-animation flex items-center text-(--deep-text)">
+				{siteConfig.navbar.logo?.type === "icon" ? (
+					<Icon name={siteConfig.navbar.logo.value || "material-symbols:home-pin-outline"} is:inline class="text-[1.35rem] flex-shrink-0" />
+				) : siteConfig.navbar.logo?.type === "image" && logoImg ? (
+					logoImg.format === "svg" ? (
+						<img src={logoImg.src} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="h-6 w-6 object-contain flex-shrink-0" fetchpriority="high" />
+					) : (
+						<Picture
+							src={logoImg}
+							alt={siteConfig.navbar.logo.alt || siteConfig.title}
+							class="h-6 w-6 object-contain flex-shrink-0"
+							formats={getImageFormats()}
+							fallbackFormat={getFallbackFormat()}
+							widths={[24, 48]}
+							loading="eager"
+							fetchpriority="high"
+						/>
+					)
+				) : siteConfig.navbar.logo?.type === "image" ? (
+					<img src={url(siteConfig.navbar.logo.value)} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="h-6 w-6 object-contain flex-shrink-0" fetchpriority="high" />
+				) : siteConfig.navbar.logo?.type === "url" ? (
+					<img src={siteConfig.navbar.logo.value} alt={siteConfig.navbar.logo.alt || siteConfig.title} class="h-6 w-6 object-contain flex-shrink-0" fetchpriority="high" />
+				) : (
+					<Icon name="material-symbols:home-pin-outline" is:inline class="text-[1.35rem] flex-shrink-0" />
+				)}
+				</a>
+				<button
+					type="button"
+					class="navbar-logo-text font-mono uppercase tracking-[0.12em] text-xs font-semibold ml-2"
+					data-nav-profile-trigger
+					aria-expanded="false"
+					aria-haspopup="dialog"
+					title={navbarTitle}
+				>
+					{navbarTitle}
+				</button>
+			</div>
+
+		<!-- 中段：紧凑导航椭圆（滚动不变） -->
+		<div class="navbar-seg navbar-seg--center" data-navbar-nav>
+			<div class="navbar-nav hidden lg:flex items-center gap-0.5 relative">
+				<div class="navbar-hover-highlight" data-hover-border></div>
+				{links.map((l) => (
+					<DropdownMenu
+						link={l}
+						variant={l.dynamicSource === "post-categories" ? "grid" : "list"}
+					/>
+				))}
+			</div>
+		</div>
+
+		<!-- 右段：搜索 + 快捷键（滚动收缩成球），移动端追加菜单按钮 -->
+		<div class="navbar-seg navbar-seg--right">
+			<button aria-label="Search" name="Search" class="btn-plain h-9 nav-search-btn" id="nav-search-btn">
+				<span class="nav-search-btn__shortcut" data-shortcut>⌘ K</span>
+				<Icon name="material-symbols:search-rounded" is:inline class="text-[1.4rem]" style="font-variation-settings: 'wght' 700" />
+			</button>
+			<button aria-label="Menu" name="Nav Menu" class="btn-plain h-9 w-9 lg:hidden!" id="nav-menu-switch">
+				<Icon name="material-symbols:menu-rounded" is:inline class="text-[1.2rem]" />
+			</button>
+		</div>
+	</div>
+</div>
+
+<script is:inline>
+(function() {
+	var _hoverSliderAbortController = null;
+	var _hoverSliderMouseEnterHandlers = [];
+
+	function cleanupHoverSlider() {
+		if (_hoverSliderAbortController) {
+			_hoverSliderAbortController.abort();
+			_hoverSliderAbortController = null;
+		}
+		_hoverSliderMouseEnterHandlers.forEach(function(entry) {
+			entry[0].removeEventListener('mouseenter', entry[1]);
+		});
+		_hoverSliderMouseEnterHandlers = [];
+	}
+
+	function normalizePath(p) {
+		return p.replace(/\/$/, '') || '/';
+	}
+
+	function pathMatches(currentPath, href) {
+		var cp = normalizePath(currentPath);
+		var hp = normalizePath(href);
+		if (hp === '/') return cp === '/';
+		return cp === hp || cp.startsWith(hp + '/');
+	}
+
+	function moveHighlight(navContainer, hoverBorder, item) {
+		if (!item) {
+			hoverBorder.style.opacity = '0';
+			return;
+		}
+		var rect = item.getBoundingClientRect();
+		var containerRect = navContainer.getBoundingClientRect();
+		hoverBorder.style.width = rect.width + 'px';
+		hoverBorder.style.height = rect.height + 'px';
+		hoverBorder.style.left = (rect.left - containerRect.left) + 'px';
+		hoverBorder.style.top = (rect.top - containerRect.top) + 'px';
+	}
+
+	function initHoverSlider() {
+		cleanupHoverSlider();
+
+		var navContainer = document.querySelector('[data-navbar-nav] .navbar-nav');
+		var hoverBorder = document.querySelector('[data-hover-border]');
+		if (!navContainer || !hoverBorder) return;
+
+		_hoverSliderAbortController = new AbortController();
+		var navItems = Array.from(navContainer.querySelectorAll(':scope > .dropdown-container'));
+
+		function detectActiveItem() {
+			var currentPath = window.location.pathname;
+			var activeItem = null;
+			var activeLen = -1;
+
+			navItems.forEach(function(item) {
+				item.classList.remove('nav-item-active');
+				var hrefs = [];
+				var selfLink = item.querySelector(':scope > a');
+				if (selfLink) {
+					var href = selfLink.getAttribute('href');
+					if (href) hrefs.push(href);
+				}
+				item.querySelectorAll('.dropdown-item[href]').forEach(function(el) {
+					var href = el.getAttribute('href');
+					if (href) hrefs.push(href);
+				});
+
+				// 取本项内最长的命中路径：/categories/xx/ 比 /categories/ 更具体
+				var matchedLen = -1;
+				hrefs.forEach(function(href) {
+					if (!pathMatches(currentPath, href)) return;
+					var len = normalizePath(href).length;
+					if (len > matchedLen) matchedLen = len;
+				});
+
+				// 多项同时命中时只高亮最具体的那个：否则进分类详情页时
+				// 「文章>图谱」(/categories/) 与「分类」会一起亮
+				if (matchedLen > activeLen) {
+					activeLen = matchedLen;
+					activeItem = item;
+				}
+			});
+
+			if (activeItem) {
+				activeItem.classList.add('nav-item-active');
+				navContainer.classList.add('nav-has-active');
+				requestAnimationFrame(function() {
+					moveHighlight(navContainer, hoverBorder, activeItem);
+				});
+			} else {
+				navContainer.classList.remove('nav-has-active');
+				hoverBorder.style.opacity = '0';
+			}
+		}
+
+		navItems.forEach(function(item) {
+			var handler = function() { moveHighlight(navContainer, hoverBorder, item); };
+			item.addEventListener('mouseenter', handler);
+			_hoverSliderMouseEnterHandlers.push([item, handler]);
+		});
+
+		navContainer.addEventListener('mouseleave', function() {
+			var activeItem = navContainer.querySelector('.nav-item-active');
+			moveHighlight(navContainer, hoverBorder, activeItem);
+		}, { signal: _hoverSliderAbortController.signal });
+
+		navContainer.addEventListener('mouseenter', function() {
+			hoverBorder.style.opacity = '1';
+		}, { signal: _hoverSliderAbortController.signal });
+
+		detectActiveItem();
+		document.addEventListener('astro:page-load', detectActiveItem, { signal: _hoverSliderAbortController.signal });
+	}
+
+	initHoverSlider();
+
+	// Scroll shrink effect
+	(function() {
+		var navbar = document.getElementById('navbar');
+		var navbarWrapper = document.getElementById('navbar-wrapper');
+		if (!navbar) return;
+
+		var SCROLL_IN = 80;
+		var SCROLL_OUT = 40;
+		var COMPACT_GAP = 8;
+		var ticking = false;
+		var layoutRaf = null;
+
+		var segments = document.querySelector('.navbar-segments');
+		var center = document.querySelector('.navbar-seg--center');
+		var left = document.querySelector('.navbar-seg--left');
+		var right = document.querySelector('.navbar-seg--right');
+
+		function updateCompactLayout() {
+			if (!segments || !center || !left || !right) return;
+
+			var isScrolled = navbar.classList.contains('scrolled');
+			var isMobile = window.matchMedia('(max-width: 1023px)').matches;
+
+			if (isMobile) {
+				left.style.left = '';
+				left.style.transform = '';
+				right.style.left = '';
+				right.style.right = '';
+				right.style.transform = '';
+				return;
+			}
+
+			var segmentsRect = segments.getBoundingClientRect();
+			var centerRect = center.getBoundingClientRect();
+			var leftRect = left.getBoundingClientRect();
+			var rightRect = right.getBoundingClientRect();
+
+			var isFirstRightPosition = right.style.right === '';
+			if (isFirstRightPosition) { right.style.transition = 'none'; }
+
+			left.style.transform = 'translateY(-50%)';
+			right.style.transform = 'translateY(-50%)';
+
+			if (isScrolled) {
+				// 收缩态：左右段贴到中间椭圆两侧。右段用 right 定位，算出来再大也只是往左偏，
+				// 不会被推出容器（用 left 定位时算错就直接溢出屏幕）。
+				// right 是「右段右边缘到容器右边缘」的距离，所以要减掉右段自身宽度。
+				var maxRight = Math.max(0, segmentsRect.width - rightRect.width);
+				var desiredRight = segmentsRect.right - centerRect.right - COMPACT_GAP - rightRect.width;
+				right.style.right = Math.min(Math.max(desiredRight, 0), maxRight) + 'px';
+				left.style.left = Math.max(0, centerRect.left - segmentsRect.left - COMPACT_GAP - leftRect.width) + 'px';
+			} else {
+				// 展开态：右段贴住容器右边缘。这里用纯 right: 0，不再按 px 换算，
+				// 于是滚动条出现、字体加载、换页导致的宽度变化都不会让它跑到页面外。
+				left.style.left = '0px';
+				right.style.right = '0px';
+			}
+
+			if (isFirstRightPosition) {
+				right.offsetHeight;
+				right.style.transition = '';
+			}
+		}
+
+		// 收缩态的位置是 JS 按 px 算的，容器可用宽度变了（滚动条出现/消失、
+		// Swup 换页后内容变高）就得重算；window.resize 抓不到这一类变化。
+		function scheduleLayoutUpdate() {
+			if (layoutRaf !== null) return;
+			layoutRaf = requestAnimationFrame(function() {
+				layoutRaf = null;
+				updateCompactLayout();
+			});
+		}
+
+		function handleScroll() {
+			var y = window.scrollY;
+			var wasScrolled = navbar.classList.contains('scrolled');
+
+			if (y > SCROLL_IN) {
+				navbar.classList.add('scrolled');
+				if (navbarWrapper) navbarWrapper.classList.add('navbar-scrolled');
+			} else if (y < SCROLL_OUT) {
+				navbar.classList.remove('scrolled');
+				if (navbarWrapper) navbarWrapper.classList.remove('navbar-scrolled');
+			}
+
+			var isScrolled = navbar.classList.contains('scrolled');
+			if (wasScrolled !== isScrolled || isScrolled) {
+				requestAnimationFrame(updateCompactLayout);
+			}
+			ticking = false;
+		}
+
+		window.addEventListener('scroll', function() {
+			if (!ticking) {
+				requestAnimationFrame(handleScroll);
+				ticking = true;
+			}
+		}, { passive: true });
+
+		window.addEventListener('resize', scheduleLayoutUpdate, { passive: true });
+
+		// 只盯「容器宽度」：滚动条出现/消失、窗口变化都会让它变。
+		// 不监听左右段自身 —— 收缩动画进行中它们的尺寸每帧都在变，
+		// 那时重算反而会打断 right / left 的过渡动画。
+		if (typeof ResizeObserver !== 'undefined') {
+			var layoutObserver = new ResizeObserver(scheduleLayoutUpdate);
+			[segments, navbar, navbarWrapper].forEach(function(el) {
+				if (el) layoutObserver.observe(el);
+			});
+		}
+
+		window.addEventListener('load', scheduleLayoutUpdate);
+		document.addEventListener('astro:page-load', scheduleLayoutUpdate);
+
+		handleScroll();
+		requestAnimationFrame(updateCompactLayout);
+	})();
+
+	// Search shortcut
+	function initSearchShortcut() {
+		var isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
+		var text = isMac ? "⌘K" : "Ctrl K";
+		document.querySelectorAll("[data-shortcut]").forEach(function(el) {
+			el.textContent = text;
+		});
+	}
+
+	initSearchShortcut();
+	document.addEventListener("astro:page-load", function() {
+		initHoverSlider();
+		initSearchShortcut();
+	});
+
+	// Search button click — 使用事件委托在 document 上，避免 Swup 重复绑定
+	if (!window.__navbarSearchBound) {
+		window.__navbarSearchBound = true;
+		document.addEventListener("click", function(e) {
+			var btn = e.target?.closest?.("#nav-search-btn");
+			if (!btn) return;
+			e.stopPropagation();
+			// 触发搜索模态框
+			if (window.__fireflySearchModalController) {
+				window.__fireflySearchModalController.toggle();
+			} else {
+				window.__fireflySearchModalPendingToggle = true;
+			}
+		});
+	}
+})();
+</script>
+
+{
+	import.meta.env.PROD && (
+		<script is:inline data-swup-ignore-script define:vars={{ scriptUrl: url('/pagefind/pagefind.js') }}>
+			async function loadPagefind() {
+				try {
+					const response = await fetch(scriptUrl, { method: 'HEAD' });
+					if (!response.ok) {
+						throw new Error(`Pagefind script not found: ${response.status}`);
+					}
+					const pagefind = await import(scriptUrl);
+					await pagefind.options({ excerptLength: 20 });
+					window.pagefind = pagefind;
+					document.dispatchEvent(new CustomEvent('pagefindready'));
+				} catch (error) {
+					console.error('Failed to load Pagefind:', error);
+					window.pagefind = {
+						search: () => Promise.resolve({ results: [] }),
+						options: () => Promise.resolve(),
+					};
+					document.dispatchEvent(new CustomEvent('pagefindloaderror'));
+				}
+			}
+
+			if (document.readyState === 'loading') {
+				document.addEventListener('DOMContentLoaded', loadPagefind);
+			} else {
+				loadPagefind();
+			}
+		</script>
+	)
+}

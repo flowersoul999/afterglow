@@ -1,0 +1,340 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { getCollection, render } from "astro:content";
+import * as path from "node:path";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import type { GetStaticPaths, ImageMetadata } from "astro";
+import { Icon } from "astro-icon/components";
+import ArticleVirtualList from "@/components/pages/ArticleVirtualList.svelte";
+import { siteConfig } from "@/config";
+import { coverImageConfig } from "@/config/coverImageConfig";
+import { getCategoryFromId } from "@/utils/category-tree";
+import {
+	comparePostsByOrderAndDate,
+	getCategoryList,
+} from "@/utils/content-utils";
+import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
+import {
+	getCategoryPageUrl,
+	getCategoryUrl,
+	getFileDirFromPath,
+	getPostUrlBySlug,
+	getTagUrl,
+	url,
+} from "@/utils/url-utils";
+
+export const getStaticPaths = (async () => {
+	const categories = await getCategoryList();
+	const allPosts = await getCollection("posts", ({ data }) => {
+		return import.meta.env.PROD ? data.draft !== true : true;
+	});
+
+	const paths: {
+		params: { category: string };
+		props: {
+			categoryName: string;
+			posts: CollectionEntry<"posts">[];
+			totalPosts: number;
+			tags: { name: string; count: number }[];
+		};
+	}[] = [];
+
+	for (const category of categories) {
+		// 过滤该分类下的文章（子树包含：父分类含子分类文章）
+		const categoryPosts = allPosts.filter((post) => {
+			const postCategory = getCategoryFromId(post.id);
+			const uncategorized = i18n(I18nKey.uncategorized).toLowerCase();
+
+			if (!category.name || category.name.toLowerCase() === uncategorized) {
+				return !postCategory || postCategory.toLowerCase() === uncategorized;
+			}
+			return (
+				postCategory === category.name ||
+				postCategory.startsWith(`${category.name}/`)
+			);
+		});
+
+		// 排序规则见 src/utils/content-utils.ts#comparePostsByOrderAndDate
+		categoryPosts.sort(comparePostsByOrderAndDate);
+
+		// 收集该分类下所有标签
+		const tagCountMap: Record<string, number> = {};
+		categoryPosts.forEach((post) => {
+			(post.data.tags || []).forEach((tag) => {
+				tagCountMap[tag] = (tagCountMap[tag] || 0) + 1;
+			});
+		});
+		const tags = Object.entries(tagCountMap)
+			.sort((a, b) => b[1] - a[1])
+			.map(([name, count]) => ({ name, count }));
+
+		paths.push({
+			params: { category: category.name },
+			props: {
+				categoryName: category.name,
+				posts: categoryPosts,
+				totalPosts: categoryPosts.length,
+				tags,
+			},
+		});
+	}
+
+	return paths;
+}) satisfies GetStaticPaths;
+
+const { categoryName } = Astro.props;
+const { posts, tags } = Astro.props;
+
+// 解码分类名称（支持多级 a/b）
+const decodedCategory = decodeURIComponent(categoryName);
+const categoryParts = decodedCategory.split("/").filter(Boolean);
+const categoryTrail = categoryParts.map((part, idx) => {
+	const full = categoryParts.slice(0, idx + 1).join("/");
+	return { name: part, url: getCategoryUrl(full) };
+});
+
+// 图片解析（与文章列表页一致）
+const articleImageFiles = import.meta.glob<ImageMetadata>(
+	"../../content/**/*.{png,jpg,jpeg,webp,avif}",
+	{
+		import: "default",
+	},
+);
+
+const dateFormatter = new Intl.DateTimeFormat(
+	siteConfig.lang.replace("_", "-"),
+	{
+		year: "numeric",
+		month: "2-digit",
+		day: "2-digit",
+	},
+);
+
+async function resolveArticleImage(entry: CollectionEntry<"posts">) {
+	const processedImage = processCoverImageSync(
+		entry.data.image || "api",
+		entry.id,
+	);
+	const imageApiUrls = getApiUrlList(entry.data.image, entry.id);
+
+	if (!processedImage) {
+		return {
+			imageUrl: "",
+			imageApiUrls,
+		};
+	}
+
+	const isLocal = !(
+		processedImage.startsWith("/") ||
+		processedImage.startsWith("http") ||
+		processedImage.startsWith("https") ||
+		processedImage.startsWith("data:")
+	);
+
+	if (isLocal) {
+		const basePath = getFileDirFromPath(entry.filePath || "");
+		const normalizedPath = path
+			.normalize(path.join("../../content/", basePath, processedImage))
+			.replace(/\\/g, "/");
+		const imageFile = articleImageFiles[normalizedPath];
+
+		if (!imageFile) {
+			return {
+				imageUrl: "",
+				imageApiUrls,
+			};
+		}
+
+		const image = await imageFile();
+		return {
+			imageUrl: image.src,
+			imageApiUrls,
+		};
+	}
+
+	const imageUrl = processedImage.startsWith("/")
+		? url(processedImage)
+		: processedImage;
+
+	return {
+		imageUrl,
+		imageApiUrls,
+	};
+}
+
+// 转换文章数据为 ArticleVirtualList 所需格式
+function getCategoryHue(category: string): number {
+	let hash = 2166136261;
+	for (let i = 0; i < category.length; i++) {
+		hash ^= category.charCodeAt(i);
+		hash = Math.imul(hash, 16777619);
+	}
+	return (hash >>> 0) % 360;
+}
+
+const fallbackImageUrl = coverImageConfig.randomCoverImage.fallback
+	? `${`/${coverImageConfig.randomCoverImage.fallback.replace(/^\/+/, "")}`}`
+	: "";
+
+const articleListPosts = await Promise.all(
+	posts.map(async (entry) => {
+		const { remarkPluginFrontmatter } = await render(entry);
+		const articleImage = await resolveArticleImage(entry);
+		const rawCategory = getCategoryFromId(entry.id);
+		const category = rawCategory || i18n(I18nKey.uncategorized);
+		const tags = (entry.data.tags || [])
+			.map((tag) => tag.trim())
+			.filter(Boolean)
+			.map((tag) => ({
+				name: tag,
+				url: getTagUrl(tag),
+			}));
+
+		const hasRealCover = !!entry.data.image;
+
+		return {
+			id: entry.id,
+			title: entry.data.title,
+			url: getPostUrlBySlug(entry.id),
+			publishedIso: entry.data.published.toISOString(),
+			publishedText: dateFormatter.format(entry.data.published),
+			category,
+			categoryUrl: getCategoryUrl(rawCategory || null),
+			tags,
+			description:
+				entry.data.description ||
+				remarkPluginFrontmatter.excerpt ||
+				"暂无文章简介，点击卡片查看完整内容。",
+			imageUrl: articleImage.imageUrl,
+			imageApiUrls: articleImage.imageApiUrls,
+			pinned: !!entry.data.pinned,
+			hasRealCover,
+		};
+	}),
+);
+
+const defaultLayout = siteConfig.postListLayout.defaultMode || "list";
+const allowLayoutSwitch = siteConfig.postListLayout.allowSwitch;
+---
+
+<MainGridLayout title={`${decodedCategory} - ${i18n(I18nKey.categories)}`}>
+    <!-- 面包屑 + 标签筛选（合并卡片） -->
+    <div class="card-base px-6 py-5 mb-4 tag-section">
+        <!-- 面包屑导航（多级） -->
+        <nav class="flex items-center gap-2 text-sm text-30 mb-4 flex-wrap">
+            <a href="/" class="hover:text-(--primary) transition-colors">
+                <Icon name="material-symbols:home" class="inline-block align-middle" />
+            </a>
+            <span class="opacity-50">/</span>
+            <a href={getCategoryPageUrl()} class="hover:text-(--primary) transition-colors">
+                {i18n(I18nKey.categories)}
+            </a>
+            {categoryTrail.map((seg) => (
+                <>
+                    <span class="opacity-50">/</span>
+                    <a href={seg.url} class="hover:text-(--primary) transition-colors">{seg.name}</a>
+                </>
+            ))}
+        </nav>
+
+        <!-- 标签筛选 -->
+        {
+            tags.length > 0 && (
+                <>
+                    <div class="flex items-center gap-3 mb-3">
+                        <Icon name="material-symbols:label" class="text-lg text-(--primary)" />
+                        <span class="text-sm font-medium text-90">{i18n(I18nKey.tags)}</span>
+                        <span class="text-xs text-30">({tags.length})</span>
+                    </div>
+                <div class="tag-list" id="tag-list">
+                    <div class="flex flex-wrap gap-2">
+                        {tags.map((tag: { name: string; count: number }, index: number) => (
+                            <a
+                                href={getTagUrl(tag.name)}
+                                class:list={[
+                                    "btn-regular px-3 py-1.5 text-sm rounded-md transition-all duration-200 hover:scale-105 hover:bg-(--primary)/20 active:scale-95",
+                                    { "tag-hidden": index >= 8 },
+                                ]}
+                                data-tag-index={index}
+                            >
+                                #{tag.name}
+                                <span class="ml-1 text-xs opacity-60">({tag.count})</span>
+                            </a>
+                        ))}
+                    </div>
+                </div>
+                {tags.length > 8 && (
+                    <button
+                        class="tag-toggle-btn mt-3 flex items-center gap-1.5 text-xs text-30 hover:text-(--primary) transition-colors cursor-pointer"
+                        id="tag-toggle-btn"
+                        data-expanded="false"
+                        data-total={tags.length}
+                    >
+                        <Icon name="material-symbols:expand-more" class="text-base tag-toggle-icon" />
+                        <span class="tag-toggle-text">展开全部 {tags.length} 个标签</span>
+                    </button>
+                )}
+                </>
+            )
+        }
+    </div>
+
+    <!-- 文章列表 -->
+    <section class="article-list-page" style="padding-top: 0;">
+
+        <ArticleVirtualList
+            client:load
+            posts={articleListPosts}
+            defaultView={defaultLayout === "grid" ? "grid" : "list"}
+            postsPerPage={9}
+            allowLayoutSwitch={allowLayoutSwitch}
+        />
+    </section>
+</MainGridLayout>
+
+<style>
+    .tag-hidden {
+        display: none;
+    }
+
+    .tag-section[data-expanded="true"] .tag-hidden {
+        display: inline-flex;
+    }
+
+    .tag-toggle-icon {
+        transition: transform 0.3s ease;
+    }
+
+    .tag-section[data-expanded="true"] .tag-toggle-icon {
+        transform: rotate(180deg);
+    }
+</style>
+
+<script>
+    function initTagToggle() {
+        const btn = document.getElementById("tag-toggle-btn");
+        const section = btn?.closest(".tag-section");
+        if (!btn || !section) return;
+
+        btn.addEventListener("click", () => {
+            const isExpanded = section.getAttribute("data-expanded") === "true";
+            const total = btn.getAttribute("data-total") || "0";
+            const textEl = btn.querySelector(".tag-toggle-text");
+
+            if (isExpanded) {
+                section.setAttribute("data-expanded", "false");
+                if (textEl) textEl.textContent = `展开全部 ${total} 个标签`;
+            } else {
+                section.setAttribute("data-expanded", "true");
+                if (textEl) textEl.textContent = "收起标签";
+            }
+        });
+    }
+
+    initTagToggle();
+    document.addEventListener("swup:content:replace", () => {
+        requestAnimationFrame(initTagToggle);
+    });
+</script>

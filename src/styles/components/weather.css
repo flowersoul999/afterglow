@@ -1,0 +1,187 @@
+/* ============================================
+ * 天气小组件
+ * ============================================ */
+
+.weather-widget {
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: none;
+  padding: 0.75rem 1rem;
+  transition: border-color 0.3s ease;
+}
+
+:root.dark .weather-widget {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: #181818;
+  box-shadow: none;
+}
+
+.weather-widget:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0 20px 4px rgba(0, 0, 0, 0.08);
+}
+
+:root.dark .weather-widget:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 20px 4px rgba(0, 0, 0, 0.4);
+}
+
+.weather-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* 左上角：图标 + 标题 */
+.weather-header {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.weather-header-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.weather-header-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--content-meta);
+  letter-spacing: 0.02em;
+}
+
+/* 主体区域 */
+.weather-body {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.weather-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.weather-temp {
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: var(--deep-text);
+  line-height: 1;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.weather-location {
+  font-size: 0.8125rem;
+  color: var(--content-meta);
+  font-weight: 400;
+}
+
+.weather-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+/* 右下角轮播 */
+.weather-right {
+  position: relative;
+  min-width: 6rem;
+  flex-shrink: 0;
+}
+
+.weather-slide {
+  display: none;
+  font-size: 0.75rem;
+  color: var(--content-meta);
+  font-weight: 400;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.weather-slide.is-active {
+  display: block;
+  animation: weatherSlideIn 0.4s ease both;
+}
+
+@keyframes weatherSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.375rem);
+  }
+  to {
+    opacity: 0.7;
+    transform: translateY(0);
+  }
+}
+
+.weather-slide--aqi {
+  opacity: 0;
+}
+
+.weather-slide--aqi.is-active {
+  opacity: 0.55;
+}
+
+.weather-slide--alert {
+  font-weight: 600;
+}
+
+.weather-slide--alert.is-active {
+  opacity: 1;
+}
+
+.weather-slide--red.is-active { color: #dc2626; }
+:root.dark .weather-slide--red.is-active { color: #f87171; }
+
+.weather-slide--orange.is-active { color: #ea580c; }
+:root.dark .weather-slide--orange.is-active { color: #fb923c; }
+
+.weather-slide--yellow.is-active { color: #b45309; }
+:root.dark .weather-slide--yellow.is-active { color: #fbbf24; }
+
+.weather-slide--blue.is-active { color: #2563eb; }
+:root.dark .weather-slide--blue.is-active { color: #60a5fa; }
+
+
+/* 加载状态 */
+.weather-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.weather-loading-icon {
+  font-size: 1.25rem;
+  opacity: 0.5;
+  animation: weatherPulse 2s ease-in-out infinite;
+}
+
+.weather-loading-text {
+  font-size: 0.8125rem;
+  color: var(--content-meta);
+}
+
+@keyframes weatherPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.2; }
+}
+
+.weather-error {
+  padding: 0.5rem 0;
+}
+
+.weather-error-text {
+  font-size: 0.75rem;
+  color: var(--content-meta);
+}

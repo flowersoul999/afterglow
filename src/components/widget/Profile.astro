@@ -1,0 +1,222 @@
+---
+import { Icon } from "astro-icon/components";
+import ImageWrapper from "@/components/common/ImageWrapper.astro";
+import { profileConfig } from "@/config/profileConfig";
+import { url } from "@/utils/url-utils";
+
+const bioText = Array.isArray(profileConfig.bio)
+	? profileConfig.bio[0]
+	: profileConfig.bio;
+---
+
+<div class="profile-card">
+	<!-- 顶部背景区域 -->
+	<div class="profile-card__bg">
+		<img
+			class="profile-card__bg-img"
+			src="/assets/images/icons/profile.png"
+			alt=""
+			loading="eager"
+		/>
+		<div class="profile-card__bg-fade"></div>
+	</div>
+
+	<!-- 头像（居中，跨背景和内容区） -->
+	<div class="profile-card__avatar-wrap">
+		<a href={url("/about/")} class="profile-card__avatar" aria-label="关于我">
+			<ImageWrapper
+				src={profileConfig.avatar || ""}
+				alt={profileConfig.name || "头像"}
+				class="profile-card__avatar-img"
+				loading="eager"
+				fetchpriority="high"
+				widths={[120]}
+				sizes="120px"
+			/>
+		</a>
+	</div>
+
+	<!-- 内容区域 -->
+	<div class="profile-card__body">
+		<!-- 名字 -->
+		<h2 class="profile-card__name">{profileConfig.name}</h2>
+
+		<!-- 简介 -->
+		{bioText && (
+			<p class="profile-card__bio">{bioText}</p>
+		)}
+
+		<!-- 社交图标 -->
+		<div class="profile-card__links">
+			{profileConfig.links.map((item) => (
+				<a
+					href={item.url}
+					target={item.url.startsWith("mailto:") ? "_self" : "_blank"}
+					rel="noopener noreferrer"
+					class="profile-card__link"
+					aria-label={item.name}
+					title={item.name}
+				>
+					<Icon name={item.icon} class="profile-card__link-icon" />
+				</a>
+			))}
+		</div>
+	</div>
+</div>
+
+<style>
+	.profile-card {
+		position: relative;
+		border-radius: 10px;
+		overflow: hidden;
+		background: #fff;
+		border: 1px solid rgba(0, 0, 0, 0.08);
+		box-shadow: none;
+		transition: border-color 0.3s ease;
+	}
+
+	:root.dark .profile-card {
+		background: #181818;
+		border-color: rgba(255, 255, 255, 0.1);
+		box-shadow: none;
+	}
+
+	.profile-card:hover {
+		border-color: rgba(0, 0, 0, 0.15);
+		box-shadow: 0 0 20px 4px rgba(0, 0, 0, 0.08);
+	}
+
+	:root.dark .profile-card:hover {
+		border-color: rgba(255, 255, 255, 0.15);
+		box-shadow: 0 0 20px 4px rgba(0, 0, 0, 0.4);
+	}
+
+	/* 顶部背景 */
+	.profile-card__bg {
+		position: relative;
+		height: 7rem;
+		overflow: hidden;
+		background: #1a1a1a;
+	}
+
+	.profile-card__bg-img {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	/* 渐变过渡：背景 → 白色内容区 */
+	.profile-card__bg-fade {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 2.5rem;
+		background: linear-gradient(
+			to bottom,
+			transparent,
+			#fff
+		);
+	}
+
+	:root.dark .profile-card__bg-fade {
+		background: linear-gradient(
+			to bottom,
+			transparent,
+			#181818
+		);
+	}
+
+	/* 头像容器 */
+	.profile-card__avatar-wrap {
+		position: relative;
+		z-index: 2;
+		display: flex;
+		justify-content: center;
+		margin-top: -2.5rem;
+	}
+
+	.profile-card__avatar {
+		display: block;
+		width: 4.5rem;
+		height: 4.5rem;
+		border-radius: 50%;
+		overflow: hidden;
+		border: 3px solid #fff;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+		transition: transform 0.2s ease;
+	}
+
+	:root.dark .profile-card__avatar {
+		border-color: #222;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+	}
+
+	.profile-card__avatar:hover {
+		transform: scale(1.05);
+	}
+
+	.profile-card__avatar-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	/* 内容区域 */
+	.profile-card__body {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 0.625rem 1rem 1rem;
+		text-align: center;
+	}
+
+	.profile-card__name {
+		font-size: 1.0625rem;
+		font-weight: 700;
+		color: var(--deep-text);
+		margin: 0 0 0.25rem;
+		line-height: 1.3;
+	}
+
+	.profile-card__bio {
+		font-size: 0.75rem;
+		color: var(--content-meta);
+		line-height: 1.5;
+		margin: 0 0 0.75rem;
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	/* 社交图标 */
+	.profile-card__links {
+		display: flex;
+		gap: 0.625rem;
+		justify-content: center;
+	}
+
+	.profile-card__link {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		color: var(--content-meta);
+		transition: color 0.2s ease, background 0.2s ease;
+	}
+
+	.profile-card__link:hover {
+		color: var(--primary);
+		background: var(--btn-plain-bg-hover);
+	}
+
+	.profile-card__link-icon {
+		width: 1.125rem;
+		height: 1.125rem;
+	}
+</style>

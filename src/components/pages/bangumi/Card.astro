@@ -1,0 +1,323 @@
+---
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import type { UserSubjectCollection } from "@/types/bangumi";
+
+interface Props {
+	item: UserSubjectCollection;
+}
+
+const { item } = Astro.props;
+
+const subject_base_url = "https://bgm.tv/subject/";
+const link = item.link || `${subject_base_url}${item.subject.id}`;
+
+const getStatusColor = (type: number) => {
+	switch (type) {
+		case 1:
+			return "bg-sky-500/80";
+		case 2:
+			return "bg-emerald-500/80";
+		case 3:
+			return "bg-amber-500/80";
+		case 4:
+			return "bg-violet-500/80";
+		case 5:
+			return "bg-rose-400/80";
+		default:
+			return "bg-gray-500/80";
+	}
+};
+
+const getStatusText = (type: number) => {
+	const subjectType = item.subject.type;
+	switch (type) {
+		case 1:
+			if (subjectType === 1) return i18n(I18nKey.bangumiStatusBookWish);
+			if (subjectType === 3) return i18n(I18nKey.bangumiStatusMusicWish);
+			if (subjectType === 4) return i18n(I18nKey.bangumiStatusGameWish);
+			return i18n(I18nKey.bangumiStatusWish);
+		case 2:
+			if (subjectType === 1) return i18n(I18nKey.bangumiStatusBookRead);
+			if (subjectType === 3) return i18n(I18nKey.bangumiStatusMusicListened);
+			if (subjectType === 4) return i18n(I18nKey.bangumiStatusGamePlayed);
+			return i18n(I18nKey.bangumiStatusWatched);
+		case 3:
+			if (subjectType === 1) return i18n(I18nKey.bangumiStatusBookReading);
+			if (subjectType === 3) return i18n(I18nKey.bangumiStatusMusicListening);
+			if (subjectType === 4) return i18n(I18nKey.bangumiStatusGamePlaying);
+			return i18n(I18nKey.bangumiStatusWatching);
+		case 4:
+			return i18n(I18nKey.bangumiStatusOnHold);
+		case 5:
+			return i18n(I18nKey.bangumiStatusDropped);
+		default:
+			return i18n(I18nKey.bangumiStatusUnknown);
+	}
+};
+
+const displayTags =
+	item.tags && item.tags.length > 0
+		? item.tags.slice(0, 3)
+		: (item.subject.tags || [])
+				.map((t: { name: string }) => t.name)
+				.slice(0, 3);
+
+const rawScore = item.subject.score ?? 0;
+const score = Math.max(0, Math.min(10, rawScore));
+const scoreText = Number.isFinite(score) ? `${score}`.replace(/\.0$/, "") : "";
+const hasScore = score > 0;
+
+const title = item.subject.name_cn || item.subject.name;
+const subType = item.subject_type;
+---
+
+<a
+	href={link}
+	target={item.link ? "_self" : "_blank"}
+	rel={item.link ? "" : "noopener noreferrer nofollow"}
+	class="bm-card group"
+	data-type={subType}
+>
+	<!-- 封面是卡片本体 -->
+	<div class="bm-cover">
+		<img
+			src={item.subject?.images?.medium || ""}
+			alt={title}
+			class="bm-img"
+			loading="lazy"
+		/>
+
+		<!-- 底部渐变遮罩 -->
+		<div class="bm-gradient" />
+
+		<!-- 左上：状态 -->
+		<span class={`bm-status ${getStatusColor(item.type)}`}>
+			{getStatusText(item.type)}
+		</span>
+
+		<!-- 右上：评分 -->
+		{hasScore && (
+			<span class="bm-score">
+				<svg class="bm-star" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+				{scoreText}
+			</span>
+		)}
+
+		<!-- 底部文字叠层 -->
+		<div class="bm-info">
+			<h3 class="bm-title">{title}</h3>
+			{displayTags.length > 0 && (
+				<div class="bm-tags">
+					{displayTags.map((tag: string) => (
+						<span class="bm-tag">{tag}</span>
+					))}
+				</div>
+			)}
+		</div>
+
+		<!-- 悬停评论遮罩 -->
+		{item.comment && (
+			<div class="bm-overlay">
+				<p class="bm-comment">{item.comment}</p>
+			</div>
+		)}
+	</div>
+</a>
+
+<style>
+	.bm-card {
+		display: block;
+		border-radius: var(--radius-large);
+		overflow: hidden;
+		text-decoration: none;
+		color: inherit;
+		transition: transform 0.22s cubic-bezier(.23,1,.32,1),
+		            box-shadow 0.22s cubic-bezier(.23,1,.32,1);
+	}
+	.bm-card:hover {
+		transform: translateY(-3px);
+		box-shadow: 0 8px 25px -6px rgba(0,0,0,.12), 0 0 0 1px var(--primary);
+	}
+	:global(html.dark) .bm-card:hover {
+		box-shadow: 0 8px 25px -6px rgba(0,0,0,.35), 0 0 0 1px var(--primary);
+	}
+
+	/* ===== 封面层 ===== */
+	.bm-cover {
+		position: relative;
+		aspect-ratio: 2/3;
+		background: var(--btn-regular-bg);
+		overflow: hidden;
+	}
+	.bm-card[data-type="4"] .bm-cover {
+		aspect-ratio: 3/2;
+	}
+	.bm-card[data-type="3"] .bm-cover {
+		aspect-ratio: 1/1;
+	}
+	.bm-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+		transition: transform 0.5s cubic-bezier(.23,1,.32,1);
+	}
+	.bm-card:hover .bm-img {
+		transform: scale(1.06);
+	}
+
+	/* ===== 底部渐变 ===== */
+	.bm-gradient {
+		position: absolute;
+		inset: auto 0 0 0;
+		height: 55%;
+		background: linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.28) 50%, transparent 100%);
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	/* ===== 左上状态 ===== */
+	.bm-status {
+		position: absolute;
+		top: 8px;
+		left: 8px;
+		padding: 3px 10px;
+		border-radius: 9999px;
+		font-size: 10px;
+		font-weight: 600;
+		letter-spacing: .04em;
+		color: #fff;
+		backdrop-filter: blur(6px);
+		-webkit-backdrop-filter: blur(6px);
+		z-index: 3;
+		line-height: 1.5;
+	}
+
+	/* ===== 右上评分 ===== */
+	.bm-score {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		display: flex;
+		align-items: center;
+		gap: 3px;
+		padding: 3px 8px 3px 6px;
+		border-radius: 9999px;
+		background: rgba(0,0,0,.48);
+		backdrop-filter: blur(6px);
+		-webkit-backdrop-filter: blur(6px);
+		font-size: 11px;
+		font-weight: 700;
+		color: #fff;
+		z-index: 3;
+		line-height: 1;
+	}
+	.bm-star {
+		width: 11px;
+		height: 11px;
+		color: #fbbf24;
+		flex-shrink: 0;
+	}
+
+	/* ===== 底部叠字区 ===== */
+	.bm-info {
+		position: absolute;
+		inset: auto 0 0 0;
+		z-index: 2;
+		padding: 0 10px 10px;
+		pointer-events: none;
+	}
+
+	.bm-title {
+		font-size: 14px;
+		font-weight: 700;
+		line-height: 1.4;
+		color: #fff;
+		margin: 0 0 6px;
+		text-shadow: 0 1px 3px rgba(0,0,0,.4);
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	.bm-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+	}
+	.bm-tag {
+		font-size: 10px;
+		font-weight: 500;
+		padding: 2px 8px;
+		border-radius: 9999px;
+		background: rgba(255,255,255,.15);
+		backdrop-filter: blur(4px);
+		-webkit-backdrop-filter: blur(4px);
+		color: rgba(255,255,255,.85);
+		line-height: 1.5;
+	}
+
+	/* ===== 悬停评论层 ===== */
+	.bm-overlay {
+		position: absolute;
+		inset: 0;
+		background: rgba(0,0,0,.76);
+		backdrop-filter: blur(3px);
+		-webkit-backdrop-filter: blur(3px);
+		opacity: 0;
+		transition: opacity .25s ease;
+		display: flex;
+		align-items: flex-start;
+		justify-content: center;
+		padding: 16px;
+		pointer-events: none;
+		z-index: 20;
+	}
+	.bm-card:hover .bm-overlay {
+		opacity: 1;
+	}
+	.bm-comment {
+		font-size: 12px;
+		line-height: 1.7;
+		color: rgba(255,255,255,.92);
+		margin: auto 0 0;
+		width: 100%;
+		display: -webkit-box;
+		-webkit-line-clamp: 5;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	/* ===== 移动端 ===== */
+	@media (max-width: 640px) {
+		.bm-status {
+			top: 5px;
+			left: 5px;
+			padding: 2px 7px;
+			font-size: 9px;
+		}
+		.bm-score {
+			top: 5px;
+			right: 5px;
+			padding: 2px 7px 2px 5px;
+			font-size: 10px;
+		}
+		.bm-star {
+			width: 10px;
+			height: 10px;
+		}
+		.bm-info {
+			padding: 0 8px 8px;
+		}
+		.bm-title {
+			font-size: 13px;
+			margin-bottom: 5px;
+		}
+		.bm-tag {
+			font-size: 9px;
+			padding: 1px 6px;
+		}
+	}
+</style>

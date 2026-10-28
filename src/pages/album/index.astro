@@ -1,0 +1,577 @@
+---
+import { getCollection } from "astro:content";
+import { Icon } from "astro-icon/components";
+import PageTitle from "@/components/common/PageTitle.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { formatDateI18n } from "@/utils/date-utils";
+
+// 2026-09-30 改版：整页变成「一整面照片墙」（所有相册的照片拆开铺满整个内容区），
+// 顶部一条细线筛选（搜索 / 相册 / 标签），点照片开灯箱。
+// 单相册页 /album/<id>/ 已删除；所有照片都走图床（imgbedFolder），客户端并行拉取。
+
+const albums = (await getCollection("album"))
+	.filter((a) => import.meta.env.PROD === false || a.data.draft !== true)
+	.sort(
+		(a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime(),
+	);
+
+const imgbedUrl = import.meta.env.PUBLIC_IMAGEBED_URL || "";
+const imgbedToken = import.meta.env.PUBLIC_IMAGEBED_API_TOKEN || "";
+
+// 给前端：每个相册的元数据（照片由前端去图床拉）
+const albumMeta = albums.map((a) => ({
+	id: a.id,
+	title: a.data.title,
+	subtitle: a.data.subtitle || "",
+	date: new Date(a.data.date).toISOString().slice(0, 10),
+	dateText: formatDateI18n(new Date(a.data.date)),
+	location: a.data.location || "",
+	tags: a.data.tags || [],
+	folder: a.data.imgbedFolder || "",
+}));
+
+const tagCounts = new Map<string, number>();
+for (const a of albums) {
+	for (const t of a.data.tags || [])
+		tagCounts.set(t, (tagCounts.get(t) || 0) + 1);
+}
+const tags = [...tagCounts.entries()]
+	.sort((x, y) => y[1] - x[1] || x[0].localeCompare(y[0], "zh-CN"))
+	.map(([name, count]) => ({ name, count }));
+
+const albumCount = albums.length;
+---
+
+<MainGridLayout
+	title="相册"
+	description="所有相册的照片都在这一面墙上"
+>
+	<div class="flex w-full rounded-(--radius-large) overflow-clip relative min-h-32">
+		<div class="card-base z-10 px-4 py-6 md:px-9 relative w-full">
+			<div class="mb-6">
+				<PageTitle title="相册" eyebrow="Album" description="所有相册的照片都拆开铺在这一面墙上" />
+			</div>
+
+			<!-- 顶部筛选条：细线语言、无底色块；选中靠主题色下划线（不是胶囊） -->
+			<div class="alb-bar" id="alb-bar">
+				<div class="alb-bar__row">
+					<label class="alb-search">
+						<Icon name="material-symbols:search-rounded" is:inline class="text-[1.05rem]" />
+						<input type="search" placeholder="搜索照片 / 相册 / 地点…" aria-label="搜索" id="alb-search" />
+						<button type="button" class="alb-search__clear" id="alb-search-clear" hidden aria-label="清空搜索">
+							<Icon name="material-symbols:close-rounded" is:inline />
+						</button>
+					</label>
+					<span class="alb-count" id="alb-count">{albumCount} 个相册</span>
+					<button type="button" class="alb-clear" id="alb-clear" hidden>清空</button>
+				</div>
+				<div class="alb-bar__row alb-bar__row--tabs">
+					<div class="alb-tabs" id="alb-tabs" role="group" aria-label="按相册筛选">
+						<button type="button" class="alb-tab is-active" data-album-id="">全部</button>
+						{
+							albumMeta.map((a) => (
+								<button type="button" class="alb-tab" data-album-id={a.id}>
+									{a.title}
+								</button>
+							))
+						}
+					</div>
+					</div>
+				</div>
+
+			<!-- 照片墙：CSS columns 瀑布流，照片由脚本铺进来 -->
+			<div class="alb-wall" id="alb-wall" data-url={imgbedUrl} data-token={imgbedToken}>
+				<div class="alb-loading" id="alb-loading">
+					<div class="alb-spinner"></div>
+					<span id="alb-status">正在从图床加载照片…</span>
+				</div>
+			</div>
+			<p class="alb-empty" id="alb-empty" hidden>没有符合条件的内容</p>
+		</div>
+	</div>
+
+	<!-- 灯箱（自研，无第三方库）：跨整面墙切换 -->
+	<div class="lightbox" id="lightbox" role="dialog" aria-label="图片查看器">
+		<div class="lightbox-backdrop" id="lightbox-backdrop"></div>
+		<button class="lightbox-close" id="lightbox-close" aria-label="关闭">
+			<Icon name="material-symbols:close-rounded" is:inline />
+		</button>
+		<button class="lightbox-nav lightbox-prev" id="lightbox-prev" aria-label="上一张">
+			<Icon name="material-symbols:chevron-left-rounded" is:inline />
+		</button>
+		<button class="lightbox-nav lightbox-next" id="lightbox-next" aria-label="下一张">
+			<Icon name="material-symbols:chevron-right-rounded" is:inline />
+		</button>
+		<div class="lightbox-img-wrap" id="lightbox-img-wrap">
+			<img id="lightbox-img" src="" alt="" />
+			<div class="lightbox-meta" id="lightbox-meta"></div>
+		</div>
+		<div class="lightbox-counter" id="lightbox-counter"></div>
+	</div>
+
+	<script is:inline define:vars={{ ALBUMS: albumMeta }}>
+	(function () {
+		var BED = document.getElementById("alb-wall");
+		if (!BED) return;
+		var BED_URL = BED.getAttribute("data-url") || "";
+		var BED_TOKEN = BED.getAttribute("data-token") || "";
+		var wall = BED;
+		var loading = document.getElementById("alb-loading");
+		var statusEl = document.getElementById("alb-status");
+		var emptyEl = document.getElementById("alb-empty");
+		var countEl = document.getElementById("alb-count");
+		var searchInput = document.getElementById("alb-search");
+		var searchClear = document.getElementById("alb-search-clear");
+		var clearBtn = document.getElementById("alb-clear");
+
+		var state = { q: "", album: "", tag: "" };
+		var photos = [];       // { src, albumId, albumTitle, date, dateText, location, tags[] }
+		var visible = [];      // 当前可见（筛选后）的照片，灯箱按它切换
+		var albumTitle = {};
+		ALBUMS.forEach(function (a) { albumTitle[a.id] = a; });
+
+		/* ---------- 拉图床：每个相册一个文件夹，并行 ---------- */
+		function listFolder(folder) {
+			var out = [], start = 0;
+			function step() {
+				return fetch(
+					BED_URL + "/api/manage/list?dir=" + encodeURIComponent(folder) + "&start=" + start + "&count=100",
+					{ headers: { Authorization: "Bearer " + BED_TOKEN } },
+				)
+					.then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+					.then(function (data) {
+						var files = (data.files || []).filter(function (f) {
+							return f.metadata && f.metadata.FileType && f.metadata.FileType.indexOf("image/") === 0;
+						});
+						out = out.concat(files);
+						if (statusEl) statusEl.textContent = "正在从图床加载照片… " + (window.__albLoaded = out.length) + " 张";
+						if (!data.files || data.files.length < 100) return out;
+						start += 100;
+						return step();
+					});
+			}
+			return step();
+		}
+
+		function buildItems() {
+			var tasks = ALBUMS.filter(function (a) { return a.folder; }).map(function (a) {
+				return listFolder(a.folder)
+					.then(function (files) {
+						return files.map(function (f) {
+							return {
+								src: BED_URL + "/file/" + f.name,
+								albumId: a.id,
+								albumTitle: a.title,
+								date: a.date,
+								dateText: a.dateText,
+								location: a.location,
+								tags: a.tags,
+							};
+						});
+					})
+					.catch(function () { return []; });
+			});
+			return Promise.all(tasks).then(function (lists) {
+				photos = [];
+				lists.forEach(function (l) { photos = photos.concat(l); });
+				photos.sort(function (x, y) { return (x.date < y.date ? 1 : x.date > y.date ? -1 : 0); });
+			});
+		}
+
+		/* ---------- 渲染 ---------- */
+		function itemEl(p, index) {
+			var btn = document.createElement("button");
+			btn.type = "button";
+			btn.className = "alb-photo";
+			btn.setAttribute("data-album-id", p.albumId);
+			btn.setAttribute("data-album-tag", (p.tags || []).join(","));
+			btn.setAttribute("data-search", [p.albumTitle, p.location, (p.tags || []).join(" ")].join(" ").toLowerCase());
+			btn.setAttribute("data-index", String(index));
+			btn.setAttribute(
+				"data-meta",
+				[(p.albumTitle || ""), (p.dateText || p.date || ""), (p.location || "")].filter(Boolean).join(" · "),
+			);
+			btn.innerHTML = '<img loading="lazy" decoding="async" alt="' + (p.albumTitle || "") + '">';
+			btn.querySelector("img").src = p.src;
+			btn.addEventListener("click", function () { openLightbox(btn); });
+			return btn;
+		}
+
+		function render() {
+			wall.querySelectorAll(".alb-photo").forEach(function (el) { el.remove(); });
+			var frag = document.createDocumentFragment();
+			photos.forEach(function (p, i) { frag.appendChild(itemEl(p, i)); });
+			wall.appendChild(frag);
+			if (loading) loading.remove();
+			loading = null;
+			applyFilters();
+		}
+
+		/* ---------- 筛选 ---------- */
+		function match(el) {
+			if (state.album && el.getAttribute("data-album-id") !== state.album) return false;
+			if (state.tag && (el.getAttribute("data-album-tag") || "").split(",").indexOf(state.tag) < 0) return false;
+			if (state.q && (el.getAttribute("data-search") || "").indexOf(state.q) < 0) return false;
+			return true;
+		}
+		function applyFilters() {
+			var els = Array.prototype.slice.call(wall.querySelectorAll(".alb-photo"));
+			visible = [];
+			els.forEach(function (el) {
+				var ok = match(el);
+				el.classList.toggle("is-hide", !ok);
+				if (ok) visible.push(el);
+			});
+			var filtering = !!(state.q || state.album || state.tag);
+			if (countEl) countEl.textContent = filtering ? "已筛 " + visible.length + " 张" : photos.length + " 张照片";
+			if (clearBtn) clearBtn.hidden = !filtering;
+			if (emptyEl) emptyEl.hidden = !(filtering && visible.length === 0);
+		}
+		function syncTabs() {
+			Array.prototype.forEach.call(document.querySelectorAll(".alb-tab[data-album-id]"), function (b) {
+				b.classList.toggle("is-active", (b.getAttribute("data-album-id") || "") === state.album);
+			});
+			Array.prototype.forEach.call(document.querySelectorAll(".alb-tab[data-album-tag]"), function (b) {
+				b.classList.toggle("is-active", (b.getAttribute("data-album-tag") || "") === state.tag);
+			});
+		}
+		function syncSearchClear() { if (searchClear && searchInput) searchClear.hidden = !searchInput.value; }
+
+		var searchTimer = null;
+		if (searchInput) {
+			searchInput.addEventListener("input", function () {
+				syncSearchClear();
+				if (searchTimer) clearTimeout(searchTimer);
+				searchTimer = setTimeout(function () {
+					state.q = searchInput.value.trim().toLowerCase();
+					applyFilters();
+				}, 150);
+			});
+		}
+		if (searchClear) {
+			searchClear.addEventListener("click", function () {
+				if (searchInput) searchInput.value = "";
+				state.q = "";
+				syncSearchClear();
+				applyFilters();
+			});
+		}
+		Array.prototype.forEach.call(document.querySelectorAll(".alb-tab[data-album-id]"), function (b) {
+			b.addEventListener("click", function () {
+				var id = b.getAttribute("data-album-id") || "";
+				state.album = state.album === id ? "" : id;
+				syncTabs();
+				applyFilters();
+			});
+		});
+		Array.prototype.forEach.call(document.querySelectorAll(".alb-tab[data-album-tag]"), function (b) {
+			b.addEventListener("click", function () {
+				var tag = b.getAttribute("data-album-tag") || "";
+				state.tag = state.tag === tag ? "" : tag;
+				syncTabs();
+				applyFilters();
+			});
+		});
+		if (clearBtn) {
+			clearBtn.addEventListener("click", function () {
+				state = { q: "", album: "", tag: "" };
+				if (searchInput) searchInput.value = "";
+				syncSearchClear();
+				syncTabs();
+				applyFilters();
+			});
+		}
+
+		/* ---------- 灯箱 ---------- */
+		var lb = document.getElementById("lightbox");
+		var lbImg = document.getElementById("lightbox-img");
+		var lbMeta = document.getElementById("lightbox-meta");
+		var lbCounter = document.getElementById("lightbox-counter");
+		var current = -1;
+		function openLightbox(el) {
+			current = visible.indexOf(el);
+			if (current < 0) return;
+			showCurrent();
+			lb.classList.add("is-open");
+			document.documentElement.style.overflow = "hidden";
+		}
+		function closeLightbox() {
+			lb.classList.remove("is-open");
+			document.documentElement.style.overflow = "";
+		}
+		function showCurrent() {
+			var el = visible[current];
+			if (!el || !lbImg) return;
+			var img = el.querySelector("img");
+			lbImg.src = img ? img.src : "";
+			if (lbMeta) lbMeta.textContent = el.getAttribute("data-meta") || "";
+			if (lbCounter) lbCounter.textContent = (current + 1) + " / " + visible.length;
+		}
+		function step(delta) {
+			if (!visible.length) return;
+			current = (current + delta + visible.length) % visible.length;
+			showCurrent();
+		}
+		var lbClose = document.getElementById("lightbox-close");
+		var lbPrev = document.getElementById("lightbox-prev");
+		var lbNext = document.getElementById("lightbox-next");
+		var lbBackdrop = document.getElementById("lightbox-backdrop");
+		if (lbClose) lbClose.addEventListener("click", closeLightbox);
+		if (lbBackdrop) lbBackdrop.addEventListener("click", closeLightbox);
+		if (lbPrev) lbPrev.addEventListener("click", function () { step(-1); });
+		if (lbNext) lbNext.addEventListener("click", function () { step(1); });
+		document.addEventListener("keydown", function (ev) {
+			if (!lb.classList.contains("is-open")) return;
+			if (ev.key === "Escape") closeLightbox();
+			else if (ev.key === "ArrowLeft") step(-1);
+			else if (ev.key === "ArrowRight") step(1);
+		});
+		var touchStartX = null;
+		if (lb) {
+			lb.addEventListener("touchstart", function (ev) { touchStartX = ev.touches[0].clientX; }, { passive: true });
+			lb.addEventListener("touchend", function (ev) {
+				if (touchStartX === null) return;
+				var dx = ev.changedTouches[0].clientX - touchStartX;
+				if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1);
+				touchStartX = null;
+			});
+		}
+
+		/* ---------- 启动 ---------- */
+		function init() {
+			if (!document.getElementById("alb-wall")) return;
+			if (photos.length) { applyFilters(); return; }
+			if (!BED_URL || !BED_TOKEN) {
+				if (statusEl) statusEl.textContent = "未配置图床 API Token";
+				return;
+			}
+			buildItems().then(function () {
+				if (!photos.length) {
+					if (statusEl) statusEl.textContent = "图床里没有照片";
+					return;
+				}
+				render();
+			});
+		}
+		init();
+	})();
+	</script>
+
+	{/* 照片是脚本动态创建的，Astro 默认作用域样式（带 data-astro-cid）套不到它们身上
+	   —— .alb-photo.is-hide 会失效。这里必须用 is:global（所有规则都带 alb- 前缀，不会外溢）。 */}
+	<style is:global>
+		/* ---------- 顶部筛选条：细线、无底色块，选中 = 主题色下划线 ---------- */
+		.alb-bar {
+			position: static;
+			margin-bottom: 1rem;
+			padding: 0.5rem 0 0.5rem;
+			background: var(--page-bg);
+			border-bottom: 1px solid var(--line-divider);
+		}
+		.alb-bar__row {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+		}
+		.alb-bar__row--tabs {
+			display: block;
+			margin-top: 0.5rem;
+		}
+		.alb-search {
+			display: flex;
+			align-items: center;
+			gap: 0.4rem;
+			flex: 1;
+			max-width: 22rem;
+			padding: 0.4rem 0.6rem;
+			border: 1px solid var(--line-divider);
+			border-radius: 0.5rem;
+			color: var(--content-meta);
+			transition: border-color 150ms ease;
+		}
+		.alb-search:focus-within { border-color: var(--deep-text); }
+		.alb-search input {
+			flex: 1;
+			min-width: 0;
+			border: none;
+			background: transparent;
+			color: var(--deep-text);
+			font-family: inherit;
+			font-size: 0.82rem;
+			outline: none;
+		}
+		.alb-search__clear {
+			display: grid;
+			place-items: center;
+			width: 1.25rem;
+			height: 1.25rem;
+			padding: 0;
+			border: none;
+			border-radius: 9999px;
+			background: transparent;
+			color: var(--content-meta);
+			cursor: pointer;
+		}
+		.alb-search__clear:hover { background: var(--btn-plain-bg-hover); color: var(--deep-text); }
+		.alb-search__clear[hidden] { display: none; }
+		.alb-count { font-size: 0.8rem; color: var(--content-meta); white-space: nowrap; }
+		.alb-clear {
+			margin-left: auto;
+			padding: 0;
+			border: none;
+			background: transparent;
+			color: var(--primary);
+			font-family: inherit;
+			font-size: 0.8rem;
+			font-weight: 600;
+			cursor: pointer;
+		}
+		.alb-clear[hidden] { display: none; }
+		.alb-tabs {
+			display: flex;
+			align-items: center;
+			gap: 0.25rem;
+			overflow-x: auto;
+			scrollbar-width: none;
+			overscroll-behavior-x: contain;
+		}
+		.alb-tabs::-webkit-scrollbar { display: none; }
+		.alb-tab {
+			position: relative;
+			flex: 0 0 auto;
+			padding: 0.25rem 0.5rem 0.4rem;
+			border: none;
+			background: transparent;
+			color: var(--content-meta);
+			font-family: inherit;
+			font-size: 0.82rem;
+			white-space: nowrap;
+			cursor: pointer;
+			transition: color 150ms ease;
+		}
+		.alb-tab:hover { color: var(--deep-text); }
+		.alb-tab.is-active { color: var(--primary); font-weight: 600; }
+		.alb-tab.is-active::after {
+			content: "";
+			position: absolute;
+			left: 0.5rem;
+			right: 0.5rem;
+			bottom: 0.15rem;
+			height: 2px;
+			border-radius: 2px;
+			background: var(--primary);
+		}
+
+		/* ---------- 照片墙：CSS columns 瀑布流 ---------- */
+		.alb-wall {
+			columns: 5;
+			column-gap: 0.1875rem;
+		}
+		@media (max-width: 1280px) { .alb-wall { columns: 4; } }
+		@media (max-width: 1023px) { .alb-wall { columns: 3; } }
+		@media (max-width: 768px) { .alb-wall { columns: 2; column-gap: 0.125rem; } }
+		.alb-photo {
+			position: relative;
+			display: block;
+			width: 100%;
+			margin: 0 0 0.1875rem;
+			padding: 0;
+			border: none;
+			border-radius: 0;
+			overflow: hidden;
+			background: var(--btn-regular-bg);
+			cursor: zoom-in;
+			break-inside: avoid;
+			transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 200ms ease;
+		}
+		.alb-photo:hover { transform: translateY(-2px); box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.25); }
+		.alb-photo.is-hide { display: none; }
+		.alb-photo img { display: block; width: 100%; height: auto; }
+		.alb-tabs--tags { margin-top: 0.4rem; }
+		.alb-tabs__label {
+			flex: 0 0 auto;
+			margin-right: 0.25rem;
+			color: var(--content-meta);
+			font-size: 0.72rem;
+			letter-spacing: 0.08em;
+		}
+		.alb-loading {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.5rem;
+			padding: 4rem 1rem;
+			color: var(--content-meta);
+			font-size: 0.85rem;
+			column-span: all;
+		}
+		.alb-spinner {
+			width: 1.1rem;
+			height: 1.1rem;
+			border: 2px solid var(--line-divider);
+			border-top-color: var(--primary);
+			border-radius: 50%;
+			animation: alb-spin 0.8s linear infinite;
+		}
+		@keyframes alb-spin { to { transform: rotate(360deg); } }
+		.alb-empty {
+			padding: 3rem 1rem;
+			text-align: center;
+			color: var(--content-meta);
+			font-size: 0.875rem;
+		}
+		.alb-empty[hidden] { display: none; }
+
+		/* ---------- 灯箱 ---------- */
+		.lightbox { position: fixed; inset: 0; z-index: 100; display: none; }
+		.lightbox.is-open { display: block; }
+		.lightbox-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.88); }
+		.lightbox-img-wrap { position: absolute; inset: 6.5rem 3rem 3rem; display: flex; align-items: center; justify-content: center; }
+		.lightbox-img-wrap img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 0.5rem; }
+		.lightbox-meta {
+			position: absolute;
+			bottom: -0.25rem;
+			left: 50%;
+			transform: translateX(-50%);
+			color: rgba(255, 255, 255, 0.85);
+			font-size: 0.8rem;
+			white-space: nowrap;
+		}
+		.lightbox-close,
+		.lightbox-nav {
+			position: absolute;
+			z-index: 2;
+			display: grid;
+			place-items: center;
+			width: 2.75rem;
+			height: 2.75rem;
+			border: none;
+			border-radius: 9999px;
+			background: rgba(255, 255, 255, 0.12);
+			color: #fff;
+			font-size: 1.4rem;
+			cursor: pointer;
+			transition: background 150ms ease;
+		}
+		.lightbox-close:hover,
+		.lightbox-nav:hover { background: rgba(255, 255, 255, 0.24); }
+		.lightbox-close { top: 5rem; right: 1rem; }
+		.lightbox-prev { left: 1rem; top: 50%; transform: translateY(-50%); }
+		.lightbox-next { right: 1rem; top: 50%; transform: translateY(-50%); }
+		.lightbox-counter {
+			position: absolute;
+			top: 5.35rem;
+			left: 50%;
+			transform: translateX(-50%);
+			color: rgba(255, 255, 255, 0.7);
+			font-size: 0.8rem;
+			letter-spacing: 0.05em;
+		}
+
+		@media (max-width: 768px) {
+			.alb-bar__row--tabs { flex-wrap: nowrap; }
+			.lightbox-img-wrap { inset: 3.5rem 0.5rem 3.5rem; }
+			.lightbox-meta { white-space: normal; text-align: center; }
+		}
+	</style>
+</MainGridLayout>

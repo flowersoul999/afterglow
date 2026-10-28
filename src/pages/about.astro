@@ -1,0 +1,29 @@
+---
+import { getEntry, render } from "astro:content";
+import Markdown from "@components/common/Markdown.astro";
+import PageTitle from "@/components/common/PageTitle.astro";
+import SiteStructuredData from "@/components/seo/SiteStructuredData.astro";
+import { homeConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const aboutPost = await getEntry("spec", "about");
+if (!aboutPost) {
+	throw new Error("About page content not found");
+}
+
+const { Content } = await render(aboutPost);
+---
+
+<MainGridLayout title={i18n(I18nKey.about)} description={i18n(I18nKey.aboutDescription).replace("{name}", homeConfig.name)}>
+	<SiteStructuredData slot="head" includeProfilePage={true} />
+	<div class="about-page card-base z-10 px-4 py-6 md:px-9 relative w-full">
+		<div class="mb-6">
+			<PageTitle title={i18n(I18nKey.about)} variant="stacked" />
+		</div>
+		<Markdown class="mb-6 markdown-content onload-animation">
+			<Content />
+		</Markdown>
+	</div>
+</MainGridLayout>

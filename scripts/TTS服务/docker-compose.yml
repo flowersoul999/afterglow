@@ -1,0 +1,13 @@
+services:
+  tts:
+    build: .
+    container_name: blog-tts
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - ALLOWED_ORIGINS=https://blog.tsh520.cn,http://localhost:4321
+      - CACHE_MAX_MB=2048
+      - EDGE_TTS_PROXY=
+    volumes:
+      - ./cache:/data/cache

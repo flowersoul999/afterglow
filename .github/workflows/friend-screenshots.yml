@@ -1,0 +1,38 @@
+name: 友链站点截图
+on:
+  schedule:
+    - cron: "23 3 * * 0"   # 每周日凌晨 3:23
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["src/content/友链/**"]
+
+permissions:
+  contents: write
+
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.14.4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}
+      - run: pnpm exec playwright install chromium --with-deps
+      - run: node scripts/友链截图/index.mjs
+      - name: 提交截图
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/friends-shots
+          git diff --cached --quiet || git commit -m "chore: 更新友链站点截图"
+          git push

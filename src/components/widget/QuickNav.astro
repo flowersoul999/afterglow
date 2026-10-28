@@ -1,0 +1,141 @@
+---
+import { Icon } from "astro-icon/components";
+import { siteConfig } from "@/config";
+
+interface NavItem {
+	icon: string;
+	label: string;
+	url: string;
+	show: boolean;
+}
+
+const navItems: NavItem[] = [
+	{
+		icon: "material-symbols:article-outline",
+		label: "文章",
+		url: "/posts/",
+		show: true,
+	},
+	{
+		icon: "material-symbols:book-5",
+		label: "书架",
+		url: "/books/",
+		show: !!siteConfig.pages.books,
+	},
+	{
+		icon: "material-symbols:movie",
+		label: "影视与游戏",
+		url: "/movies-games/",
+		show: !!siteConfig.pages.moviesGames,
+	},
+	{
+		icon: "material-symbols:music-note",
+		label: "音乐",
+		url: "/music/",
+		show: !!siteConfig.pages.musicPage,
+	},
+	{
+		icon: "material-symbols:chat",
+		label: "留言板",
+		url: "/guestbook/",
+		show: !!siteConfig.pages.guestbook,
+	},
+	{
+		icon: "material-symbols:chat-bubble-outline",
+		label: "说说",
+		url: "/moments/",
+		show: true,
+	},
+	{
+		icon: "material-symbols:photo-album-outline",
+		label: "相册",
+		url: "/album/",
+		show: true,
+	},
+	{
+		icon: "material-symbols:group",
+		label: "友链",
+		url: "/friends/",
+		show: true,
+	},
+];
+
+const visibleItems = navItems.filter((item) => item.show);
+---
+
+<div class="quick-nav">
+  <div class="quick-nav-grid">
+    {visibleItems.map(item => (
+      <a href={item.url} class="quick-nav-item">
+        <Icon name={item.icon} class="quick-nav-icon" />
+        <span class="quick-nav-label">{item.label}</span>
+      </a>
+    ))}
+  </div>
+</div>
+
+<style>
+  .quick-nav {
+    width: 100%;
+  }
+
+  .quick-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+
+  .quick-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.75rem 0.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--line-divider);
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: var(--deep-text);
+  }
+
+  .quick-nav-item:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+  }
+
+  .quick-nav-icon {
+    font-size: 1.5rem;
+    color: var(--content-meta);
+    transition: color 0.2s ease;
+  }
+
+  .quick-nav-item:hover .quick-nav-icon {
+    color: var(--primary);
+  }
+
+  .quick-nav-label {
+    font-size: 0.75rem;
+    color: var(--content-meta);
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  @media (max-width: 767px) {
+    .quick-nav-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.375rem;
+    }
+
+    .quick-nav-item {
+      padding: 0.5rem 0.25rem;
+    }
+
+    .quick-nav-icon {
+      font-size: 1.25rem;
+    }
+
+    .quick-nav-label {
+      font-size: 0.625rem;
+    }
+  }
+</style>

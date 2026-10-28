@@ -1,0 +1,127 @@
+/* ===== View Transitions API 主题切换保护 ===== */
+@layer components {
+  /* 为整个文档根元素设置视图过渡 */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    mix-blend-mode: normal;
+  }
+
+  /* 视图过渡组 - 交叉淡化效果 */
+  ::view-transition-group(root) {
+    animation-duration: 0.5s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* 淡出旧视图 */
+  ::view-transition-old(root) {
+    animation-name: theme-fade-out;
+    z-index: 2;
+  }
+
+  /* 淡入新视图 */
+  ::view-transition-new(root) {
+    animation-name: theme-fade-in;
+    z-index: 1;
+  }
+
+  @keyframes theme-fade-out {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  @keyframes theme-fade-in {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+
+  /* 确保边框和分隔线元素有明确的过渡时长 */
+  .transition,
+  [class*="border"],
+  [class*="transition"] {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 0.15s;
+  }
+
+  /* 主题过渡保护 - 非 View Transitions 模式 */
+  .is-theme-transitioning:not(.use-view-transition) *,
+  .is-theme-transitioning:not(.use-view-transition) *::before,
+  .is-theme-transitioning:not(.use-view-transition) *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* 主题切换时禁用代码块复杂效果 */
+  .is-theme-transitioning .expressive-code,
+  .is-theme-transitioning .expressive-code * {
+    transition: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  /* 禁用复杂选择器元素的过渡 - 非 View Transitions 模式 */
+  .is-theme-transitioning:not(.use-view-transition) .float-panel,
+  .is-theme-transitioning:not(.use-view-transition) .float-panel *,
+  .is-theme-transitioning:not(.use-view-transition) .music-player,
+  .is-theme-transitioning:not(.use-view-transition) .music-player *,
+  .is-theme-transitioning:not(.use-view-transition) .widget,
+  .is-theme-transitioning:not(.use-view-transition) .widget *,
+  .is-theme-transitioning:not(.use-view-transition) .dropdown-content,
+  .is-theme-transitioning:not(.use-view-transition) .dropdown-content * {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  /* 强制 contain 隔离渲染上下文 */
+  .is-theme-transitioning:not(.use-view-transition) .post-card,
+  .is-theme-transitioning:not(.use-view-transition) .widget,
+  .is-theme-transitioning:not(.use-view-transition) .float-panel {
+    contain: layout style paint !important;
+  }
+
+  /* 水波纹效果精确同步 */
+  .is-theme-transitioning:not(.use-view-transition) svg use {
+    transition: none;
+    fill: currentColor;
+  }
+
+  /* 导航栏主题切换保护 */
+  .is-theme-transitioning:not(.use-view-transition) #navbar > div,
+  .is-theme-transitioning:not(.use-view-transition) #navbar[data-transparent-mode] > div,
+  .is-theme-transitioning:not(.use-view-transition) #navbar[data-transparent-mode].scrolled > div,
+  .is-theme-transitioning:not(.use-view-transition) #wallpaper-wrapper ~ * #navbar > div,
+  .is-theme-transitioning:not(.use-view-transition) #wallpaper-wrapper ~ * #navbar[data-transparent-mode] > div,
+  .is-theme-transitioning:not(.use-view-transition) body:has(#wallpaper-wrapper) #navbar > div,
+  .is-theme-transitioning:not(.use-view-transition) body:has(#wallpaper-wrapper) #navbar[data-transparent-mode] > div {
+    transition: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* 导航栏浮动面板过渡禁用 */
+  .is-theme-transitioning .dropdown-content,
+  .is-theme-transitioning .float-panel,
+  .is-theme-transitioning #display-setting,
+  .is-theme-transitioning #nav-menu-panel,
+  .is-theme-transitioning #translate-panel,
+  .is-theme-transitioning #mobile-toc-panel,
+  .is-theme-transitioning #search-panel {
+    transition: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* 水波纹容器颜色传递 */
+  .is-theme-transitioning #header-waves {
+    color: var(--page-bg);
+    isolation: isolate;
+    contain: layout style paint;
+    transform: translateZ(0);
+    background: transparent;
+  }
+
+  .is-theme-transitioning #header-waves use {
+    will-change: transform;
+    transform: translateZ(0);
+  }
+}

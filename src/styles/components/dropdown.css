@@ -1,0 +1,141 @@
+/* ===== 下拉菜单样式 ===== */
+@reference "tailwindcss";
+@layer components {
+  .dropdown-container {
+    @apply relative;
+  }
+
+  /* pt-5（1.25rem）= 气泡与导航胶囊之间的距离，对齐参考站。
+     这段留白同时充当悬停过渡区：太窄时鼠标从胶囊移向卡片会掉出 hover 区导致面板闪收 */
+  .dropdown-menu {
+    @apply absolute top-full left-0 pt-5 opacity-0 invisible pointer-events-none
+      transition-all duration-200 ease-out transform translate-y-[-8px] z-50;
+  }
+
+  .dropdown-container:hover .dropdown-menu,
+  .dropdown-container:focus-within .dropdown-menu {
+    @apply opacity-100 visible pointer-events-auto translate-y-0;
+  }
+
+  .dropdown-container:hover .dropdown-arrow,
+  .dropdown-container:focus-within .dropdown-arrow {
+    @apply rotate-180;
+  }
+
+  /* 卡片：1.5px 深色实边框 + 纯色底 + 无阴影无毛玻璃（对齐参考站的下拉语言）。
+     ⚠️ 选择器要带 .float-panel 提高优先级：DropdownPanel 的根元素同时有
+     .float-panel（那条规则在本文件更靠后，同优先级会盖掉 .dropdown-content），
+     而且它的 overflow: hidden 会把下面那颗小角裁掉，这里显式改回 visible */
+  .float-panel.dropdown-content,
+  .dropdown-content-wrapper {
+    @apply relative py-2 min-w-48;
+    /* .float-panel 自带 top: 5.25rem；这里改成 relative 给小角当定位基准后，
+       那个 top 会把整张卡片顶下去，显式清掉 */
+    top: auto;
+    border: 1.5px solid var(--deep-text);
+    background: var(--float-panel-bg);
+    border-radius: 0.75rem;
+    overflow: visible;
+  }
+
+  /* 小角：贴触发器下沿，自带底色盖住卡片上边框的接缝 */
+  .float-panel.dropdown-content::before,
+  .dropdown-content-wrapper::before {
+    position: absolute;
+    top: -0.45rem;
+    left: 1.25rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-top: 1.5px solid var(--deep-text);
+    border-left: 1.5px solid var(--deep-text);
+    background: var(--float-panel-bg);
+    content: "";
+    rotate: 45deg;
+  }
+
+  /* 菜单项：不再用常驻透明边框做 hover 反馈，改成换底色 */
+  .dropdown-item {
+    @apply flex items-center justify-between px-3 py-2 transition-colors duration-150;
+    margin: 0 0.375rem;
+    border: none;
+    border-radius: 0.375rem !important;
+    color: var(--deep-text);
+    background-color: transparent;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .dropdown-item:hover,
+  .dropdown-item:focus-visible {
+    color: var(--deep-text);
+    background-color: var(--btn-plain-bg-hover);
+  }
+
+  /* ===== 「分类」下拉：沿用站内下拉卡片语言，只把内部排成两列 =====
+     面板还是上面那张 .dropdown-content（白底 + 1.5px 深色描边 + 小角），
+     这里只负责列数与网格项的内边距 —— 不另起一套外观。
+     只有 variant="grid" 用（Navbar 按 dynamicSource 传），列表式下拉不受影响。 */
+  .dropdown-grid {
+    display: grid;
+    /* 固定两列：每列 10.5rem，中文分类名 + 图标约 7rem，留白让两列不挤 */
+    grid-template-columns: repeat(2, minmax(10.5rem, 1fr));
+    gap: 0.125rem;
+    padding: 0 0.375rem;
+  }
+
+  /* 网格项：字号与 hover 底色都沿用 .dropdown-item，只改内边距、去掉左右外边距 */
+  .dropdown-grid .dropdown-item {
+    @apply flex items-center justify-start;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.5rem 0.65rem;
+  }
+
+  /* 移动端菜单 */
+  .mobile-submenu {
+    @apply max-h-0 overflow-hidden transition-all duration-300 ease-in-out;
+  }
+
+  .mobile-dropdown[data-expanded="true"] .mobile-submenu {
+    @apply max-h-96;
+  }
+
+  .mobile-dropdown[data-expanded="true"] .mobile-dropdown-arrow {
+    @apply rotate-180;
+  }
+
+  /* 响应式隐藏 */
+  @media (max-width: 768px) {
+    .dropdown-container {
+      @apply hidden;
+    }
+  }
+
+  /* 无障碍支持 */
+  .dropdown-container:focus-within .dropdown-menu {
+    @apply opacity-100 visible pointer-events-auto translate-y-0;
+  }
+
+  .dropdown-item:focus {
+    @apply outline-hidden;
+  }
+
+  .mobile-dropdown button:focus {
+    @apply outline-hidden;
+  }
+
+  /* 浮动面板 */
+  .float-panel {
+    @apply top-21 overflow-hidden bg-(--float-panel-bg) transition-colors duration-150
+      border border-(--line-divider);
+  }
+  .float-panel-closed {
+    @apply -translate-y-1 opacity-0 pointer-events-none;
+  }
+  .float-panel-closed * {
+    @apply pointer-events-none;
+  }
+  .search-panel mark {
+    @apply bg-transparent text-(--primary);
+  }
+}

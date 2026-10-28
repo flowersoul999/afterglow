@@ -1,0 +1,173 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { render } from "astro:content";
+import { Icon } from "astro-icon/components";
+import CoverImage from "@/components/common/CoverImage.astro";
+import PostMetadata from "@/components/layout/PostMeta.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
+import { getFileDirFromPath, getTagUrl } from "@/utils/url-utils";
+
+interface Props {
+	class?: string;
+	entry: CollectionEntry<"posts">;
+	title: string;
+	url: string;
+	published: Date;
+	updated?: Date;
+	tags: string[];
+	category: string | null;
+	image: string;
+	description: string;
+	draft: boolean;
+	pinned?: boolean;
+	style: string;
+	loading?: "lazy" | "eager";
+}
+const {
+	entry,
+	title,
+	url,
+	published,
+	updated,
+	tags,
+	category,
+	image,
+	description,
+	pinned,
+	style,
+	loading = "lazy",
+} = Astro.props;
+const className = Astro.props.class;
+
+// 处理随机图：如果image为"api"或未设置，则从配置的API获取随机图
+const processedImage = processCoverImageSync(image || "api", entry.id);
+const apiUrls = getApiUrlList(image || "api", entry.id);
+const hasCover =
+	processedImage !== undefined &&
+	processedImage !== null &&
+	processedImage !== "";
+
+const coverWidth = "30%";
+
+await render(entry);
+---
+
+<div
+  class:list={[
+    "post-card-wrapper",
+    hasCover ? "has-cover" : "no-cover",
+    pinned ? "pinned" : "",
+    "flex flex-col-reverse md:flex-col w-full rounded-(--radius-large) overflow-hidden relative",
+    className,
+  ]}
+  style={`--coverWidth: ${coverWidth}; ${style || ''}`}
+  data-post-url={url}
+  onclick="((e)=>{if(!e.target.closest('a'))window.location.href=this.dataset.postUrl}).call(this,arguments[0])"
+>
+  <div
+    class:list={[
+      "post-card-content",
+      "pl-4 md:pl-9 pr-4 md:pr-2 pt-4 md:pt-7 pb-4 md:pb-7 relative flex flex-col h-full",
+      {
+        "w-full md:w-[calc(100%-52px-12px)]": !hasCover,
+        "w-full md:w-[calc(100%-var(--coverWidth)-1.5rem)]": hasCover,
+      },
+    ]}
+  >
+    <a
+      href={url}
+      class="post-card-title transition group font-bold mb-3 text-3xl text-90
+        hover:text-(--primary) dark:hover:text-(--primary)
+        active:text-(--title-active) dark:active:text-(--title-active)"
+    >
+      {title}
+    </a>
+
+    <!-- metadata -->
+    <PostMetadata
+      published={published}
+      updated={updated}
+      tags={tags}
+      category={category || undefined}
+      pinned={pinned}
+      className="mb-4 post-meta"
+    />
+
+    <!-- description -->
+    <div
+      class:list={[
+        "transition text-75 md:pr-4 description grow",
+        { "line-clamp-2": description },
+      ]}
+    >
+      {description}
+    </div>
+
+    <!-- tags -->
+    <div
+      class="text-sm text-black/30 dark:text-white/30 flex flex-wrap gap-2 transition stats pt-3"
+    >
+      {
+        tags &&
+          tags.length > 0 &&
+          tags.map((tag, _i) => (
+            <a
+              href={getTagUrl(tag)}
+              aria-label={`View all posts with the ${tag.trim()} tag`}
+              class="post-tag-square text-xs px-2 py-1"
+            >
+              #{tag.trim()}
+            </a>
+          ))
+      }
+      {
+        !(tags && tags.length > 0) && (
+          <span class="text-(--content-meta) text-xs">
+            #{i18n(I18nKey.noTags)}
+          </span>
+        )
+      }
+    </div>
+  </div>
+
+  {
+    hasCover && (
+      <a
+        href={url}
+        aria-label={title}
+        class:list={[
+          "post-card-image",
+          "group",
+          "w-full md:w-(--coverWidth)",
+          "aspect-2/1 md:aspect-auto",
+          "relative md:absolute md:top-4 md:bottom-4 md:right-4",
+          "rounded-(--radius-large) md:rounded-xl overflow-hidden",
+        ]}
+      >
+        <div class="absolute pointer-events-none z-10 w-full h-full group-hover:bg-black/30 group-active:bg-black/50 transition" />
+        <div class="absolute pointer-events-none z-20 w-full h-full flex items-center justify-center ">
+          <Icon
+            name="material-symbols:chevron-right-rounded"
+            class="transition opacity-0 group-hover:opacity-100 scale-50 group-hover:scale-100 text-white text-5xl"
+          />
+        </div>
+        <CoverImage
+          src={processedImage}
+          basePath={getFileDirFromPath(entry.filePath || '')}
+          alt="Cover Image of the Post"
+          class="w-full h-full transition-transform duration-300 group-hover:scale-110 group-active:scale-115"
+          preview={true}
+          loading={loading}
+          apiUrls={apiUrls}
+        />
+      </a>
+    )
+  }
+
+  <!-- hover arrow -->
+  <div class="post-card-arrow" aria-hidden="true">
+    <Icon name="material-symbols:arrow-outward-rounded" is:inline class="text-2xl" />
+  </div>
+</div>

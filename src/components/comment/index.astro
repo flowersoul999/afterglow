@@ -1,0 +1,179 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { Icon } from "astro-icon/components";
+import { commentConfig } from "@/config/commentConfig";
+import Key from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { removeFileExtension } from "@/utils/url-utils";
+import Artalk from "./Artalk.astro";
+import Disqus from "./Disqus.astro";
+import Giscus from "./Giscus.astro";
+import Twikoo from "./Twikoo.astro";
+import Waline from "./Waline.astro";
+
+interface Props {
+	post?: CollectionEntry<"posts"> | CollectionEntry<"spec">;
+	customPath?: string;
+}
+
+const { post, customPath } = Astro.props;
+
+// 根据页面类型确定路径
+let path: string;
+let slug: string;
+let url: string;
+
+if (post) {
+	const { id } = post;
+	slug = removeFileExtension(id);
+	path =
+		customPath || (post.collection === "posts" ? `/posts/${slug}` : `/${slug}`);
+	url = `${Astro.site?.href}${path}`;
+} else if (customPath) {
+	path = customPath;
+	slug = customPath;
+	url = `${Astro.site?.href}${path}`;
+} else {
+	path = "/";
+	slug = "/";
+	url = Astro.site?.href || "";
+}
+
+// 强制commentService类型为string，避免类型不兼容警告
+let commentService: string = commentConfig?.type || "none";
+---
+
+{
+  commentService !== "none" && (
+    <div class="card-base p-8 mb-6 relative overflow-hidden">
+      <!-- 评论区装饰性背景 -->
+      <div class="absolute top-0 right-0 w-32 h-32 opacity-5 pointer-events-none">
+        <svg viewBox="0 0 100 100" class="w-full h-full">
+          <circle cx="50" cy="50" r="40" fill="currentColor" class="text-(--primary)" />
+          <circle cx="50" cy="50" r="25" fill="none" stroke="currentColor" stroke-width="2" class="text-(--primary)" />
+          <circle cx="50" cy="50" r="10" fill="currentColor" class="text-(--primary)" />
+        </svg>
+      </div>
+
+      <!-- 分割线：小剪刀跟随鼠标 -->
+      <div class="relative mb-6 py-4">
+        <div class="scissor-divider" id="scissor-divider">
+          <div class="scissor-line"></div>
+          <div class="scissor-icon" id="scissor-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="6" cy="6" r="3"></circle>
+              <circle cx="6" cy="18" r="3"></circle>
+              <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+              <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+              <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- 评论区标题 -->
+      <div class="relative z-10 mb-6">
+        <div class="flex items-center gap-2">
+          <Icon name="material-symbols:chat-bubble-outline" class="text-xl text-(--primary)" />
+          <h3 class="text-xl font-bold text-(--btn-content)">{i18n(Key.commentSection)}</h3>
+        </div>
+      </div>
+      <!-- 评论内容区域 -->
+      <div class="relative z-10">
+        {commentService === "twikoo" && <Twikoo path={path} />}
+        {commentService === "waline" && <Waline path={path} />}
+        {commentService === "giscus" && <Giscus />}
+        {commentService === "disqus" && <Disqus identifier={slug} url={url} title={post && 'title' in post.data ? post.data.title : slug} />}
+        {commentService === "artalk" && <Artalk path={path} />}
+        {commentService === "none" && (
+          <div class="text-center py-8 text-(--content-meta)">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-(--btn-regular-bg) flex items-center justify-center">
+              <svg class="w-8 h-8 text-(--primary)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+              </svg>
+            </div>
+            <p>{i18n(Key.commentNotConfigured)}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+<script is:inline>
+  // 小剪刀跟随鼠标效果
+  document.querySelectorAll('.scissor-divider').forEach(divider => {
+    const scissorIcon = divider.querySelector('.scissor-icon');
+    if (!scissorIcon) return;
+
+    let defaultX = 20; // 默认位置距离左侧
+    scissorIcon.style.left = defaultX + 'px';
+
+    divider.addEventListener('mousemove', (e) => {
+      const rect = divider.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      // 限制在合理范围内
+      const minX = 20;
+      const maxX = rect.width - 40;
+      scissorIcon.style.left = Math.min(Math.max(x, minX), maxX) + 'px';
+    });
+
+    divider.addEventListener('mouseleave', () => {
+      scissorIcon.style.left = defaultX + 'px';
+    });
+  });
+</script>
+
+<style>
+  .scissor-divider {
+    position: relative;
+    width: 100%;
+    height: 24px;
+    cursor: crosshair;
+  }
+
+  .scissor-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: repeating-linear-gradient(
+      to right,
+      #9ca3af,
+      #9ca3af 4px,
+      transparent 4px,
+      transparent 8px
+    );
+    transform: translateY(-50%);
+  }
+  :root.dark .scissor-line {
+    background: repeating-linear-gradient(
+      to right,
+      #52525b,
+      #52525b 4px,
+      transparent 4px,
+      transparent 8px
+    );
+  }
+
+  .scissor-icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    transition: left 0.1s ease-out;
+    pointer-events: none;
+  }
+  :root.dark .scissor-icon { color: #71717a; }
+
+  .scissor-icon:hover {
+    color: #6b7280;
+  }
+  :root.dark .scissor-icon:hover { color: #a1a1aa; }
+
+  .scissor-divider:hover .scissor-icon {
+    color: #6b7280;
+  }
+  :root.dark .scissor-divider:hover .scissor-icon { color: #a1a1aa; }
+</style>

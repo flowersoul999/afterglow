@@ -1,0 +1,307 @@
+---
+import { Icon } from "astro-icon/components";
+import PostDirectoryList from "@/components/widget/PostDirectoryList.astro";
+
+interface Props {
+	slug?: string;
+}
+const { slug = "" } = Astro.props;
+---
+
+<!-- Mobile post toolbar — sticky, visible on scroll -->
+<div id="mobile-post-toolbar" class="mobile-post-toolbar">
+  <button id="mpt-posts-btn" class="mpt-btn" aria-label="全部文章">
+    <Icon name="material-symbols:list-alt-outline" class="text-xl" />
+    <span class="mpt-label">全部文章</span>
+  </button>
+  <span class="mpt-divider"></span>
+  <button id="mpt-toc-btn" class="mpt-btn" aria-label="目录">
+    <Icon name="material-symbols:format-list-bulleted" class="text-xl" />
+    <span class="mpt-label">目录</span>
+  </button>
+</div>
+
+<!-- 文章列表左滑抽屉 -->
+<div id="mpt-posts-drawer" class="mpt-drawer mpt-drawer-left" aria-hidden="true">
+  <div class="mpt-drawer-bg" id="mpt-posts-bg"></div>
+  <div class="mpt-drawer-panel">
+    <div class="mpt-drawer-header">
+      <span class="mpt-drawer-title">全部文章</span>
+      <button id="mpt-posts-close" class="mpt-drawer-close" aria-label="关闭">
+        <Icon name="material-symbols:close" class="text-xl" />
+      </button>
+    </div>
+    <div class="mpt-drawer-body">
+      <PostDirectoryList currentSlug={slug} />
+    </div>
+  </div>
+</div>
+
+<!-- 目录右侧面板 -->
+<div id="mpt-toc-panel" class="mpt-drawer mpt-drawer-right" aria-hidden="true">
+  <div class="mpt-drawer-bg" id="mpt-toc-bg"></div>
+  <div class="mpt-drawer-panel">
+    <div class="mpt-drawer-header">
+      <span class="mpt-drawer-title">目录</span>
+      <button id="mpt-toc-close" class="mpt-drawer-close" aria-label="关闭">
+        <Icon name="material-symbols:close" class="text-xl" />
+      </button>
+    </div>
+    <div class="mpt-drawer-body">
+      <div class="toc-scroll-container custom-scrollbar">
+        <div class="toc-content" id="mpt-toc-content">
+          <!-- TOC 动态生成 -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ===== 工具条 ===== */
+  .mobile-post-toolbar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem;
+    background: var(--page-bg);
+    border-bottom: 2px solid #000;
+    max-width: var(--page-width);
+    box-sizing: border-box;
+  }
+  :root.dark .mobile-post-toolbar {
+    border-color: #3f3f46;
+  }
+
+  @media (max-width: 767px) {
+    .mobile-post-toolbar {
+      display: flex;
+    }
+  }
+
+  .mpt-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--deep-text);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    font-family: inherit;
+  }
+  .mpt-btn:hover {
+    background: var(--btn-plain-bg-hover);
+  }
+  .mpt-btn:active {
+    background: var(--btn-plain-bg-active);
+    transform: scale(0.97);
+  }
+  .mpt-label {
+    white-space: nowrap;
+  }
+  .mpt-divider {
+    width: 1px;
+    height: 1.25rem;
+    background: var(--line-divider);
+    flex-shrink: 0;
+  }
+
+  /* ===== 抽屉/面板 ===== */
+  .mpt-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .mpt-drawer.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .mpt-drawer-bg {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+  }
+  :root.dark .mpt-drawer-bg {
+    background: rgba(0,0,0,0.7);
+  }
+
+  .mpt-drawer-panel {
+    position: relative;
+    z-index: 1;
+    width: 85vw;
+    max-width: 360px;
+    height: 100%;
+    background: var(--page-bg);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s cubic-bezier(0.22, 0.68, 0.25, 1);
+  }
+
+  .mpt-drawer-left .mpt-drawer-panel {
+    transform: translateX(-100%);
+  }
+  .mpt-drawer-left.active .mpt-drawer-panel {
+    transform: translateX(0);
+  }
+
+  .mpt-drawer-right {
+    justify-content: flex-end;
+  }
+  .mpt-drawer-right .mpt-drawer-panel {
+    transform: translateX(100%);
+  }
+  .mpt-drawer-right.active .mpt-drawer-panel {
+    transform: translateX(0);
+  }
+
+  .mpt-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid #000;
+    flex-shrink: 0;
+  }
+  :root.dark .mpt-drawer-header {
+    border-color: #3f3f46;
+  }
+
+  .mpt-drawer-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--deep-text);
+  }
+
+  .mpt-drawer-close {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--deep-text);
+    cursor: pointer;
+  }
+  .mpt-drawer-close:hover {
+    background: var(--btn-plain-bg-hover);
+  }
+
+  .mpt-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
+  }
+
+  /* TOC content within drawer */
+  #mpt-toc-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  #mpt-toc-content a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    color: var(--deep-text);
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: background-color 0.15s;
+  }
+  #mpt-toc-content a:hover {
+    background: var(--toc-btn-hover);
+  }
+  #mpt-toc-content a.pl-4  { padding-left: 2rem; }
+  #mpt-toc-content a.pl-8  { padding-left: 3rem; }
+</style>
+
+<script>
+  import('../../utils/tocUtils.ts').then(function(mod) {
+    (window as any).__mptTocReady = true;
+    var postsBtn = document.getElementById('mpt-posts-btn');
+    var postsDrawer = document.getElementById('mpt-posts-drawer');
+    var postsBg = document.getElementById('mpt-posts-bg');
+    var postsClose = document.getElementById('mpt-posts-close');
+    var tocBtn = document.getElementById('mpt-toc-btn');
+    var tocPanel = document.getElementById('mpt-toc-panel');
+    var tocBg = document.getElementById('mpt-toc-bg');
+    var tocClose = document.getElementById('mpt-toc-close');
+    var tocInited = false;
+
+    if (!postsBtn || !tocBtn) return;
+
+    function openDrawer(drawer: HTMLElement | null) {
+      if (!drawer) return;
+      drawer.classList.add('active');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeAll() {
+      [postsDrawer, tocPanel].forEach(function(d) {
+        if (d) { d.classList.remove('active'); d.setAttribute('aria-hidden', 'true'); }
+      });
+      document.body.style.overflow = '';
+    }
+
+    postsBtn.addEventListener('click', function() { openDrawer(postsDrawer); });
+    if (postsBg) postsBg.addEventListener('click', closeAll);
+    if (postsClose) postsClose.addEventListener('click', closeAll);
+
+    tocBtn.addEventListener('click', function() {
+      openDrawer(tocPanel);
+      if (!tocInited) {
+        tocInited = true;
+        setTimeout(function() {
+          try {
+            new mod.TOCManager({
+              contentId: 'mpt-toc-content',
+              indicatorId: 'mpt-toc-indicator',
+              maxLevel: 3,
+              scrollOffset: 80,
+            }).init();
+          } catch(e) {
+            console.error('Mobile TOC init failed:', e);
+          }
+        }, 100);
+      }
+    });
+    if (tocBg) tocBg.addEventListener('click', closeAll);
+    if (tocClose) tocClose.addEventListener('click', closeAll);
+
+    // Close on swipe
+    var touchStartX = 0;
+    if (postsDrawer) {
+      postsDrawer.addEventListener('touchstart', function(e) {
+        touchStartX = e.touches[0].clientX;
+      });
+      postsDrawer.addEventListener('touchend', function(e) {
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        if (dx < -60) closeAll();
+      });
+    }
+  });
+</script>

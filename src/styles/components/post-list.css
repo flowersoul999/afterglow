@@ -1,0 +1,58 @@
+/* ===== 文章列表布局 ===== */
+@reference "tailwindcss";
+
+/* 布局切换样式 */
+.post-list-layout-switch {
+  @apply flex items-center gap-2 mb-6 p-3 bg-(--card-bg) rounded-lg border border-(--line-divider);
+}
+.post-list-layout-switch span {
+  @apply text-sm text-(--text-secondary);
+}
+.post-list-layout-switch .layout-buttons {
+  @apply flex gap-1;
+}
+.post-list-layout-switch button {
+  @apply px-3 py-1.5 text-sm rounded-md transition-colors;
+}
+.post-list-layout-switch button.active {
+  @apply bg-(--primary) text-white;
+}
+.post-list-layout-switch button:not(.active) {
+  @apply bg-(--bg-secondary) text-(--text-secondary) hover:bg-(--bg-hover);
+}
+
+/* 网格模式下的文章卡片样式调整 */
+.post-list-container.grid-mode .post-card-item {
+  @apply w-full;
+}
+.post-list-container.grid-mode .post-card-item a[href] {
+  @apply text-xl before:h-4 before:top-[28px] before:left-[-18px] truncate;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  max-height: 2.8em;
+}
+.post-list-container.grid-mode .post-card-item a[aria-label] {
+  @apply hidden;
+}
+.post-list-container.grid-mode .post-card-item .btn-regular {
+  @apply hidden;
+}
+.post-list-container.grid-mode .post-card-item .line-clamp-1 {
+  @apply line-clamp-1;
+}
+.post-list-container.grid-mode .post-card-item > div {
+  @apply p-4;
+}
+.post-list-container.grid-mode .post-card-item .post-meta {
+  @apply mb-2;
+}
+.post-list-container.grid-mode .post-card-item .description {
+  @apply text-sm mb-2 line-clamp-1;
+}
+.post-list-container.grid-mode .post-card-item .stats {
+  @apply text-xs;
+}

@@ -1,0 +1,41 @@
+---
+export interface Props {
+	title: string;
+	href: string;
+	imgurl: string;
+	desc: string;
+	/** 站点截图（public/assets/friends-shots/{id}.webp）：只喂给悬浮预览用，卡片本身不展示 */
+	screenshot?: string;
+}
+
+const { title, href, imgurl, desc, screenshot } = Astro.props;
+
+// 头像加载失败 / 骨架占位使用的首字
+const initial = title.trim().slice(0, 1);
+---
+
+{/*
+  「头像 + 名字」一行（2026-09-30 改版）。
+  ⚠️ 下面这几个类名与 data-* 属性被依赖，别改名：
+     .friend-card / data-href（friends.astro 脚本：点击与键盘 Enter 打开）
+     .friend-card-avatar / __img / __face / data-src（IntersectionObserver 懒加载 + 涂鸦 fallback）
+     .friend-card / data-screenshot（同一个脚本：悬浮时在卡旁浮出站点截图预览 #friend-preview）
+  ⚠️ 另外 `.friend-card` 的 data-title / data-siteurl 是「朋友圈 /circle/」抓取程序的取值点，
+     改结构时必须保留（见 CLAUDE.md，2026-08 曾因改 class 导致朋友圈停更 6 天）。
+*/}
+<div
+  class="friend-card"
+  role="link"
+  tabindex="0"
+  data-href={href}
+  data-siteurl={href}
+  data-title={title}
+  data-screenshot={screenshot || undefined}
+  data-desc={desc}
+>
+  <div class="friend-card-avatar" data-initial={initial}>
+    <span class="friend-card-avatar__face" aria-hidden="true"></span>
+    <img alt={title} class="friend-card-avatar__img" data-src={imgurl} />
+  </div>
+  <span class="friend-name">{title}</span>
+</div>

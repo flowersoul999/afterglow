@@ -1,0 +1,16 @@
+/* ===== 链接样式 ===== */
+@reference "tailwindcss";
+@reference "../base/utilities.css";
+@layer components {
+  .link {
+    @apply transition-colors duration-150 rounded-md p-1 -m-1;
+  }
+  .link-lg {
+    @apply transition-colors duration-150 rounded-md p-1.5 -m-1.5;
+  }
+  .link-underline {
+    @apply transition-colors duration-150 underline decoration-2 decoration-dashed
+      decoration-(--link-underline) hover:decoration-(--link-hover)
+      active:decoration-(--link-active) underline-offset-[0.25rem];
+  }
+}
