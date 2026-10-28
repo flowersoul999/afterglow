@@ -1,0 +1,78 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Astro Build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          run_install: false # 版本由 package.json 的 packageManager 决定（pnpm 9.14.4）
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 首次运行会自动创建 Pages 站点（Source 设为 GitHub Actions）
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      # 与本地 pnpm build 完全一致：图标生成 -> astro build -> pagefind 索引
+      - name: Build
+        run: pnpm build
+        env:
+          PUBLIC_AMAP_KEY: ${{ secrets.PUBLIC_AMAP_KEY }}
+          PUBLIC_AMAP_KEY_PLACES: ${{ secrets.PUBLIC_AMAP_KEY_PLACES }}
+          PUBLIC_UMAMI_BASE: ${{ secrets.PUBLIC_UMAMI_BASE }}
+          PUBLIC_UMAMI_USERNAME: ${{ secrets.PUBLIC_UMAMI_USERNAME }}
+          PUBLIC_UMAMI_PASSWORD: ${{ secrets.PUBLIC_UMAMI_PASSWORD }}
+          PUBLIC_BIXYH_QJHXRZP_HR: ${{ secrets.PUBLIC_BIXYH_QJHXRZP_HR }}
+          PUBLIC_UMAMI_SHARE_ID: ${{ secrets.PUBLIC_UMAMI_SHARE_ID }}
+          PUBLIC_WALINE_SERVER: ${{ secrets.PUBLIC_WALINE_SERVER }}
+          PUBLIC_IMAGEBED_URL: ${{ secrets.PUBLIC_IMAGEBED_URL }}
+          PUBLIC_IMAGEBED_AUTH_CODE: ${{ secrets.PUBLIC_IMAGEBED_AUTH_CODE }}
+          PUBLIC_IMAGEBED_FOLDER: ${{ secrets.PUBLIC_IMAGEBED_FOLDER }}
+          PUBLIC_IMAGEBED_API_TOKEN: ${{ secrets.PUBLIC_IMAGEBED_API_TOKEN }}
+          PUBLIC_TTS_SERVER: ${{ secrets.PUBLIC_TTS_SERVER }}
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
