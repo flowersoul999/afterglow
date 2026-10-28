@@ -87,7 +87,7 @@ const allItems = [
 const recentItems = allItems
 	.sort((a, b) => b.date.getTime() - a.date.getTime())
 	.slice(0, 10);
-const defaultImage = "https://img.tsh520.cn/file/blog/album/武侠风/22.webp";
+const defaultImage = "/assets/ziyuan/tx.webp";
 
 const typeLabel: Record<string, () => string> = {
 	post: () => i18n(I18nKey.recentPosts),

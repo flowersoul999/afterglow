@@ -12,10 +12,10 @@ export const profileConfig: ProfileConfig = {
 	avatarOffWork: "",
 
 	// 名字
-	name: "团子和蛋糕",
+	name: "jojo",
 
 	// 首页展示名字（留空则使用 name）
-	displayName: "Dumpling",
+	displayName: "jojo",
 
 	// 职业/身份标签
 	occupation: "[技术博主 / 生活记录者]",

@@ -50,7 +50,7 @@ const momentsCollection = defineCollection({
 	schema: ({ image }) =>
 		z.object({
 			id: z.string().optional().default(""),
-			author: z.string().optional().default("团子和蛋糕"),
+			author: z.string().optional().default("jojo"),
 			avatar: z.string().optional().default("/assets/ziyuan/tx.webp"),
 			pinned: z.boolean().optional().default(false),
 			published: z.date(),
@@ -145,7 +145,7 @@ const placesCollection = defineCollection({
 	}),
 });
 
-// notebooks 集合已于 2026-10-20 整体摘除（站长要求笔记不再公开：https://blog.tsh520.cn/life/notebooks/）
+// notebooks 集合已于 2026-10-20 整体摘除（笔记不再公开）
 // 内容已移至 src/content/笔记本归档/（.gitignore 内，仅留在本地 Obsidian 库）
 // 若要恢复，先恢复本集合定义 + src/pages/life/notebooks/ 路由 + navBarConfig 入口
 

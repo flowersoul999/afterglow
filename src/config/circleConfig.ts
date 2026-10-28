@@ -17,8 +17,8 @@ export interface CircleConfig {
 }
 
 export const circleConfig: CircleConfig = {
-	// EdgeOne 托管的 data.json 地址
-	dataUrl: "https://cir.tsh520.cn/data.json",
+	// 朋友圈数据源（留空 = 未启用，页面会提示暂无数据）
+	dataUrl: "",
 
 	// 每页显示 20 篇文章
 	pageSize: 20,

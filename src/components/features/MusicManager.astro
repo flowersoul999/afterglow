@@ -11,7 +11,7 @@ const config = musicPlayerConfig;
 const musicPlaylistUrl = url("/music-playlist.json");
 const metingApiBase = config.meting?.api
 	? config.meting.api.split("?")[0]
-	: "https://mu.tsh520.cn/api";
+	: "";
 const localPlaylist =
 	config.mode === "local" && config.local?.playlist
 		? config.local.playlist.map((song) => {
@@ -364,7 +364,7 @@ const managerConfigStr = JSON.stringify({
 
     // ── Meting track resolution ─────────────────────────────
     async function resolveMetingTracks(playlist) {
-        var base = (metingApiBase || 'https://mu.tsh520.cn/api') + '?server=';
+        var base = (metingApiBase || '') + '?server=';
         for (var i = 0; i < playlist.length; i++) {
             var track = playlist[i];
             if (track.metingServer && track.metingId && !track.url) {

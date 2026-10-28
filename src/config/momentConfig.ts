@@ -1,7 +1,7 @@
 import type { GuestbookConfig } from "../types/config";
 
 export const momentConfig: GuestbookConfig = {
-	adminNicknames: ["团子和蛋糕"],
+	adminNicknames: ["jojo"],
 	announcements: [
 		{
 			id: "moments-rules",

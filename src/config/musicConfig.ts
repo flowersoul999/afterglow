@@ -1,19 +1,19 @@
 import type { MusicPlayerConfig } from "../types/config";
 
 export const musicPlayerConfig: MusicPlayerConfig = {
-	showInNavbar: true,
+	showInNavbar: false,
 	mode: "local",
 	volume: 0.7,
 	playMode: "list",
 	showLyrics: true,
 
 	meting: {
-		api: "https://mu.tsh520.cn/api?server=:server&type=:type&id=:id",
+		api: "",
 		server: "netease",
 		type: "song",
 		id: "30254265974",
 		auth: "",
-		fallbackApis: ["https://mu.tsh520.cn/api?server=:server&type=:type&id=:id"],
+		fallbackApis: [],
 	},
 
 	// 本地播放列表为空 — 音乐数据全部从 bangumi content collection 加载

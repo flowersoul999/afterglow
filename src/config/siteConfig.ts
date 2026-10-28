@@ -8,26 +8,25 @@ const SITE_LANG = "zh_CN";
 
 export const siteConfig: SiteConfig = {
 	// 站点标题
-	title: "团子和蛋糕的博客",
+	title: "jojostar",
 
 	// 站点副标题
-	subtitle: "",
+	subtitle: "jojo 的个人博客",
 
 	// 站点 URL
-	site_url: "https://blog.tsh520.cn",
+	site_url: "https://jojocode.cn",
 
 	// 站点描述
 	description:
-		"团子和蛋糕的博客，一个分享技术见解与生活感悟的个人空间。涵盖编程开发、实用工具推荐、ACG文化与日常生活的随想，记录成长的每一步。",
+		"jojostar —— jojo 的个人博客，记录技术、代码与生活里值得留下的东西。",
 
 	// 站点关键词
 	keywords: [
-		"团子",
-		"团子和蛋糕",
-		"蛋糕",
-		"团子和蛋糕的博客",
-		"团子的网站",
-		"蛋糕的网站",
+		"jojostar",
+		"jojo",
+		"jojocode",
+		"jojo 的博客",
+		"个人博客",
 	],
 
 	// 主题色
@@ -77,7 +76,7 @@ export const siteConfig: SiteConfig = {
 			alt: "🍀",
 		},
 		// 导航栏标题
-		title: "团子和蛋糕",
+		title: "jojostar",
 		// 悬停时显示的互动颜文字
 		hoverTitle: "w(ﾟДﾟ)w 不要走！再看看嘛！",
 		// 全宽导航栏，导航栏是否占满屏幕宽度，true：占满，false：不占满
@@ -93,13 +92,13 @@ export const siteConfig: SiteConfig = {
 	portal: {
 		announcement: {
 			enable: true,
-			text: "欢迎来到团子和蛋糕的博客！这里有技术分享、生活记录和更多有趣内容。",
+			text: "欢迎来到 jojostar！这里记录技术、代码与生活里值得留下的东西。",
 		},
 		dailyQuote: {
 			enable: true,
 			quotes: [
 				{ text: "人生到处知何似，应似飞鸿踏雪泥。", source: "苏轼" },
-				{ text: "海棠花未眠，老陈总在我身边。", source: "团子" },
+				{ text: "星光不问赶路人，时光不负有心人。", source: "佚名" },
 				{
 					text: "世界上只有一种真正的英雄主义，那就是在认识生活的真相后依然热爱生活。",
 					source: "罗曼·罗兰",
