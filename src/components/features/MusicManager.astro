@@ -9,9 +9,7 @@ const config = musicPlayerConfig;
 // 播放列表（bangumi 集合里的 music 条目）不再内联进页面：站长 2026-10-05 起改为
 // 静态 JSON（/music-playlist.json），由 init() 按需拉一次；构建逻辑见 utils/music-playlist.ts
 const musicPlaylistUrl = url("/music-playlist.json");
-const metingApiBase = config.meting?.api
-	? config.meting.api.split("?")[0]
-	: "";
+const metingApiBase = config.meting?.api ? config.meting.api.split("?")[0] : "";
 const localPlaylist =
 	config.mode === "local" && config.local?.playlist
 		? config.local.playlist.map((song) => {

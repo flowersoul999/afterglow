@@ -21,13 +21,7 @@ export const siteConfig: SiteConfig = {
 		"jojostar —— jojo 的个人博客，记录技术、代码与生活里值得留下的东西。",
 
 	// 站点关键词
-	keywords: [
-		"jojostar",
-		"jojo",
-		"jojocode",
-		"jojo 的博客",
-		"个人博客",
-	],
+	keywords: ["jojostar", "jojo", "jojocode", "jojo 的博客", "个人博客"],
 
 	// 主题色
 	themeColor: {
