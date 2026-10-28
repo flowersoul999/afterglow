@@ -36,11 +36,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 首次运行会自动创建 Pages 站点（Source 设为 GitHub Actions）
+      # Pages 站点需先在 Settings → Pages → Source 选 GitHub Actions 启用一次
+      # （GITHUB_TOKEN 无权限自动创建，故不设 enablement）
       - name: Setup Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       # 与本地 pnpm build 完全一致：图标生成 -> astro build -> pagefind 索引
       - name: Build
