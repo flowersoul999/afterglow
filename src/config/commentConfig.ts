@@ -2,7 +2,8 @@ import type { CommentConfig } from "../types/config";
 
 export const commentConfig: CommentConfig = {
 	// 评论系统类型: none, twikoo, waline, giscus, disqus, artalk，默认为none，即不启用评论系统
-	type: "waline",
+	// giscus 无需自建后端，评论存在 GitHub Discussions 里
+	type: "giscus",
 
 	//twikoo评论系统配置
 	twikoo: {
@@ -48,12 +49,13 @@ export const commentConfig: CommentConfig = {
 	giscus: {
 		// 设置 Giscus 评论系统仓库
 		repo: "flowersoul999/afterglow",
-		// 仓库ID（需在 https://giscus.app 用本仓库重新生成后填入）
-		repoId: "",
+		// 仓库 node_id（GitHub API 取得，非仓库名）
+		repoId: "R_kgDOVaquiQ",
 		// 设置 Giscus 评论系统分类
-		category: "General",
-		// 分类ID（同上，需重新生成）
-		categoryId: "",
+		// 用 Announcements：只有维护者能新建讨论，避免 Discussions 页被游客乱建
+		category: "Announcements",
+		// 分类 node_id
+		categoryId: "DIC_kwDOVaquic4DJ5QM",
 		// 获取 Giscus 评论系统映射方式
 		mapping: "title",
 		// 获取 Giscus 评论系统严格模式
@@ -73,6 +75,6 @@ export const commentConfig: CommentConfig = {
 	//disqus评论系统配置
 	disqus: {
 		// 获取 Disqus 评论系统
-		shortname: "firefly",
+		shortname: "",
 	},
 };
