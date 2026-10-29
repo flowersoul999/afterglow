@@ -21,7 +21,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			icon: "material-symbols:public",
 		},
 
-		// 文章（带下拉子菜单：文章列表 → 分类 → 归档）
+		// 文章（带下拉子菜单：文章列表 → 图谱 → 面经 → 归档）
 		{
 			name: "文章",
 			url: "/posts/",
@@ -30,17 +30,27 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 				// 文章列表
 				LinkPreset.Posts,
 
-				// 分类（2026-10-29 合并：原「文章 > 图谱」与独立「分类」按钮都指向 /categories/，
-				// 两处重复，统一收进本下拉并改名为「分类」）
+				// 图谱（/categories/ 的四层知识图谱）
+				// 2026-10-29：恢复「图谱」原名 —— 当天早些时候曾改名为「分类」，
+				// 但「分类」与文章本身的分类文件夹（/categories/<分类>/）同名易混，改回「图谱」。
 				...(siteConfig.pages.categories
 					? [
 							{
-								name: "分类",
+								name: "图谱",
 								url: "/categories/",
-								icon: "material-symbols:folder-outline",
+								icon: "material-symbols:hub",
 							},
 						]
 					: []),
+
+				// 面经（2026-10-29 归入「文章」这一类）—— 独立内容板块 /interview/，
+				// 内容存 src/content/面经/，不参与文章列表/归档/RSS。原先挂在 /categories/
+				// 顶部的浮层卡片上，现在导航里有了直达项，浮层已撤（避免两处重复入口）。
+				{
+					name: "面经",
+					url: "/interview/",
+					icon: "material-symbols:quiz-outline",
+				},
 
 				// 归档
 				LinkPreset.Archive,
@@ -94,6 +104,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		url: "/life/places/",
 		icon: "material-symbols:location-on",
 	});
+
 	if (recordChildren.length > 0) {
 		const defaultUrl = siteConfig.pages.books
 			? "/books/"
@@ -108,6 +119,61 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			children: recordChildren,
 		});
 	}
+
+	// 技能图（2026-10-29 自 jojo! 站迁入）—— 独立顶层入口，不塞进「记录」里：
+	// 七张图本身是学习体系，跟书架/影视/足迹这些生活记录不是一类。
+	// 分两组（顺序即截图里的顺序）：
+	//   修行路（有境界门禁、算修为）：计算机基础 → 前端 → 后端 → Agent 开发
+	//   修行录（无门禁、不算修为）：音乐 / 英语 / 理财
+	// 每张图内部还有顶部切换条可以互跳（SkillGraphSwitch），这里只是给导航一个直达入口。
+	// 父项带 children 时 Navbar 会渲染成按钮（不是链接），所以这里的 url 只是兜底。
+	links.push({
+		name: "技能",
+		url: "/skills/",
+		icon: "material-symbols:account-tree-rounded",
+		children: [
+			// 计算机基础技能图（数学 / 组原 / 操作系统 / 网络 / 数据库 …）
+			{
+				name: "计算机基础",
+				url: "/cs/",
+				icon: "material-symbols:school",
+			},
+			// 前端技能图
+			{
+				name: "前端技能图",
+				url: "/skills/",
+				icon: "material-symbols:account-tree-rounded",
+			},
+			// 后端技能图（在前端基础上往全栈转）
+			{
+				name: "后端技能图",
+				url: "/backend/",
+				icon: "material-symbols:storage",
+			},
+			// Agent 开发技能图（大模型应用：提示 / RAG / 工具编排 / 评测 / 上线）
+			{
+				name: "Agent 开发",
+				url: "/agent/",
+				icon: "material-symbols:smart-toy",
+			},
+			// 修行录三张：与修行路无先后关系，不计修为
+			{
+				name: "音乐（修行录）",
+				url: "/music/",
+				icon: "material-symbols:music-note",
+			},
+			{
+				name: "英语（修行录）",
+				url: "/english/",
+				icon: "material-symbols:translate",
+			},
+			{
+				name: "理财（修行录）",
+				url: "/finance/",
+				icon: "material-symbols:savings",
+			},
+		],
+	});
 
 	// 关于及其子菜单
 	links.push({

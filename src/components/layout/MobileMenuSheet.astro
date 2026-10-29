@@ -36,16 +36,22 @@ const groups = [
 				label: "文章列表",
 				url: "/posts/",
 			},
-			// 分类（2026-10-29：与桌面导航同步，原「图谱」改名并合并进文章下拉）
+			// 图谱（2026-10-29：恢复「图谱」原名，与桌面导航保持一致）
 			...(siteConfig.pages.categories
 				? [
 						{
-							icon: "material-symbols:folder-outline",
-							label: "分类",
+							icon: "material-symbols:hub",
+							label: "图谱",
 							url: "/categories/",
 						},
 					]
 				: []),
+			// 面经（归入「文章」这一类）
+			{
+				icon: "material-symbols:quiz-outline",
+				label: "面经",
+				url: "/interview/",
+			},
 			{ icon: "material-symbols:archive", label: "归档", url: "/archive/" },
 		],
 	},
@@ -86,6 +92,47 @@ const groups = [
 				icon: "material-symbols:history",
 				label: "更新日志",
 				url: "/changelog/",
+			},
+		],
+	},
+	{
+		icon: "material-symbols:account-tree-rounded",
+		label: "技能",
+		children: [
+			{
+				icon: "material-symbols:school",
+				label: "计算机基础",
+				url: "/cs/",
+			},
+			{
+				icon: "material-symbols:account-tree-rounded",
+				label: "前端技能图",
+				url: "/skills/",
+			},
+			{
+				icon: "material-symbols:storage",
+				label: "后端技能图",
+				url: "/backend/",
+			},
+			{
+				icon: "material-symbols:smart-toy",
+				label: "Agent 开发",
+				url: "/agent/",
+			},
+			{
+				icon: "material-symbols:music-note",
+				label: "音乐（修行录）",
+				url: "/music/",
+			},
+			{
+				icon: "material-symbols:translate",
+				label: "英语（修行录）",
+				url: "/english/",
+			},
+			{
+				icon: "material-symbols:savings",
+				label: "理财（修行录）",
+				url: "/finance/",
 			},
 		],
 	},
