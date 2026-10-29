@@ -135,3 +135,48 @@ curl -s https://jojocode.cn/ | grep -o "<title>[^<]*</title>"
 3. **构建产物 173 MB / 828 文件** → 远低于 Pages 的 1 GB 站点上限，但首次部署上传较慢属正常。
 4. **`pagefind` 索引** → 由 `pnpm build` 的最后一步生成在 `dist/pagefind/`，漏掉这一步搜索会空。
 5. **本地跑 Biome 报一堆假错** → 见 `.gitattributes` 里的行尾契约；Windows 检出若不是 LF，Biome 会把每行都判成格式不符。
+6. **部署后页面卡骨架屏 / `Failed to fetch dynamically imported module`** → 不是服务器坏了，是浏览器拿着缓存里的旧 HTML 去要**已被删除的旧哈希 chunk**。GitHub Pages 每次部署整体替换产物，而 HTML 带 `Cache-Control: max-age=600`。临时解法：`Ctrl+Shift+R` 强刷；根治见下一节。
+
+## 六、让 HTML 不被浏览器缓存（强烈建议）
+
+### 为什么会出问题
+
+GitHub Pages 对所有文件都发 `Cache-Control: max-age=600`，**包括 HTML**。而 `/_astro/*.js` 带内容哈希，每次构建都会变：
+
+1. 访客在部署前加载了页面，HTML 进浏览器缓存（有效 10 分钟）
+2. 部署完成，旧哈希的 chunk 全部消失
+3. 访客在 10 分钟内再访问 → 用缓存 HTML 里的旧路径请求 chunk → **404**
+4. Astro 的 `astro-retry` 会带上 `?astro-retry=<ts>` 重试，但文件已经不存在，重试必然失败 → 页面永久停在骨架屏
+
+已实测：旧 `GuestbookChat.B5ao4h0M.js` 返回 404，新 `GuestbookChat.BKZAQa5y.js` 返回 200，同一时刻并存。
+
+### 修法：Cloudflare 响应头转换规则
+
+让 HTML 每次回源校验（304 很廉价），带哈希的静态资源继续走 10 分钟缓存，两者互不影响。
+
+> **注意**：这里必须用 **Transform Rules → Modify Response Header**，不能用 Cache Rules。Cache Rules 只管 Cloudflare 边缘是否缓存，改不了发给浏览器的 `Cache-Control`。官方文档也明确写了：响应头转换规则改 `cache-control` **不会**影响 Cloudflare 自身的缓存判定（HTML 本来就是 `cf-cache-status: DYNAMIC`，不缓存）。
+
+**操作路径**：Cloudflare → 选中 `jojocode.cn` → `Rules` → `Transform Rules` → `Modify Response Header` → `Create rule`
+
+| 项 | 值 |
+|---|---|
+| Rule name | `HTML no-cache` |
+| When incoming requests match | **Custom filter expression** |
+| Field | `URI Path` |
+| Operator | `does not contain` |
+| Value | `.` |
+| Then | **Set static** |
+| Header name | `cache-control` |
+| Header value | `no-cache` |
+
+表达式等价于 `not (http.request.uri.path contains ".")`。**用 URI 路径做判断而不是 `http.response.content_type`**——响应头规则的筛选阶段对 `http.response.*` 字段的支持受限，路径判断在任何阶段都可用。
+
+站点用的是无扩展名的干净 URL（`/`、`/about/`、`/life/guestbook/` 都不含点），而所有静态资源都带扩展名（`/_astro/x.js`、`/assets/x.webp`、`/rss.xml`），所以这条规则正好只命中 HTML。
+
+创建后重新部署一次或 Purge Cache，然后用下面命令确认：
+
+```bash
+curl -sI https://jojocode.cn/about/ | grep -i cache-control   # 期望 no-cache
+curl -sI https://jojocode.cn/_astro/ 2>/dev/null | head -1     # 资源不受影响
+```
+
