@@ -1,0 +1,51 @@
+---
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import type { InterviewItem } from "@utils/interview-tree";
+import "@/styles/features/interview.css";
+
+interface Props {
+	majorName: string;
+	subName: string;
+	items: InterviewItem[];
+}
+
+const { majorName, subName, items } = Astro.props;
+---
+
+<MainGridLayout
+	title={`${subName} · 面经`}
+	description={`${majorName} / ${subName}，共 ${items.length} 篇`}
+>
+	<div class="card-base z-10 px-4 py-6 md:px-9 relative w-full min-h-32">
+		<nav class="iv-crumb" aria-label="面包屑">
+			<a href="/interview/">面经</a>
+			<span>/</span>
+			<span>{majorName}</span>
+		</nav>
+
+		<header class="mb-6">
+			<h1 class="iv-major__title text-[1.375rem]!">{subName}</h1>
+			<p class="text-xs text-(--content-meta) mt-1">
+				{majorName} · 共 {items.length} 篇
+			</p>
+		</header>
+
+		<ul class="iv-list">
+			{
+				items.map((item) => (
+					<li>
+						<a class="iv-item" href={item.url}>
+							<span class="iv-item__no">{item.slug.slice(0, 2)}</span>
+							<span class="iv-item__body">
+								<span class="iv-item__title">{item.entry.data.title}</span>
+								{item.entry.data.description && (
+									<span class="iv-item__desc">{item.entry.data.description}</span>
+								)}
+							</span>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</MainGridLayout>

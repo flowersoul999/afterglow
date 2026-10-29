@@ -265,6 +265,29 @@ const changelogCollection = defineCollection({
 	}),
 });
 
+/**
+ * 面经（interview）—— 独立于博客文章的第二个内容板块。
+ *
+ * 目录即分类：src/content/面经/<大类>/<子分类>/xxx.md
+ * 目前只有一个大类「八股文」，下设 智能体/检索增强/大模型/工具调用/项目实战。
+ * 以后加新大类（如「算法」「系统设计」）只需新建文件夹，页面会按目录自动生成，
+ * 不需要改路由或配置。见 src/pages/interview/ 与 src/utils/interview-tree.ts。
+ */
+const interviewCollection = defineCollection({
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/面经" }),
+	schema: z.object({
+		title: z.string(),
+		/** 首次发布日；排序与展示用 */
+		published: z.date().optional(),
+		updated: z.date().optional(),
+		description: z.string().optional().default(""),
+		tags: z.array(z.string()).optional().default([]),
+		/** 同日期/同目录内的排序号，越大越靠前（与 posts 的 order 同义） */
+		order: z.number().optional(),
+		draft: z.boolean().optional().default(false),
+	}),
+});
+
 export const collections = {
 	posts: postsCollection,
 	spec: specCollection,
@@ -277,4 +300,5 @@ export const collections = {
 	friends: friendsCollection,
 	changelog: changelogCollection,
 	tombstones: tombstonesCollection,
+	interview: interviewCollection,
 };

@@ -59,12 +59,15 @@ src/
 │   ├── layout/          # 布局组件：Navbar, Footer, SideBar, HomeHero... (19)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
 │   ├── moments/         # 动态卡片与评论弹窗
-│   ├── pages/           # 页面级组件：bangumi, books（Bookshelf/BookCard：3D 书本卡片 + 影视页同款胶囊筛选（分类+读过/在读/想读）+ ClientPagination 分页 8/6 本每页，SSR 隐藏非首页防闪烁）, movies-games, music (10)
+│   ├── pages/           # 页面级组件：bangumi, books（Bookshelf/BookCard：3D 书本卡片 + 影视页同款胶囊筛选（分类+读过/在读/想读）+ ClientPagination 分页 8/6 本每页，SSR 隐藏非首页防闪烁）, interview（面经列表/详情）, movies-games, music (11)
 │   └── widget/          # 侧栏 Widget (27)
 ├── config/              # 站点配置（27 个 .ts，index.ts barrel export）
 ├── constants/           # 常量：页面尺寸、主题模式、图标、链接预设
-├── content/             # Astro Content Collections（11 个集合；集合键名 posts/spec/moments/bangumi/places/album/daohang/ziyuan/friends/tombstones/changelog —— **键名是英文，不随磁盘目录改名，getCollection() 一律用键名**）
+├── content/             # Astro Content Collections（12 个集合；集合键名 posts/spec/moments/bangumi/places/album/daohang/ziyuan/friends/tombstones/changelog/interview —— **键名是英文，不随磁盘目录改名，getCollection() 一律用键名**）
 │   ├── 文章/ 页面/ 动态/ 影视/ 足迹/ 相册/ 导航/ 资源/ 更新日志/   # 对应集合键 posts/spec/moments/bangumi/places/album/daohang/ziyuan/changelog
+│   ├── 面经/            # interview 集合：**独立内容板块**，路由 /interview/，不参与文章列表/归档/RSS
+│   │                    # 目录即分类：面经/<大类>/<子分类>/xxx.md（当前只有 八股文/{智能体,检索增强,大模型,工具调用,项目实战}，108 篇）
+│   │                    # 加新大类只需建文件夹，页面自动生成；树逻辑见 src/utils/interview-tree.ts
 │   ├── 页面/            # spec 集合：about.mdx 为组件化 Q&A，friends.md / guestbook.md 分别渲染进 /friends/ 与 /life/guestbook/ 下方正文
 │   ├── 友链/            # friends 集合；子目录 友链/墓碑/ 为 tombstones 集合（friends 的 glob 已加 `!墓碑/**` 排除，否则墓碑文件会被 friends 集合收进去导致 zod 校验失败）
 │   └── 笔记本归档/      # ⚠️ 不在任何集合内（2026-10-20 笔记功能下线）：私人笔记 78 篇 + 7 个 _index.json，已写入 .gitignore，只留在本地 Obsidian 库，**不进 git、不参与构建**
@@ -75,7 +78,7 @@ src/
 ├── content/notes/       # Obsidian 笔记（不发布；2026-10-08 从 src/notes 并入，Obsidian 库根 = src/content）
 ├── pages/               # 路由（34 个文件；admin 后台已删除，勿重建）
 │   ├── api/             # JSON API (2)：calendar.json.ts, home-stats.json.ts
-│   ├── album/ bangumi/ books/ categories/ life/ moments/ posts/ // moments/[slug] 已删除
+│   ├── album/ bangumi/ books/ categories/ interview/ life/ moments/ posts/ // moments/[slug] 已删除
 │   └── 404, about, archive, apps, changelog, circle, debug-urls, friends,
 │       guestbook, movies-games/, music, projects, search,
 │       sponsor, rss, robots.txt, og
@@ -196,6 +199,7 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 | friends | 友链（added 添加日期 + group 分组 friend\|other，2026-08 区块化改版：新朋友/我的朋友们/更多伙伴） |
 | tombstones | 友链墓碑（title/avatar/note，2026-08 新增，纪念下线友链） |
 | changelog | 更新日志 |
+| interview | 面经（**独立板块 /interview/**，不参与文章列表/归档/RSS；目录即分类 `<大类>/<子分类>/`） |
 
 > 友链页支撑系统（2026-08）：`.github/workflows/friend-status.yml`（每天 5:17 检测友链延迟 → public/friends-status.json，四档 fast/ok/slow/down）与 `friend-screenshots.yml`（每周日 3:23 全量补漏 + push main 变更 `src/content/friends/**` 时自动触发，Playwright 截图 → public/assets/friends-shots/{contentId}.webp，伪装真实浏览器 + load 后等字体就绪、网络空闲（6s 超时兜底）与 2s 缓冲，失败 3 次尝试）。前端 fetch 状态 JSON 注入徽标，无 JSON/无截图时优雅降级（卡片退化为纯头像卡）。改 friends 集合结构时注意同步这两个脚本（正则读 frontmatter）。**截图文件名必须是全小写**（Astro glob loader 的 entry id 为全小写 slug，脚本已按 `md 文件名.toLowerCase()` 输出；含大写的 webp 在 Windows dev 误判存在导致 404，线上 Linux 则直接退化）。
 
@@ -249,6 +253,17 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 ### 3.9 文章朗读（TTS，2026-09-15 新增）
 
 文章页提取正文（自动跳过代码块/表格/公式）→ `POST PUBLIC_TTS_SERVER/tts` 流式合成 mp3 → `<audio>` 播放（倍速 0.8x~2x + 7 种音色，选择记忆），服务不可用时降级浏览器 Web Speech 系统语音。服务端代码与部署见 `docs/deploy-edge-tts.md`（`scripts/TTS服务/`，CORS 白名单含 blog.tsh520.cn 与本地 4321）；开关在 `src/config/ttsConfig.ts`。
+
+### 3.10 面经板块（interview，2026-10-29 新增）
+
+与「文章」并列的**第二个内容板块**，路由前缀 `/interview/`，内容存在 `src/content/面经/`，集合键 `interview`。**不参与**文章列表、分类页、归档、RSS —— 想引用面经数据一律 `getCollection("interview")`，别往 posts 里塞。
+
+- **目录即分类，两级**：`面经/<大类>/<子分类>/<题号-标题>.md`，例如 `面经/八股文/智能体/01-什么是-Agent.md`。当前只有「八股文」一个大类（108 篇）。**加新大类（如「算法」）只需新建文件夹**，首页自动多出区块。
+- **路由只有两个文件**：`src/pages/interview/index.astro`（板块首页：大类区块 + 子分类卡片）与 `src/pages/interview/[...path].astro`（catch-all，按路径段数分发：2 段=题目列表、3 段=题目详情）。**不要**改成 `[major]/[sub]/index.astro` 那种双层动态目录——会和 `[major]` 争抢路由。
+- **视图组件**：`src/components/pages/interview/InterviewList.astro`（列表）、`InterviewArticle.astro`（详情，含面包屑/题号/字数/上下题）。样式在 `src/styles/features/interview.css`（类名 `iv-` 前缀）。
+- **分类树逻辑**：`src/utils/interview-tree.ts` 的 `getInterviewTree()` / `getInterviewItems()`，排序用**题号自然序**（`localeCompare(..., { numeric: true })`，避免 10 排在 2 前面）。URL **不做 encodeURIComponent**，与 posts 一致直出中文（dist 目录本身就是中文名）。
+- **`.gitignore` 必须放行**：`src/content/*/` 默认忽略所有内容目录，新增内容目录要在 `.gitignore` 补 `!src/content/面经/`，否则文件不进仓库、线上构建不到。
+- 详情页复用 `MainGridLayout` + `Markdown.astro`，因此 mermaid / callout / 代码高亮等与文章页一致；右侧目录面板的「累计记录 X 字」目前只统计 posts（面经为 0），属已知限制。
 
 ---
 

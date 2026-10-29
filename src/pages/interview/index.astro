@@ -1,0 +1,48 @@
+---
+import PageTitle from "@components/common/PageTitle.astro";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { getInterviewTree } from "@utils/interview-tree";
+import "@/styles/features/interview.css";
+
+// 面经板块首页：按「大类 → 子分类」展示。
+// 分类完全由目录结构决定（src/content/面经/<大类>/<子分类>/），
+// 以后加新大类只需建文件夹，本页无需改动。
+const tree = await getInterviewTree();
+const totalCount = tree.reduce((sum, major) => sum + major.count, 0);
+---
+
+<MainGridLayout title="面经" description="面试题整理与复习笔记">
+	<div class="card-base z-10 px-4 py-6 md:px-9 relative w-full min-h-32">
+		<PageTitle
+			title="面经"
+			eyebrow="Interview"
+			description={`面试题整理，共 ${totalCount} 篇`}
+		/>
+
+		{
+			tree.length === 0 ? (
+				<p class="text-sm text-(--content-meta) py-10 text-center">
+					还没有内容，在 src/content/面经/&lt;大类&gt;/&lt;子分类&gt;/ 下放入 Markdown 即可。
+				</p>
+			) : (
+				tree.map((major) => (
+					<section class="iv-major">
+						<header class="iv-major__head">
+							<h2 class="iv-major__title">{major.name}</h2>
+							<span class="iv-major__count">{major.count} 篇</span>
+						</header>
+
+						<div class="iv-grid">
+							{major.subs.map((sub) => (
+								<a class="iv-card" href={sub.url}>
+									<span class="iv-card__name">{sub.name || "未分类"}</span>
+									<span class="iv-card__count">{sub.count} 篇</span>
+								</a>
+							))}
+						</div>
+					</section>
+				))
+			)
+		}
+	</div>
+</MainGridLayout>
