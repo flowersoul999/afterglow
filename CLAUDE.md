@@ -263,8 +263,8 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 - **视图组件**：`src/components/pages/interview/InterviewList.astro`（列表）、`InterviewArticle.astro`（详情，含面包屑/题号/字数/上下题）。样式在 `src/styles/features/interview.css`（类名 `iv-` 前缀）。
 - **分类树逻辑**：`src/utils/interview-tree.ts` 的 `getInterviewTree()` / `getInterviewItems()`，排序用**题号自然序**（`localeCompare(..., { numeric: true })`，避免 10 排在 2 前面）。URL **不做 encodeURIComponent**，与 posts 一致直出中文（dist 目录本身就是中文名）。
 - **`.gitignore` 必须放行**：`src/content/*/` 默认忽略所有内容目录，新增内容目录要在 `.gitignore` 补 `!src/content/面经/`，否则文件不进仓库、线上构建不到。
-- **入口不在主导航**（2026-10-29 起）：面经是独立板块，不占导航栏位置；入口在 `/categories/` 页顶部的浮层卡片（`.iv-hub--overlay`，`src/pages/categories.astro`）。该页是全屏 fixed 画布，任何入口都必须自己 `position: fixed`，`z-index` 取 20（画布 10 / 悬浮工具栏 70 之间）。
-- **导航栏「分类」已并入「文章」下拉**（文章列表 → 分类 → 归档），不再有独立「分类」按钮；`MobileMenuSheet.astro` 是**硬编码的移动端菜单**，改导航必须两边同步改，否则手机和桌面不一致。
+- **入口在「文章」下拉**（2026-10-29 晚定稿）：面经归入「文章」这一类，下拉顺序为 **文章列表 → 图谱 → 面经 → 归档**。此前短暂挂在 `/categories/` 页顶部的浮层卡片（`.iv-hub--overlay`）已撤掉（浮层与 `.iv-hub*` 样式一并从 `interview.css` 删除），因为导航里已有直达项，两处入口会重复 —— **别再往分类页加浮层入口**。
+- **导航结构**（2026-10-29 定稿）：`首页 → 导航 → 文章（文章列表 / 图谱 / 面经 / 归档）→ 动态 → 记录 → 关于`。其中「图谱」即 `/categories/` 的四层知识图谱，**不要改回「分类」这个名字** —— 会与 `/categories/<分类>/` 分类详情页同名混淆；独立「分类」按钮与动态分类下拉均已不使用。`MobileMenuSheet.astro` 是**硬编码的移动端菜单**，改导航必须两边同步改，否则手机和桌面不一致。
 - 详情页复用 `MainGridLayout` + `Markdown.astro`，因此 mermaid / callout / 代码高亮等与文章页一致；右侧目录面板的「累计记录 X 字」目前只统计 posts（面经为 0），属已知限制。
 
 ---
@@ -456,13 +456,13 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
   - 「其他站点」：列表在**构建时**直接读 `daohang` 集合里**直接父目录为「我的网站」**的条目（文件夹判定与 `projects.astro` 的 `getFolderCategory` 一致），所以在 `/projects/` 增删站点后这里自动跟着变 —— **不要再回到 navBarConfig 里手抄一份**（`personalSites` 字段已删除）。面板显示的名字取导航 md 的 `name`。
   - **点热力图格子看当月文章**：格子是 `<button>`，构建期把「今年的文章」按月份存成 JSON 内联在组件上（标题 + 链接 + 日期），点格子切到 `posts` 态渲染；返回按钮回 default。右栏三态（default / site / posts）都用 `data-view` + `.nav-profile__view--*` 切换，卡片高度始终锚在左栏、切换不跳动。
   - 仍未移植：参考站的节假日 / 文章元数据 API（本项目不需要，热力图与文章列表都在构建期算好了）。
-- **「分类」下拉（2026-10-26）**：导航栏第 4 位（「文章」之后）。子项**不在配置里手写** —— `navBarConfig` 里只放 `{ name: "分类", dynamicSource: "post-categories" }` 占位，渲染时由 `src/utils/nav-categories.ts` 的 `resolveNavLinks()` 读 `posts` 集合、按目录前缀建树后注入；**新建 `src/content/文章/<分类>/` 文件夹，下拉里自动多一项**。桌面 `Navbar.astro` 与移动抽屉 `NavMenuPanel.astro`（经 `MainGridLayout` 的 `navLinks`）走同一份；底部 Dock 打开的 `MobileMenuSheet` 是另一套手写 groups，同样调 `getNavCategoryLinks()`。
+- **「分类」下拉（2026-10-26 引入，⚠️ 2026-10-29 起未启用）**：曾占导航栏第 4 位（「文章」之后），现 `navBarConfig` 里**已无 `dynamicSource` 项**，`resolveNavLinks()` 检测不到就直接返回原链接（不影响其它导航）。机制代码全部保留 —— `src/utils/nav-categories.ts`、`DropdownMenu` 的 `grid` 变体、`navCategoryConfig`；将来想恢复，在 `navBarConfig` 加回 `{ name: "分类", dynamicSource: "post-categories" }` 占位即可，渲染时由 `resolveNavLinks()` 读 `posts` 集合、按目录前缀建树后注入；**新建 `src/content/文章/<分类>/` 文件夹，下拉里自动多一项**。桌面 `Navbar.astro` 与移动抽屉 `NavMenuPanel.astro`（经 `MainGridLayout` 的 `navLinks`）走同一份；底部 Dock 打开的 `MobileMenuSheet` 是另一套手写 groups，恢复时同样要调 `getNavCategoryLinks()`。
   - ⚠️ **外观完全走站内下拉语言，别另起一套**（2026-10-26 站长否掉了毛玻璃版）：`DropdownMenu.astro` 有 `variant: "list" | "grid"`，Navbar 按 `dynamicSource` 传 `grid`，但两者都渲染同一个 `.dropdown-content` —— 白底 + 1.5px `--deep-text` 描边 + 左上小角 + `.dropdown-item` 的浅灰 hover。**grid 只改排列**：`dropdown.css` 的 `.dropdown-grid` 负责列数与内边距，不碰背景/边框/圆角/阴影，也不要删那颗 `::before` 小角。
   - 排列：**固定两列**（`.dropdown-grid` 的 `grid-template-columns: repeat(2, minmax(10.5rem, 1fr))`），5 个分类排成 3 行。**多级分类**靠 `depth` 缩进平铺（缩进加在项的行内 `padding-left`），不做嵌套 flyout。改列数只动这一处。
   - ⚠️ **别给 `DropdownPanel` 的 class 加 `overflow-y-auto` / `max-h-*`**（2026-10-26 踩过）：Tailwind utilities 层压过 `dropdown.css` 的 components 层，`overflow-y:auto` 还会让 `overflow-x` 计算成 auto，结果每张下拉底部都多出一条横向滚动条。面板本来就不该滚动，`overflow: visible` 是给小角留的。
   - 图标沿用 astro-icon 的 `material-symbols:folder-outline`（`NavBarLink.icon`），一级分类才有图标，子分类只缩进不重复画文件夹。
   - 篇数：`navCategoryConfig.showCount`（当前 `false`，卡片上不显示）。列表式下拉的 `.dropdown-item-count` 渲染逻辑还在，只是 count 为 undefined 时不输出。
-  - ⚠️ 导航高亮改成「**最长命中路径优先**」（`Navbar.astro` 的 `detectActiveItem`）：进 `/categories/技术分享/` 时只亮「分类」，不会连「文章 > 图谱」(`/categories/`) 一起亮。改高亮逻辑时别退回 `some()`。
+  - ⚠️ 导航高亮改成「**最长命中路径优先**」（`Navbar.astro` 的 `detectActiveItem`）：进 `/categories/技术分享/` 时只亮最具体的那一项，不会把所有前缀相同的项一起点亮（例如不会既亮「图谱」又亮别的）。改高亮逻辑时别退回 `some()`。
   - ⚠️ **点击展开（`.dropdown-open`）且鼠标不在按钮上时不要反色**（`navbar-new.css` 末尾那条 `:not(:hover)` 规则）：鼠标要移向下方面板必然离开按钮，此时若还套用反色白字，白字会压在浅灰胶囊上让整项消失。
 
 ### 5.8 动态页左栏筛选（2026-09-30）
