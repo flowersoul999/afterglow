@@ -1,0 +1,491 @@
+/* ============================================
+   导航栏动效层 —— 共享下拉面板 / 浮动图标 / 工具面板
+   （2026-10-29 照参考站移植，选择器与结构一一对应）
+
+   ⚠️ 本文件里的规则一律**不写 !important**（CLAUDE.md §4.2）。
+   需要压过 dropdown.css / utilities.css 里分层内的 hover 底色时，靠
+   「未分层样式优先于任何 @layer 内样式」这条级联规则取胜，不要再加感叹号。
+   ============================================ */
+
+/* ============================================
+ * 一、一级导航的图标坑位
+ * 图标本体不画在这里 —— 坑位只负责占宽，由 .navbar-moving-icon 绘制。
+ * ⚠️ 所有项都留坑（含非激活项）：否则激活项切换时整条导航会因宽度变化重排，
+ *    浮动图标反而没地方可飞。这是对参考实现的改良，参考站只给激活项留坑。
+ * ============================================ */
+.navbar-trigger-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-right: 0.45rem;
+  flex-shrink: 0;
+  visibility: hidden;
+}
+
+.navbar-trigger-icon svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* ============================================
+ * 二、浮动图标层（FLIP）
+ * ============================================ */
+.navbar-moving-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--deep-text);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 30;
+  will-change: transform, opacity;
+}
+
+.navbar-moving-icon__glyph {
+  display: inline-flex;
+  grid-area: 1 / 1;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.navbar-moving-icon__glyph svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* 高亮块常驻在激活项上（黑底），图标也跟着反色 */
+.navbar-nav.nav-has-active .navbar-moving-icon {
+  color: var(--navbar-highlight-text);
+}
+
+/* 反例：鼠标悬停在**别的**项上，高亮块滑走了、激活项回到浅底，
+   这时图标必须恢复深色，否则白线压在浅灰胶囊上等于消失 */
+.navbar-nav:hover:has(> .dropdown-container:hover:not(.nav-item-active)) .navbar-moving-icon {
+  color: var(--deep-text);
+}
+
+/* ============================================
+ * 三、共享下拉面板
+ * 整条导航只有一只面板：悬停到哪个带子菜单的项，它就滑到哪一项下方。
+ * 位移与宽高都交给 CSS 过渡，内容页只做交叉淡换。
+ * ============================================ */
+.navbar-dropdown-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  /* 与导航栏拉开距离，同时这段留白就是「悬停过渡区」：
+     太窄时鼠标从胶囊移向面板会掉出 hover 区，面板闪收 */
+  padding-top: 1.25rem;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.2s ease-out,
+    visibility 0.2s ease-out,
+    transform 0.2s ease-out,
+    left 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  z-index: 50;
+}
+
+.navbar-dropdown-panel.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* 箱体：面板的可见部分，宽高由控制器按激活内容页设定并做过渡 */
+.navbar-dropdown-box {
+  position: relative;
+  box-sizing: content-box;
+  border: 1.5px solid var(--deep-text);
+  border-radius: 0.75rem;
+  background: var(--float-panel-bg);
+  color: var(--deep-text);
+  overflow: hidden;
+  transition:
+    width 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    height 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* 指向箭头挂在面板上（箱体 overflow:hidden 会裁掉），与面板同节奏滑动。
+   top 里补回 1.5px 箱体上边框厚度，让箭头与箱体外沿保持一致的穿透深度，
+   否则边框开口比箭头底边宽，视觉上断开 */
+.navbar-dropdown-arrow {
+  position: absolute;
+  top: calc(1.25rem - 0.45rem + 1.5px);
+  left: 1.75rem;
+  z-index: 1;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-top: 1.5px solid var(--deep-text);
+  border-left: 1.5px solid var(--deep-text);
+  background: var(--float-panel-bg);
+  transform: rotate(45deg);
+  transition: left 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* 内容页：绝对定位堆叠，仅激活页可见，切换时新旧页交叉淡换 */
+.navbar-dropdown-page {
+  /* 高亮药丸与内容项共用这份内边距，保证左右边缘对齐 */
+  --navbar-dropdown-page-pad: 0.5rem;
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: max-content;
+  min-width: 12rem;
+  padding: var(--navbar-dropdown-page-pad);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
+}
+
+.navbar-dropdown-page.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* 悬停/聚焦高亮：药丸是页内唯一的底色，位置由控制器写成自定义属性。
+   页是绝对定位的，既是内容的偏移父级也是药丸的包含块，
+   因此 item.offsetTop 可直接用作 translateY，无需换算边框厚度 */
+.navbar-dropdown-highlight {
+  position: absolute;
+  top: 0;
+  right: var(--navbar-dropdown-page-pad);
+  left: var(--navbar-dropdown-page-pad);
+  height: var(--navbar-dropdown-hl-h, 0);
+  opacity: 0;
+  border-radius: 0.75rem;
+  background-color: color-mix(in oklch, var(--deep-text) 8%, transparent);
+  pointer-events: none;
+  transform: translateY(var(--navbar-dropdown-hl-y, 0));
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.12s ease-out;
+}
+
+.navbar-dropdown-page.is-hovered .navbar-dropdown-highlight {
+  opacity: 1;
+}
+
+/* 面板内的行不再各自刷底，底色只由滑动药丸提供
+   （未分层 → 压过 dropdown.css 与 utilities.css 里分层内的 hover 底色） */
+.navbar-dropdown-page .dropdown-item,
+.navbar-dropdown-page .dropdown-item:hover,
+.navbar-dropdown-page .dropdown-item:focus-visible,
+.navbar-dropdown-page .dropdown-item:active,
+.navbar-dropdown-page .dropdown-item::before,
+.navbar-dropdown-page .dropdown-item:hover::before,
+.navbar-dropdown-page .dropdown-item:active::before {
+  background-color: transparent;
+}
+
+/* 行悬停时文字保持深色（药丸负责底色）。
+   ⚠️ 别改成 var(--primary)：本站 primary 是灰阶（oklch 0.30），比 --deep-text
+   浅一大截，hover 时文字会「褪色」成灰，与站内其它下拉不一致 */
+.navbar-dropdown-page .dropdown-item:hover,
+.navbar-dropdown-page .dropdown-item:focus-visible {
+  color: var(--deep-text);
+}
+
+/* 触发器箭头：悬停 / 键盘聚焦 / 钉住态都翻转 */
+.dropdown-container:hover .dropdown-arrow,
+.dropdown-container:focus-within .dropdown-arrow,
+.dropdown-container.is-dropdown-open .dropdown-arrow {
+  rotate: 180deg;
+}
+
+/* ============================================
+ * 四、右段工具面板
+ * 面板挂在 .navbar-segments 下（右段收缩态 overflow:hidden 会裁掉它），
+ * 水平位置由 navbar-tools-panel.ts 实测。
+ * --tools-anchor-x = 工具按钮中心相对面板左缘的偏移，指针位移与箱体缩放
+ * 原点共用这一个值，动画只跑 opacity / transform，不触发布局。
+ * ============================================ */
+.nav-tools-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  padding-inline: 0;
+}
+
+.nav-tools-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  /* 靠左定位后右侧可视空间可能小于内容宽度，不锁 max-content 会把图标压扁 */
+  width: max-content;
+  /* 与导航栏拉开距离，保留悬停过渡区防止面板闪收 */
+  padding-top: 1rem;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(0.95);
+  transform-origin: var(--tools-anchor-x, 6rem) top;
+  /* 收起：短促淡出内缩（快进慢出的反向口径） */
+  transition:
+    opacity 0.1s cubic-bezier(0.4, 0, 1, 1),
+    transform 0.1s cubic-bezier(0.4, 0, 1, 1),
+    visibility 0.1s linear;
+  z-index: 50;
+}
+
+/* 展开：从按钮中心「长出来」的临界阻尼感缩放，约 0.3s、无回弹 */
+.nav-tools-panel.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: scale(1);
+  transition:
+    opacity 0.16s ease-out,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
+}
+
+/* 竖排菜单箱体：relative 让行偏移与高亮药丸共用同一坐标系（padding box） */
+.nav-tools-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 12rem;
+  padding: 0.5rem;
+  border: 1.5px solid var(--deep-text);
+  border-radius: 0.75rem;
+  background: var(--float-panel-bg);
+  color: var(--deep-text);
+}
+
+/* 指向工具按钮的指针：箱体改成定位上下文后，top / translateX 都以箱体
+   padding box 为原点，需各自扣掉 1.5px 上/左边框厚度（同下拉面板箭头口径）。
+   横向只改 transform，指针沿箱沿滑动不触发布局 */
+.nav-tools-box::before {
+  position: absolute;
+  top: -0.45rem;
+  left: 0;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-top: 1.5px solid var(--deep-text);
+  border-left: 1.5px solid var(--deep-text);
+  background: var(--float-panel-bg);
+  content: "";
+  transform: translateX(calc(var(--tools-anchor-x, 6rem) - 1.5px - 0.375rem))
+    rotate(45deg);
+}
+
+/* 悬停/聚焦高亮：整只箱体只有这一个药丸，位置与高度由控制器写成自定义属性，
+   左右内缩与行的内容盒对齐（箱体 padding 0.5rem） */
+.nav-tools-highlight {
+  position: absolute;
+  top: 0;
+  right: 0.5rem;
+  left: 0.5rem;
+  height: var(--tools-hl-h, 0);
+  opacity: 0;
+  border-radius: 0.5rem;
+  background-color: color-mix(in oklch, var(--deep-text) 8%, transparent);
+  pointer-events: none;
+  transform: translateY(var(--tools-hl-y, 0));
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.12s ease-out;
+}
+
+.nav-tools-highlight.is-on {
+  opacity: 1;
+}
+
+.nav-tools-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--deep-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: start;
+  white-space: nowrap;
+  cursor: pointer;
+  /* 行级错峰：面板展开后各自上浮淡入。延迟只挂在 opacity / transform 上，
+     悬停变色保持即时 */
+  opacity: 0;
+  transform: translateY(3px);
+  transition:
+    color 0.15s ease-out,
+    opacity 0.2s ease-out var(--tools-row-delay, 0s),
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1) var(--tools-row-delay, 0s);
+}
+
+/* 收起态不定义该变量，回落到 0s 使各行同时消失 */
+.nav-tools-panel.is-open .nav-tools-item {
+  --tools-row-delay: calc(0.03s + var(--tools-row-index, 0) * 0.016s);
+  opacity: 1;
+  transform: none;
+}
+
+.nav-tools-item--group {
+  /* 主题行是组不是按钮：整行不参与点击收起，光标也不该是手形 */
+  cursor: default;
+}
+
+.nav-tools-item__icon {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+/* 悬停底色交给药丸，文字保持深色（理由同下拉项：本站 primary 是灰阶） */
+.nav-tools-item:hover,
+.nav-tools-item:focus-visible {
+  color: var(--deep-text);
+}
+
+.nav-tools-item:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--primary) 60%, transparent);
+  outline-offset: -2px;
+}
+
+/* 快捷键提示：与搜索模态框的 Ctrl/Cmd+K 绑定对应，
+   修饰键文案由脚本按平台改写，这里只负责排布 */
+.nav-tools-keys {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  line-height: 1;
+  font-family: inherit;
+  color: color-mix(in oklch, var(--deep-text) 45%, transparent);
+}
+
+/* 主题三段滑块：整行是一个组，滑块只靠 --nav-tools-seg-index 位移 */
+.nav-tools-segments {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 2px;
+  border-radius: 9999px;
+  background-color: color-mix(in oklch, var(--deep-text) 8%, transparent);
+}
+
+.nav-tools-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / 3);
+  height: calc(100% - 4px);
+  border-radius: 9999px;
+  background-color: color-mix(in oklch, var(--deep-text) 18%, transparent);
+  transform: translateX(calc(var(--nav-tools-seg-index, 0) * 100%));
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-tools-segment {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.5rem;
+  border: none;
+  border-radius: 9999px;
+  background: none;
+  cursor: pointer;
+  color: var(--deep-text);
+  opacity: 0.55;
+  transition: opacity 0.15s ease-out;
+}
+
+.nav-tools-segment:hover {
+  opacity: 0.8;
+}
+
+.nav-tools-segment[aria-checked="true"] {
+  opacity: 1;
+}
+
+.nav-tools-segment__icon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* ============================================
+ * 五、公告弹窗（外壳复用 privacy-modal）
+ * ============================================ */
+/* .privacy-title 不是 flex 容器，铃铛和标题会各占一行；公告标题要并排 */
+.nav-announcement-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-announcement-title-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+.nav-announcement-body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.8;
+}
+
+.nav-announcement-link {
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+/* ============================================
+ * 六、减少动效
+ * ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  .navbar-dropdown-panel,
+  .navbar-dropdown-box,
+  .navbar-dropdown-arrow,
+  .navbar-dropdown-page,
+  .navbar-dropdown-highlight,
+  .nav-tools-panel,
+  .nav-tools-item,
+  .nav-tools-highlight,
+  .nav-tools-thumb,
+  .nav-tools-segment {
+    transition-duration: 0.01ms;
+  }
+
+  /* 只保留有无，不保留位移与缩放；药丸仍需 translate 落位，不能清掉 */
+  .nav-tools-panel,
+  .nav-tools-item {
+    transform: none;
+  }
+
+  .navbar-moving-icon {
+    will-change: auto;
+  }
+}

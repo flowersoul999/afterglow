@@ -1,47 +1,83 @@
 /* ==========================================================================
    Swup Page Transitions & Global Animations
-   规范版本：v2 — 包含 7 个已知 CSS 渲染问题的修复
+   规范版本：v3（2026-10-29 恢复位移动画，对齐参考站）
+   —— v2 曾为了绕开 7 个渲染坑把过渡降级成「纯 opacity、无位移」，
+      v3 用 :has() 精确识别 fixed 布局的页面单独退化，其余页面拿回位移。
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. Swup Page Transitions
-   -------------------------------------------------------------------------- */
+   1. Swup 页面过渡：淡出上移 / 淡入下移
+   --------------------------------------------------------------------------
+   swup 4.9 会在 <html> 上按阶段挂 is-changing / is-leaving / is-rendering，
+   容器本身带 animationClass 生成的 .transition-swup-main。
+   离开短（180ms）、进入长（280ms）：出去要利落，进来要留出落地感。 */
 
-/* Main Content Transition — 快速淡入淡出，无位移 */
-.transition-main {
-  transition: opacity 200ms ease-out;
+@keyframes page-leave-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
 }
 
-/* Leaving Animation */
-.transition-leaving {
-  transition: opacity 200ms ease-out;
+@keyframes page-enter-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* State: Changing (Swup) */
-html.is-changing .transition-main {
-  transition: opacity 200ms ease-out;
+@keyframes fade-out-only {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 
-html.is-leaving .transition-main {
-  transition: opacity 200ms ease-out;
+@keyframes fade-in-only {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-/* State: Animating (Entering) — 即时切换，无位移 */
-html.is-animating .transition-main {
-  opacity: 0;
+/* 离开阶段：is-leaving 在 animatePageOut 时添加，content:replace 时移除 */
+html.is-leaving .transition-swup-main {
+  animation: page-leave-out 180ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* State: Leaving — 即时切换，无位移 */
-html.is-animating.is-leaving .transition-leaving {
-  opacity: 0;
+/* 进入阶段：is-rendering 在 content:replace 后添加，animatePageIn 完成时移除 */
+html.is-rendering .transition-swup-main {
+  animation: page-enter-in 280ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-/* Swup Fade Fallback */
+/* 页内 fixed 元素（首页被 ScrollTrigger pin 住的 hero、文章页右侧大纲面板）
+   会在容器出现非 none 的 transform 时改以容器为 containing block，
+   过渡瞬间跳位甚至飞出屏幕。所以只有进出这两类页面时退化成纯 opacity，
+   其余页面照常保留 6px 位移 —— 这是 v2 全禁位移的真正解药。 */
+html.is-leaving:has(.home-page) .transition-swup-main,
+html.is-leaving:has(.article-toc-panel) .transition-swup-main {
+  animation-name: fade-out-only;
+}
+
+html.is-rendering:has(.home-page) .transition-swup-main,
+html.is-rendering:has(.article-toc-panel) .transition-swup-main {
+  animation-name: fade-in-only;
+}
+
+/* 侧栏容器共用 is-animating 的淡出（它们不是主容器，不参与位移动画） */
 .transition-swup-fade {
-  transition: opacity 200ms ease-out;
-}
-
-html.is-changing .transition-swup-fade {
   transition: opacity 200ms ease-out;
 }
 
@@ -49,21 +85,88 @@ html.is-animating .transition-swup-fade {
   opacity: 0;
 }
 
-/* --------------------------------------------------------------------------
-   2. Keyframes
-   -------------------------------------------------------------------------- */
-
-/* --------------------------------------------------------------------------
-   3. Onload Animations — 即时显示，无位移
-   -------------------------------------------------------------------------- */
-
-.onload-animation {
-  opacity: 1;
+/* 旧样式撤下前先隐藏内容，避免样式切换或滚动恢复期间露出错位内容 */
+html.is-content-pending #swup-container {
   animation: none;
+  opacity: 0;
+}
+
+/* 无障碍：减少动画 */
+@media (prefers-reduced-motion: reduce) {
+  html.is-leaving .transition-swup-main,
+  html.is-rendering .transition-swup-main,
+  html.is-leaving:has(.home-page) .transition-swup-main,
+  html.is-rendering:has(.home-page) .transition-swup-main,
+  html.is-leaving:has(.article-toc-panel) .transition-swup-main,
+  html.is-rendering:has(.article-toc-panel) .transition-swup-main {
+    animation: none;
+  }
 }
 
 /* --------------------------------------------------------------------------
-   4. Navigation Progress Bar
+   2. Onload Animations（入场错峰上浮）
+   --------------------------------------------------------------------------
+   首屏与换页后，带 .onload-animation 的卡片依次上浮淡入。
+   ⚠️ 只给子卡片用：#content-wrapper 自己也带这个类，但整块内容上浮 0.75rem
+      会让页面「跳」一下，所以下面把它单独压掉，位移交给 Swup 容器。 */
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.onload-animation {
+  opacity: 1;
+  animation: fade-in-up 400ms cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+/* 渐进式延迟：同级卡片依次登场，最多错开 5 层 */
+.onload-animation:nth-child(1) {
+  animation-delay: 50ms;
+}
+.onload-animation:nth-child(2) {
+  animation-delay: 100ms;
+}
+.onload-animation:nth-child(3) {
+  animation-delay: 150ms;
+}
+.onload-animation:nth-child(4) {
+  animation-delay: 200ms;
+}
+.onload-animation:nth-child(5) {
+  animation-delay: 250ms;
+}
+
+/* 整块内容不做上浮：Swup 容器已经在淡入淡出，再来一次位移就是双重动效。
+   首页 hero 被 GSAP 以 fixed 钉住，同理不能碰它的 transform */
+#content-wrapper,
+#content-wrapper:has(> .home-page) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onload-animation {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/* 手机上滚动短、卡片窄，错峰动画只剩干扰，直接关掉 */
+@media (max-width: 768px) {
+  .onload-animation {
+    opacity: 1;
+    animation: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. Navigation Progress Bar
    -------------------------------------------------------------------------- */
 
 #progress-bar {
@@ -87,16 +190,8 @@ html.is-animating .transition-swup-fade {
 }
 
 /* ==========================================================================
-   SWUP 过渡修复（7 个已知问题）
+   过渡期的布局冻结（原「7 个已知问题」修复里仍然有效的部分）
    ========================================================================== */
-
-/* 修复 A：禁用子元素独立动画，防止与 Swup 容器双重 opacity 冲突 */
-html.is-animating .onload-animation,
-html.is-changing .onload-animation {
-  animation: none !important;
-  opacity: 1 !important;
-  transform: none !important;
-}
 
 /* 修复 B/D：过渡期间冻结布局属性，防止 Banner 高度跳动 */
 html.is-page-transitioning #wallpaper-wrapper,

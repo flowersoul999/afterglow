@@ -3,8 +3,13 @@ import { Picture } from "astro:assets";
 import * as path from "node:path";
 import type { ImageMetadata } from "astro";
 import { Icon } from "astro-icon/components";
-import { navBarConfig, siteConfig } from "@/config";
-import { type NavBarLink } from "@/types/config";
+import DropdownItem from "@/components/common/DropdownItem.astro";
+import { announcementConfig, navBarConfig, siteConfig } from "@/config";
+import { DARK_MODE, LIGHT_MODE, SYSTEM_MODE } from "@/constants/constants";
+import { LinkPresets } from "@/constants/link-presets";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { LinkPreset, type NavBarLink } from "@/types/config";
 import { getFallbackFormat, getImageFormats } from "@/utils/image-utils";
 import { resolveNavLinks } from "@/utils/nav-categories";
 import { url } from "@/utils/url-utils";
@@ -17,6 +22,52 @@ const navbarWidthFull = siteConfig.navbar.widthFull ?? false;
 // 「分类」等动态菜单的子项在这里注入（配置里只有按钮），
 // 数据来自文章目录，新加分类文件夹后无需改配置
 const links: NavBarLink[] = await resolveNavLinks(navBarConfig.links);
+
+/**
+ * 共享下拉面板的内容页：带子菜单的导航项各占一页，
+ * 页序号与触发器容器上的 data-dropdown-index 配对。
+ * 整条导航只有一只面板，内容页全渲染在这里、靠切换 is-active 交叉淡换。
+ */
+interface NavbarDropdownPage {
+	index: number;
+	/** 「分类」那种多列排布，沿用站内 .dropdown-grid，只改排列不改外观 */
+	grid: boolean;
+	children: NavBarLink[];
+}
+
+const resolveChild = (child: NavBarLink | LinkPreset): NavBarLink | null =>
+	typeof child === "number" ? (LinkPresets[child] ?? null) : child;
+
+const dropdownPages: NavbarDropdownPage[] = links
+	.map((link, index) => ({
+		index,
+		grid: link.dynamicSource === "post-categories",
+		children: (link.children ?? [])
+			.map(resolveChild)
+			.filter((child): child is NavBarLink => child !== null),
+	}))
+	.filter((page) => page.children.length > 0);
+
+// 工具面板主题行的三段滑块，值对应 setting-utils 的 LIGHT_DARK_MODE
+const toolsThemeOptions = [
+	{
+		value: LIGHT_MODE,
+		label: i18n(I18nKey.themeLight),
+		icon: "material-symbols:light-mode-outline-rounded",
+	},
+	{
+		value: DARK_MODE,
+		label: i18n(I18nKey.themeDark),
+		icon: "material-symbols:dark-mode-outline-rounded",
+	},
+	{
+		value: SYSTEM_MODE,
+		label: i18n(I18nKey.themeSystem),
+		icon: "material-symbols:brightness-auto-outline-rounded",
+	},
+];
+
+const showAnnouncement = Boolean(announcementConfig.content);
 
 // Logo
 const logoValue = siteConfig.navbar.logo?.value || "";
@@ -88,296 +139,183 @@ if (isLocalSrcLogo) {
 		<div class="navbar-seg navbar-seg--center" data-navbar-nav>
 			<div class="navbar-nav hidden lg:flex items-center gap-0.5 relative">
 				<div class="navbar-hover-highlight" data-hover-border></div>
-				{links.map((l) => (
-					<DropdownMenu
-						link={l}
-						variant={l.dynamicSource === "post-categories" ? "grid" : "list"}
-					/>
+
+				{/* 浮动图标层：图标不画在按钮里，切页时由这一层「飞」到新项。
+				    current / next 两层叠在同一个网格单元里做交叉淡换 */}
+				<span class="navbar-moving-icon" data-navbar-moving-icon aria-hidden="true">
+					<span class="navbar-moving-icon__glyph" data-navbar-icon-current></span>
+					<span class="navbar-moving-icon__glyph" data-navbar-icon-next></span>
+				</span>
+
+				{links.map((link, index) => (
+					<DropdownMenu link={link} index={index} />
 				))}
+
+				{dropdownPages.length > 0 && (
+					<div class="navbar-dropdown-panel" data-navbar-dropdown-panel>
+						<span class="navbar-dropdown-arrow" aria-hidden="true"></span>
+						<div class="navbar-dropdown-box">
+							{dropdownPages.map((page) => (
+								<div class="navbar-dropdown-page" data-dropdown-page={page.index}>
+									<span class="navbar-dropdown-highlight" aria-hidden="true"></span>
+									{page.grid ? (
+										<div class="dropdown-grid">
+											{page.children.map((child) => (
+												<a
+													href={child.external ? child.url : url(child.url)}
+													target={child.external ? "_blank" : undefined}
+													class="dropdown-item"
+													style={(child.depth ?? 1) > 1 ? `padding-left: calc(0.65rem + ${Math.min((child.depth ?? 1) - 1, 2) * 0.85}rem)` : undefined}
+												>
+													{child.icon && <Icon name={child.icon} class="text-[1.15rem] navbar-subitem-icon" />}
+													<span class="dropdown-item-label">{child.name}</span>
+													{child.external && (
+														<Icon name="fa7-solid:arrow-up-right-from-square" class="text-[0.75rem] ml-auto text-black/25 dark:text-white/25" />
+													)}
+												</a>
+											))}
+										</div>
+									) : (
+										page.children.map((child, childIndex) => (
+											<DropdownItem
+												href={child.external ? child.url : url(child.url)}
+												target={child.external ? "_blank" : undefined}
+												isLast={childIndex === page.children.length - 1}
+												class="dropdown-item"
+											>
+												{child.icon && <Icon name={child.icon} class="text-[1.25rem] mr-3 navbar-subitem-icon" />}
+												<span
+													class="dropdown-item-label"
+													style={(child.depth ?? 1) > 1 ? `padding-left: ${Math.min((child.depth ?? 1) - 1, 2) * 0.85}rem` : undefined}
+												>
+													{child.name}
+												</span>
+												{typeof child.count === "number" && <span class="dropdown-item-count">{child.count}</span>}
+												{child.external && (
+													<Icon name="fa7-solid:arrow-up-right-from-square" class="text-[0.75rem] text-black/25 dark:text-white/25 ml-auto" />
+												)}
+											</DropdownItem>
+										))
+									)}
+								</div>
+							))}
+						</div>
+					</div>
+				)}
 			</div>
 		</div>
 
-		<!-- 右段：搜索 + 快捷键（滚动收缩成球），移动端追加菜单按钮 -->
+		<!-- 右段：工具按钮（滚动收缩成球），移动端追加菜单按钮 -->
 		<div class="navbar-seg navbar-seg--right">
-			<button aria-label="Search" name="Search" class="btn-plain h-9 nav-search-btn" id="nav-search-btn">
-				<span class="nav-search-btn__shortcut" data-shortcut>⌘ K</span>
-				<Icon name="material-symbols:search-rounded" is:inline class="text-[1.4rem]" style="font-variation-settings: 'wght' 700" />
+			<button
+				aria-label={i18n(I18nKey.tools)}
+				aria-haspopup="menu"
+				aria-expanded="false"
+				name="Tools"
+				class="btn-plain h-9 nav-tools-btn"
+				id="nav-tools-btn"
+				type="button"
+			>
+				<Icon name="material-symbols:instant-mix-outline-rounded" is:inline class="text-[1.35rem]" style="font-variation-settings: 'wght' 500" />
 			</button>
 			<button aria-label="Menu" name="Nav Menu" class="btn-plain h-9 w-9 lg:hidden!" id="nav-menu-switch">
 				<Icon name="material-symbols:menu-rounded" is:inline class="text-[1.2rem]" />
 			</button>
 		</div>
+
+		<!-- 工具面板：挂在 .navbar-segments 下（右段收缩态 overflow:hidden 会裁掉它），
+		     水平位置由 navbar-tools-panel.ts 实测 -->
+		<div class="nav-tools-panel" id="nav-tools-panel">
+			<div class="nav-tools-box" role="menu" aria-label={i18n(I18nKey.tools)}>
+				<span class="nav-tools-highlight" aria-hidden="true"></span>
+
+				<button class="nav-tools-item" type="button" role="menuitem" data-nav-search-trigger data-nav-tools-stop>
+					<Icon name="material-symbols:search-rounded" class="nav-tools-item__icon" />
+					<span>{i18n(I18nKey.search)}</span>
+					<kbd class="nav-tools-keys">
+						<span data-nav-tools-modifier>Ctrl</span><span>K</span>
+					</kbd>
+				</button>
+
+				{showAnnouncement && (
+					<button class="nav-tools-item" type="button" role="menuitem" id="nav-tools-announcement" data-nav-tools-stop>
+						<Icon name="material-symbols:campaign-outline-rounded" class="nav-tools-item__icon" />
+						<span>{announcementConfig.title || i18n(I18nKey.announcement)}</span>
+					</button>
+				)}
+
+				<div class="nav-tools-item nav-tools-item--group" data-nav-tools-stop="group">
+					<Icon name="material-symbols:palette-outline" class="nav-tools-item__icon" />
+					<span>{i18n(I18nKey.theme)}</span>
+					<div class="nav-tools-segments" role="group" aria-label={i18n(I18nKey.theme)}>
+						<span class="nav-tools-thumb" aria-hidden="true"></span>
+						{toolsThemeOptions.map((option) => (
+							<button
+								class="nav-tools-segment"
+								type="button"
+								role="menuitemradio"
+								aria-checked="false"
+								aria-label={option.label}
+								title={option.label}
+								data-nav-tools-theme={option.value}
+							>
+								<Icon name={option.icon} class="nav-tools-segment__icon" />
+							</button>
+						))}
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
+
+	{showAnnouncement && (
+		<dialog id="nav-announcement-modal" class="privacy-modal" aria-label={announcementConfig.title || i18n(I18nKey.announcement)}>
+			<div class="privacy-overlay" data-nav-announcement-close></div>
+			<div class="privacy-panel">
+				<div class="privacy-header">
+					<h2 class="privacy-title nav-announcement-title">
+						<Icon name="material-symbols:campaign-outline-rounded" class="nav-announcement-title-icon" />
+						{announcementConfig.title || i18n(I18nKey.announcement)}
+					</h2>
+					<button class="privacy-close" type="button" aria-label={i18n(I18nKey.announcementClose)} data-nav-announcement-close>
+						<Icon name="material-symbols:close-rounded" />
+					</button>
+				</div>
+				<div class="privacy-body">
+					<p class="nav-announcement-body">{announcementConfig.content}</p>
+				</div>
+				<div class="privacy-footer">
+					{announcementConfig.link?.enable && (
+						<a class="btn-regular nav-announcement-link" href={announcementConfig.link.external ? announcementConfig.link.url : url(announcementConfig.link.url)} target={announcementConfig.link.external ? "_blank" : undefined}>
+							{announcementConfig.link.text || i18n(I18nKey.viewDetails)}
+						</a>
+					)}
+					<button class="privacy-confirm-btn" type="button" data-nav-announcement-close>
+						{i18n(I18nKey.gotIt)}
+					</button>
+				</div>
+			</div>
+		</dialog>
+	)}
 </div>
 
-<script is:inline>
-(function() {
-	var _hoverSliderAbortController = null;
-	var _hoverSliderMouseEnterHandlers = [];
+<script>
+	import { initNavbarActiveMotion, refreshActiveItem } from "@/utils/navbar-active-motion";
+	import { initNavbarDropdownDelegation } from "@/utils/navbar-dropdown-controller";
+	import { initNavbarScrollLayout } from "@/utils/navbar-scroll-layout";
+	import { initNavbarToolsPanel } from "@/utils/navbar-tools-panel";
 
-	function cleanupHoverSlider() {
-		if (_hoverSliderAbortController) {
-			_hoverSliderAbortController.abort();
-			_hoverSliderAbortController = null;
-		}
-		_hoverSliderMouseEnterHandlers.forEach(function(entry) {
-			entry[0].removeEventListener('mouseenter', entry[1]);
-		});
-		_hoverSliderMouseEnterHandlers = [];
-	}
+	// 导航栏在 Swup 容器之外、跨导航常驻，这几个初始化只需跑一次
+	// （各模块内部都有 initialized guard，重复调用安全）
+	initNavbarDropdownDelegation();
+	initNavbarActiveMotion();
+	initNavbarScrollLayout();
+	initNavbarToolsPanel();
 
-	function normalizePath(p) {
-		return p.replace(/\/$/, '') || '/';
-	}
-
-	function pathMatches(currentPath, href) {
-		var cp = normalizePath(currentPath);
-		var hp = normalizePath(href);
-		if (hp === '/') return cp === '/';
-		return cp === hp || cp.startsWith(hp + '/');
-	}
-
-	function moveHighlight(navContainer, hoverBorder, item) {
-		if (!item) {
-			hoverBorder.style.opacity = '0';
-			return;
-		}
-		var rect = item.getBoundingClientRect();
-		var containerRect = navContainer.getBoundingClientRect();
-		hoverBorder.style.width = rect.width + 'px';
-		hoverBorder.style.height = rect.height + 'px';
-		hoverBorder.style.left = (rect.left - containerRect.left) + 'px';
-		hoverBorder.style.top = (rect.top - containerRect.top) + 'px';
-	}
-
-	function initHoverSlider() {
-		cleanupHoverSlider();
-
-		var navContainer = document.querySelector('[data-navbar-nav] .navbar-nav');
-		var hoverBorder = document.querySelector('[data-hover-border]');
-		if (!navContainer || !hoverBorder) return;
-
-		_hoverSliderAbortController = new AbortController();
-		var navItems = Array.from(navContainer.querySelectorAll(':scope > .dropdown-container'));
-
-		function detectActiveItem() {
-			var currentPath = window.location.pathname;
-			var activeItem = null;
-			var activeLen = -1;
-
-			navItems.forEach(function(item) {
-				item.classList.remove('nav-item-active');
-				var hrefs = [];
-				var selfLink = item.querySelector(':scope > a');
-				if (selfLink) {
-					var href = selfLink.getAttribute('href');
-					if (href) hrefs.push(href);
-				}
-				item.querySelectorAll('.dropdown-item[href]').forEach(function(el) {
-					var href = el.getAttribute('href');
-					if (href) hrefs.push(href);
-				});
-
-				// 取本项内最长的命中路径：/categories/xx/ 比 /categories/ 更具体
-				var matchedLen = -1;
-				hrefs.forEach(function(href) {
-					if (!pathMatches(currentPath, href)) return;
-					var len = normalizePath(href).length;
-					if (len > matchedLen) matchedLen = len;
-				});
-
-				// 多项同时命中时只高亮最具体的那个：/categories/xx/ 比 /categories/ 更具体
-				// （2026-10-29 起「分类」已并入「文章」下拉，不再有指向同一 URL 的两个导航项抢高亮，
-				//  但这段「取最长命中」的判定仍需保留，用于分类详情页与其它前缀相同的链接）
-				if (matchedLen > activeLen) {
-					activeLen = matchedLen;
-					activeItem = item;
-				}
-			});
-
-			if (activeItem) {
-				activeItem.classList.add('nav-item-active');
-				navContainer.classList.add('nav-has-active');
-				requestAnimationFrame(function() {
-					moveHighlight(navContainer, hoverBorder, activeItem);
-				});
-			} else {
-				navContainer.classList.remove('nav-has-active');
-				hoverBorder.style.opacity = '0';
-			}
-		}
-
-		navItems.forEach(function(item) {
-			var handler = function() { moveHighlight(navContainer, hoverBorder, item); };
-			item.addEventListener('mouseenter', handler);
-			_hoverSliderMouseEnterHandlers.push([item, handler]);
-		});
-
-		navContainer.addEventListener('mouseleave', function() {
-			var activeItem = navContainer.querySelector('.nav-item-active');
-			moveHighlight(navContainer, hoverBorder, activeItem);
-		}, { signal: _hoverSliderAbortController.signal });
-
-		navContainer.addEventListener('mouseenter', function() {
-			hoverBorder.style.opacity = '1';
-		}, { signal: _hoverSliderAbortController.signal });
-
-		detectActiveItem();
-		document.addEventListener('astro:page-load', detectActiveItem, { signal: _hoverSliderAbortController.signal });
-	}
-
-	initHoverSlider();
-
-	// Scroll shrink effect
-	(function() {
-		var navbar = document.getElementById('navbar');
-		var navbarWrapper = document.getElementById('navbar-wrapper');
-		if (!navbar) return;
-
-		var SCROLL_IN = 80;
-		var SCROLL_OUT = 40;
-		var COMPACT_GAP = 8;
-		var ticking = false;
-		var layoutRaf = null;
-
-		var segments = document.querySelector('.navbar-segments');
-		var center = document.querySelector('.navbar-seg--center');
-		var left = document.querySelector('.navbar-seg--left');
-		var right = document.querySelector('.navbar-seg--right');
-
-		function updateCompactLayout() {
-			if (!segments || !center || !left || !right) return;
-
-			var isScrolled = navbar.classList.contains('scrolled');
-			var isMobile = window.matchMedia('(max-width: 1023px)').matches;
-
-			if (isMobile) {
-				left.style.left = '';
-				left.style.transform = '';
-				right.style.left = '';
-				right.style.right = '';
-				right.style.transform = '';
-				return;
-			}
-
-			var segmentsRect = segments.getBoundingClientRect();
-			var centerRect = center.getBoundingClientRect();
-			var leftRect = left.getBoundingClientRect();
-			var rightRect = right.getBoundingClientRect();
-
-			var isFirstRightPosition = right.style.right === '';
-			if (isFirstRightPosition) { right.style.transition = 'none'; }
-
-			left.style.transform = 'translateY(-50%)';
-			right.style.transform = 'translateY(-50%)';
-
-			if (isScrolled) {
-				// 收缩态：左右段贴到中间椭圆两侧。右段用 right 定位，算出来再大也只是往左偏，
-				// 不会被推出容器（用 left 定位时算错就直接溢出屏幕）。
-				// right 是「右段右边缘到容器右边缘」的距离，所以要减掉右段自身宽度。
-				var maxRight = Math.max(0, segmentsRect.width - rightRect.width);
-				var desiredRight = segmentsRect.right - centerRect.right - COMPACT_GAP - rightRect.width;
-				right.style.right = Math.min(Math.max(desiredRight, 0), maxRight) + 'px';
-				left.style.left = Math.max(0, centerRect.left - segmentsRect.left - COMPACT_GAP - leftRect.width) + 'px';
-			} else {
-				// 展开态：右段贴住容器右边缘。这里用纯 right: 0，不再按 px 换算，
-				// 于是滚动条出现、字体加载、换页导致的宽度变化都不会让它跑到页面外。
-				left.style.left = '0px';
-				right.style.right = '0px';
-			}
-
-			if (isFirstRightPosition) {
-				right.offsetHeight;
-				right.style.transition = '';
-			}
-		}
-
-		// 收缩态的位置是 JS 按 px 算的，容器可用宽度变了（滚动条出现/消失、
-		// Swup 换页后内容变高）就得重算；window.resize 抓不到这一类变化。
-		function scheduleLayoutUpdate() {
-			if (layoutRaf !== null) return;
-			layoutRaf = requestAnimationFrame(function() {
-				layoutRaf = null;
-				updateCompactLayout();
-			});
-		}
-
-		function handleScroll() {
-			var y = window.scrollY;
-			var wasScrolled = navbar.classList.contains('scrolled');
-
-			if (y > SCROLL_IN) {
-				navbar.classList.add('scrolled');
-				if (navbarWrapper) navbarWrapper.classList.add('navbar-scrolled');
-			} else if (y < SCROLL_OUT) {
-				navbar.classList.remove('scrolled');
-				if (navbarWrapper) navbarWrapper.classList.remove('navbar-scrolled');
-			}
-
-			var isScrolled = navbar.classList.contains('scrolled');
-			if (wasScrolled !== isScrolled || isScrolled) {
-				requestAnimationFrame(updateCompactLayout);
-			}
-			ticking = false;
-		}
-
-		window.addEventListener('scroll', function() {
-			if (!ticking) {
-				requestAnimationFrame(handleScroll);
-				ticking = true;
-			}
-		}, { passive: true });
-
-		window.addEventListener('resize', scheduleLayoutUpdate, { passive: true });
-
-		// 只盯「容器宽度」：滚动条出现/消失、窗口变化都会让它变。
-		// 不监听左右段自身 —— 收缩动画进行中它们的尺寸每帧都在变，
-		// 那时重算反而会打断 right / left 的过渡动画。
-		if (typeof ResizeObserver !== 'undefined') {
-			var layoutObserver = new ResizeObserver(scheduleLayoutUpdate);
-			[segments, navbar, navbarWrapper].forEach(function(el) {
-				if (el) layoutObserver.observe(el);
-			});
-		}
-
-		window.addEventListener('load', scheduleLayoutUpdate);
-		document.addEventListener('astro:page-load', scheduleLayoutUpdate);
-
-		handleScroll();
-		requestAnimationFrame(updateCompactLayout);
-	})();
-
-	// Search shortcut
-	function initSearchShortcut() {
-		var isMac = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
-		var text = isMac ? "⌘K" : "Ctrl K";
-		document.querySelectorAll("[data-shortcut]").forEach(function(el) {
-			el.textContent = text;
-		});
-	}
-
-	initSearchShortcut();
-	document.addEventListener("astro:page-load", function() {
-		initHoverSlider();
-		initSearchShortcut();
+	// 换页后重新判定激活项：animate=true 让浮动图标从上一项「飞」到新项
+	window.addEventListener("swup:content:replaced", () => {
+		refreshActiveItem(true);
 	});
-
-	// Search button click — 使用事件委托在 document 上，避免 Swup 重复绑定
-	if (!window.__navbarSearchBound) {
-		window.__navbarSearchBound = true;
-		document.addEventListener("click", function(e) {
-			var btn = e.target?.closest?.("#nav-search-btn");
-			if (!btn) return;
-			e.stopPropagation();
-			// 触发搜索模态框
-			if (window.__fireflySearchModalController) {
-				window.__fireflySearchModalController.toggle();
-			} else {
-				window.__fireflySearchModalPendingToggle = true;
-			}
-		});
-	}
-})();
 </script>
 
 {

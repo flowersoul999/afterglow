@@ -83,7 +83,7 @@ src/
 │       guestbook, movies-games/, music, projects, search,
 │       sponsor, rss, robots.txt, og
 ├── plugins/             # 自定义 remark/rehype 插件 (10)
-├── styles/              # CSS 样式（73 个文件，含 about 技术栈/时间线/更新日志图谱）
+├── styles/              # CSS 样式（84 个文件，含 about 技术栈/时间线/更新日志图谱）
 │   ├── tokens/          # 设计令牌：colors, breakpoints, animation, z-index
 │   ├── base/            # reset, utilities
 │   ├── components/      # 组件样式
@@ -93,7 +93,7 @@ src/
 │   ├── transitions/     # Swup 过渡动画
 │   └── vendor/          # 第三方覆盖
 ├── types/               # TypeScript 类型：config.ts, bangumi.ts, guestbook-chat.ts
-└── utils/               # 工具函数（41 个文件，含 changelog.ts / tag-graph 控制器 / tts-text 正文提取 / music-player-controller 播放器形态机等）
+└── utils/               # 工具函数（58 个文件，含 changelog.ts / tag-graph 控制器 / tts-text 正文提取 / music-player-controller 播放器形态机等）
     ├── 8 个控制器模块   # 见第 10 节
     └── 33 个业务工具    # content-utils, category-tree（文件夹即分类，多级 `a/b` 推导 + CategoryNode 树）, date-utils, image-utils, url-utils, tts-text（朗读正文提取）...
 
@@ -169,6 +169,13 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 ```
 
 容器外的组件（FloatingDock, MobileDock, MusicManager, SearchModal）跨导航持久化。
+
+**过渡动画（2026-10-29 v3）**：`#swup-container` 只带 `transition-swup-main` 一个类（由 `astro.config.mjs` 的 `animationClass: "transition-swup-"` 派生，**不要再手写 `transition-main` / `transition-swup-fade`**，那会让同一元素同时跑 transition 与 animation，双重淡入）。动画定义在 `src/styles/transitions/swup.css`：
+
+- 离开：`html.is-leaving` → `page-leave-out` 180ms，淡出 + 上移 6px
+- 进入：`html.is-rendering` → `page-enter-in` 280ms，淡入 + 下移 6px
+- **fixed 页面必须退化**：`html.is-leaving:has(.home-page)` / `:has(.article-toc-panel)` 改用 `fade-out-only`（纯 opacity）。首页 hero 被 GSAP pin 住、文章页右侧大纲是 fixed，容器一旦有非 none 的 transform 就会改以容器为 containing block，瞬间跳位或飞出屏幕——这就是 v2 把位移全禁掉的原因，v3 用 `:has()` 只退化这两类页面。
+- `#content-wrapper` 也带 `.onload-animation`，但 CSS 里单独 `animation: none`：整块内容上浮 0.75rem 会让页面「跳」一下，位移交给容器，子卡片才有错峰（`.onload-animation:nth-child(n)` 50~250ms）。
 
 ### 3.3 主题系统
 
@@ -464,6 +471,27 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
   - 篇数：`navCategoryConfig.showCount`（当前 `false`，卡片上不显示）。列表式下拉的 `.dropdown-item-count` 渲染逻辑还在，只是 count 为 undefined 时不输出。
   - ⚠️ 导航高亮改成「**最长命中路径优先**」（`Navbar.astro` 的 `detectActiveItem`）：进 `/categories/技术分享/` 时只亮最具体的那一项，不会把所有前缀相同的项一起点亮（例如不会既亮「图谱」又亮别的）。改高亮逻辑时别退回 `some()`。
   - ⚠️ **点击展开（`.dropdown-open`）且鼠标不在按钮上时不要反色**（`navbar-new.css` 末尾那条 `:not(:hover)` 规则）：鼠标要移向下方面板必然离开按钮，此时若还套用反色白字，白字会压在浅灰胶囊上让整项消失。
+
+### 5.7.1 导航动效层（2026-10-29 照参考站移植）
+
+导航栏的「衔接动作」由四块拼成，**样式在 `src/styles/layout/navbar-dropdown.css`（经 `main.css` 导入），逻辑在 `src/utils/navbar-*.ts`**：
+
+| 模块 | 文件 | 职责 |
+|---|---|---|
+| 共享下拉面板 | `utils/navbar-dropdown-controller.ts` | 整条导航**只有一只**面板，悬停哪项就滑到哪项下方；定位、宽高过渡、指针滑动、键盘钉住、悬停药丸 |
+| 激活态动效 | `utils/navbar-active-motion.ts` | 最长命中判定激活项、高亮块滑动、浮动图标 FLIP |
+| 滚动收缩布局 | `utils/navbar-scroll-layout.ts` | 滚过 80px 左右两段收成球、贴到中段两侧（px 由 JS 实测） |
+| 右段工具面板 | `utils/navbar-tools-panel.ts` | 搜索 / 公告 / 主题三段滑块，缩放浮出 + 行错峰 |
+
+- **面板结构**：`DropdownMenu.astro` **只输出触发器**（`data-dropdown-index` 与项序号配对），内容页由 `Navbar.astro` 集中渲染在 `.navbar-dropdown-panel` 里，靠 `data-dropdown-page` 配对、`is-active` 交叉淡换。加导航项不用改控制器，序号自动跟上。
+- ⚠️ **触发器类名是 `is-dropdown-open`**（控制器写），不是旧的 `dropdown-open`。`navbar-new.css` 里那几条「展开态不反色」的规则已同步改成新类名，改回去会让展开时白字压浅底消失。
+- ⚠️ **图标坑位所有项都要留**（`.navbar-trigger-icon` 恒为 `visibility: hidden` 占宽，图标由 `.navbar-moving-icon` 浮动层绘制）。参考实现只给激活项留坑，切换时整条导航会因宽度变化重排；本站改良成统一留位，布局恒定。别为了「省一点空白」改回条件渲染。
+- **浮动图标颜色**：高亮块常驻在激活项上（黑底），所以 `.navbar-nav.nav-has-active .navbar-moving-icon` 默认反色；鼠标悬停到**别的**项时用 `:has(> .dropdown-container:hover:not(.nav-item-active))` 恢复深色，否则白线压在浅灰胶囊上等于消失。
+- ⚠️ **工具面板必须挂在 `.navbar-segments` 下**，不能塞进 `.navbar-seg--right`：右段滚动收缩后 `overflow: hidden` 会把面板裁掉。水平位置由控制器实测并钳制在视口内（`--tools-anchor-x` 同时给指针位移和缩放原点用，动画只跑 `opacity` / `transform`）。
+- ⚠️ **`.navbar-dropdown-page` / `.nav-tools-box` 里的行不要再各自刷底色**：底色由滑动药丸（`.navbar-dropdown-highlight` / `.nav-tools-highlight`）统一提供。覆盖 `dropdown.css` 与 `utilities.css` 里分层内的 hover 底色靠「未分层样式优先于 `@layer`」这条级联规则即可，**不要新加 `!important`**（§4.2）。
+- ⚠️ **行悬停不要写成 `color: var(--primary)`**：本站 primary 是灰阶（`oklch(0.30 0 0)`），比 `--deep-text`（`0.10`）浅一大截，hover 时文字会「褪色」成灰。参考站能用是因为它的 primary 是彩色。
+- **公告弹窗**用原生 `<dialog>` + `.privacy-modal` 外壳（`Navbar.astro` 内，`data-nav-announcement-close` 统一关闭），内容取自 `announcementConfig`；脚本里判 `target` 要用 `Element` 而不是 `HTMLElement`——关闭按钮里包着 `svg`，点中图形时 `target` 是 `SVGElement`。
+- 工具面板文案键（`tools` / `theme` / `themeLight` / `themeDark` / `themeSystem` / `gotIt` / `viewDetails`）按 §7 同时加了 `i18nKey.ts` 与 `languages/zh_CN.ts`。
 
 ### 5.8 动态页左栏筛选（2026-09-30）
 
@@ -1167,7 +1195,7 @@ EdgeOne Pages（GitHub 集成自动构建：pnpm build → dist/，需配 13 个
 
 ## 21. 更新日志规范（新增 2026-08-20）
 
-`src/content/changelog/` 是面向用户的版本历史，**每完成一个模块/功能必须新增一条**，禁止攒到最后。
+`src/content/更新日志/` 是面向用户的版本历史，**每完成一个模块/功能必须新增一条**，禁止攒到最后。
 
 **文件命名**：`YYYY-MM-DD-<kebab-case>.md`（如 `2026-08-20-folder-as-category.md`）
 

@@ -1,25 +1,11 @@
 /* ===== 下拉菜单样式 ===== */
 @reference "tailwindcss";
 @layer components {
+  /* 触发器容器：整条导航只有一只共享面板（2026-10-29 起），
+     内容页渲染在 Navbar 的 .navbar-dropdown-panel 里，容器只负责定位与配对索引。
+     面板本身的样式在 src/styles/layout/navbar-dropdown.css */
   .dropdown-container {
     @apply relative;
-  }
-
-  /* pt-5（1.25rem）= 气泡与导航胶囊之间的距离，对齐参考站。
-     这段留白同时充当悬停过渡区：太窄时鼠标从胶囊移向卡片会掉出 hover 区导致面板闪收 */
-  .dropdown-menu {
-    @apply absolute top-full left-0 pt-5 opacity-0 invisible pointer-events-none
-      transition-all duration-200 ease-out transform translate-y-[-8px] z-50;
-  }
-
-  .dropdown-container:hover .dropdown-menu,
-  .dropdown-container:focus-within .dropdown-menu {
-    @apply opacity-100 visible pointer-events-auto translate-y-0;
-  }
-
-  .dropdown-container:hover .dropdown-arrow,
-  .dropdown-container:focus-within .dropdown-arrow {
-    @apply rotate-180;
   }
 
   /* 卡片：1.5px 深色实边框 + 纯色底 + 无阴影无毛玻璃（对齐参考站的下拉语言）。
