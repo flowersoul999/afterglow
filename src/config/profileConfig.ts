@@ -21,7 +21,7 @@ export const profileConfig: ProfileConfig = {
 	occupation: "[技术博主 / 生活记录者]",
 
 	// 个人签名（支持多条，会循环打字+删除效果）
-	bio: ["如果你喜欢，那么欢迎来到我的世界！", "海棠花未眠，老陈总在我身边"],
+	bio: ["如果你喜欢，那么欢迎来到我的世界！"],
 
 	// 链接配置
 	// 已经预装的图标集：fa7-brands，fa7-regular，fa7-solid，material-symbols，simple-icons
@@ -30,18 +30,6 @@ export const profileConfig: ProfileConfig = {
 	// `pnpm add @iconify-json/<icon-set-name>`
 	// showName: true 时显示图标和名称，false 时只显示图标
 	links: [
-		{
-			name: "WeChat",
-			icon: "simple-icons:wechat",
-			url: "/assets/ziyuan/vx.webp",
-			showName: false,
-		},
-		{
-			name: "QQ",
-			icon: "simple-icons:tencentqq",
-			url: "/assets/ziyuan/qq.webp",
-			showName: false,
-		},
 		{
 			name: "GitHub",
 			icon: "simple-icons:github",
