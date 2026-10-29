@@ -1,7 +1,9 @@
 import type { MusicPlayerConfig } from "../types/config";
 
 export const musicPlayerConfig: MusicPlayerConfig = {
-	showInNavbar: false,
+	// 左下角悬浮播放器（MusicPlayerWidget）的总开关：
+	// false = 整个组件不渲染，桌面端也不出现
+	showInNavbar: true,
 	mode: "local",
 	volume: 0.7,
 	playMode: "list",

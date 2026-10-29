@@ -55,7 +55,7 @@ src/
 │   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
 │   ├── controls/        # 交互控件：搜索、归档三视图树（ArchivePanel/ArchiveTree）、主题、Dock (8)
-│   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器)
+│   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器)
 │   ├── layout/          # 布局组件：Navbar, Footer, SideBar, HomeHero... (19)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
 │   ├── moments/         # 动态卡片与评论弹窗
@@ -87,13 +87,13 @@ src/
 │   ├── tokens/          # 设计令牌：colors, breakpoints, animation, z-index
 │   ├── base/            # reset, utilities
 │   ├── components/      # 组件样式
-│   ├── features/        # 功能样式（含 tts-player.css 文章朗读播放器）
+│   ├── features/        # 功能样式（含 tts-player.css 文章朗读播放器、music-player.css 左下角唱片播放器）
 │   ├── layout/          # 布局样式
 │   ├── pages/           # 页面样式
 │   ├── transitions/     # Swup 过渡动画
 │   └── vendor/          # 第三方覆盖
 ├── types/               # TypeScript 类型：config.ts, bangumi.ts, guestbook-chat.ts
-└── utils/               # 工具函数（41 个文件，含 changelog.ts / tag-graph 控制器 / tts-text 正文提取等）
+└── utils/               # 工具函数（41 个文件，含 changelog.ts / tag-graph 控制器 / tts-text 正文提取 / music-player-controller 播放器形态机等）
     ├── 8 个控制器模块   # 见第 10 节
     └── 33 个业务工具    # content-utils, category-tree（文件夹即分类，多级 `a/b` 推导 + CategoryNode 树）, date-utils, image-utils, url-utils, tts-text（朗读正文提取）...
 
@@ -527,6 +527,20 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - 文档同步：`README.md` / `README.en.md` 标题、`AGENTS.md` 与 `CLAUDE.md` 第 1 节名称表、`.pages.yml` 首行注释。
 - **不动的地方**：`src/content/更新日志/2026-10-22-…` 与 `src/content/临时收集/…/待办笔记.md` 里的旧名 —— 那是历史记录，改了就失真。
 - 再次提醒 §5.20 的教训：改名前全仓 `grep -rn "中文旧名"`，光改 `siteConfig.title` 会漏。
+
+### 5.22 左下角唱片播放器（2026-10-29 新增，从参考站搬入）
+
+- **三件套**：`src/components/features/MusicPlayerWidget.astro`（结构 + 一次性初始化）、`src/utils/music-player-controller.ts`（形态机/拖拽/列表，约 1070 行）、`src/styles/features/music-player.css`（约 838 行，由组件自己 import，不进 `main.css`）。
+- **挂载点**：`src/layouts/Layout.astro` 的 `<slot />` 之后（`#swup-container` 外，跨导航持久，播放不中断）。用 `window.__musicPlayerWidgetReady` 守卫，切页后不会重复绑定（实测二次点击只切一态）。
+- **三态**：`data-state="disc|pill|bar"` —— 未播放只有圆碟；播放中收成「唱片 + 歌词」胶囊；悬停/点击展开成完整控制条。面板开合用 `data-panel="open|closed"`，歌单与歌词共用同一张向上生长的卡。
+- **⚠️ 引擎不要另起炉灶**：播放内核仍是 `MusicManager` 的 `window.__fireflyMusic`（`src/components/features/MusicManager.astro`），组件只消费 `fm:*` 九个事件（init/track/time/play-state/mode/volume/lyrics/lrc-index/error）。**改事件名必须两边一起改**，且 `src/components/features/music-visualizer/*` 与音乐页也挂在这套 API 上。
+- **⚠️ 类名隔离**：根节点靠 `data-mp-widget` 定位。`music-player-widget` 这个类被旧的 `MusicPlayer.astro`（音乐页小组件）占着，控制器里若改回按类名 query，会抓到旧组件、新播放器直接失效。
+- **开关**：`musicPlayerConfig.showInNavbar`（`src/config/musicConfig.ts`）为 `false` 时组件带 `hidden` 不显示；`hidden` 的 `display:none` 会被 `.music-player{display:flex}` 覆盖，所以 `music-player.css` 里另有一条 `.music-player[hidden]` 兜底。
+- **歌单来源**：`mode: "local"` 时读 `src/content/影视/music/`（经 `/music-playlist.json`），`mode: "meting"` 时走配置里的 API。懒加载 —— 点唱片或播放键才 `init()`，不点不发请求。
+- **拖拽**：位置存 `localStorage["music-player-pos"]`（`{left, bottom}`）；抓取点用 `DRAG_EXCLUDE` 排除按钮/进度条/音量/歌单列表，因此点这些区域不会误触发拖动。首帧位移需超过 4px 才判定为拖拽（真实鼠标逐帧移动没问题；自动化测试一步跨出元素会判不出，要用小步移动复现）。
+- **移动端隐藏**（≤768px，`@media` 末尾）：小屏没有音乐入口，`MobileDock` 不含音乐。要上小屏得另做紧凑布局。
+- 旧的右下角悬浮坞音乐入口（`UnifiedDock` 的 `ud-music-btn` + `dock-drawer-music`）已删除；`src/components/controls/FloatingDock.astro` 是未被任何页面 import 的死文件，里面还留着同名抽屉，需要时一并清。
+
 
 
 ### 5.18 归档页（2026-10-20 整页照参考站重做）

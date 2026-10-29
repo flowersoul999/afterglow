@@ -878,7 +878,7 @@ export type MusicPlayerConfig = {
 	// 是否显示歌词
 	showLyrics?: boolean;
 
-	// 是否在导航栏显示音乐播放器
+	// 是否显示音乐播放器（左下角悬浮组件；原本还能控制导航栏入口，该入口已移除）
 	showInNavbar?: boolean;
 
 	// Meting API 配置

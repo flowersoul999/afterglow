@@ -92,6 +92,15 @@ enum I18nKey {
 	announcement = "announcement",
 	announcementClose = "announcementClose",
 
+	// 导航右段工具面板（2026-10-29）
+	tools = "tools",
+	theme = "theme",
+	themeLight = "themeLight",
+	themeDark = "themeDark",
+	themeSystem = "themeSystem",
+	gotIt = "gotIt",
+	viewDetails = "viewDetails",
+
 	comments = "comments",
 	commentSection = "commentSection",
 	commentSubtitle = "commentSubtitle",
@@ -129,6 +138,11 @@ enum I18nKey {
 	musicCover = "musicCover",
 	musicNoCover = "musicNoCover",
 	musicAudioPlayer = "musicAudioPlayer",
+
+	// Music Player Widget（左下角悬浮播放器的播放模式提示）
+	playModeList = "playModeList",
+	playModeSingle = "playModeSingle",
+	playModeShuffle = "playModeShuffle",
 
 	themeColor = "themeColor",
 

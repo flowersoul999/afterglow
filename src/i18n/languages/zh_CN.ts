@@ -97,9 +97,23 @@ export const zh_CN: Translation = {
 	[Key.musicNoCover]: "暂无封面",
 	[Key.musicAudioPlayer]: "音频播放器",
 
+	// 音乐播放器悬浮组件（播放模式提示）
+	[Key.playModeList]: "列表循环",
+	[Key.playModeSingle]: "单曲循环",
+	[Key.playModeShuffle]: "随机播放",
+
 	// 公告栏
 	[Key.announcement]: "公告",
 	[Key.announcementClose]: "关闭",
+
+	// 导航右段工具面板（2026-10-29）
+	[Key.tools]: "工具",
+	[Key.theme]: "主题",
+	[Key.themeLight]: "浅色",
+	[Key.themeDark]: "深色",
+	[Key.themeSystem]: "跟随系统",
+	[Key.gotIt]: "知道了",
+	[Key.viewDetails]: "查看详情",
 
 	[Key.comments]: "评论",
 	[Key.commentSection]: "评论区",
