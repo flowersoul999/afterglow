@@ -226,3 +226,89 @@
 		flex-direction: column;
 	}
 }
+
+/* ---------- 分类页（/categories/）顶部的板块入口 ---------- */
+.iv-hub {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.875rem 1rem;
+	margin-bottom: 0.75rem;
+	border-radius: 0.75rem;
+	background: var(--card-bg);
+	border: 1px solid var(--line-divider);
+	text-decoration: none;
+	transition:
+		border-color 180ms ease,
+		background-color 180ms ease;
+}
+
+.iv-hub:hover {
+	border-color: var(--primary);
+	background: var(--btn-plain-bg-hover);
+}
+
+.iv-hub__icon {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.25rem;
+	height: 2.25rem;
+	border-radius: 0.625rem;
+	background: var(--btn-regular-bg);
+	color: var(--primary);
+	font-size: 1.25rem;
+}
+
+.iv-hub__text {
+	display: flex;
+	flex-direction: column;
+	gap: 0.125rem;
+	min-width: 0;
+}
+
+.iv-hub__title {
+	font-size: 0.9375rem;
+	font-weight: 500;
+	color: var(--deep-text);
+	line-height: 1.35;
+}
+
+.iv-hub__meta {
+	font-size: 0.75rem;
+	color: var(--content-meta);
+}
+
+.iv-hub__arrow {
+	margin-left: auto;
+	flex: none;
+	color: var(--content-meta);
+}
+
+/* 分类页（/categories/）是 position:fixed 的全屏画布，普通文档流元素会被盖住，
+   所以入口改成叠在画布上的浮层。z-index 20 介于画布(10) 与 dock(70) 之间。 */
+.iv-hub--overlay {
+	position: fixed;
+	top: 4.75rem;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 20;
+	width: min(28rem, calc(100vw - 2rem));
+	margin-bottom: 0;
+	background: var(--card-bg);
+}
+
+@media (max-width: 768px) {
+	.iv-hub--overlay {
+		top: 4rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.iv-hub--overlay {
+		transition: none;
+	}
+}
+
+

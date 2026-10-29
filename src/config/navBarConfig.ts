@@ -21,7 +21,7 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			icon: "material-symbols:public",
 		},
 
-		// 文章（带下拉子菜单：文章列表 → 图谱 → 归档）
+		// 文章（带下拉子菜单：文章列表 → 分类 → 归档）
 		{
 			name: "文章",
 			url: "/posts/",
@@ -30,13 +30,14 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 				// 文章列表
 				LinkPreset.Posts,
 
-				// 知识图谱（原「分类」三视图页已被 /categories/ 的四层图谱取代）
+				// 分类（2026-10-29 合并：原「文章 > 图谱」与独立「分类」按钮都指向 /categories/，
+				// 两处重复，统一收进本下拉并改名为「分类」）
 				...(siteConfig.pages.categories
 					? [
 							{
-								name: "图谱",
+								name: "分类",
 								url: "/categories/",
-								icon: "material-symbols:hub-outline",
+								icon: "material-symbols:folder-outline",
 							},
 						]
 					: []),
@@ -45,26 +46,6 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 				LinkPreset.Archive,
 			],
 		},
-
-		// 面经（独立内容板块，路由 /interview/，内容在 src/content/面经/）
-		{
-			name: "面经",
-			url: "/interview/",
-			icon: "material-symbols:quiz-outline",
-		},
-
-		// 分类（下拉里的各项在构建时从文章目录自动生成，见 utils/nav-categories.ts；
-		// 这里只放按钮本身，新加分类文件夹后无需改本文件）
-		...(siteConfig.pages.categories
-			? [
-					{
-						name: "分类",
-						url: "/categories/",
-						icon: "material-symbols:folder-outline",
-						dynamicSource: "post-categories" as const,
-					},
-				]
-			: []),
 	];
 
 	// 动态（带下拉子菜单）

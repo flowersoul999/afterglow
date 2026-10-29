@@ -186,8 +186,9 @@ if (isLocalSrcLogo) {
 					if (len > matchedLen) matchedLen = len;
 				});
 
-				// 多项同时命中时只高亮最具体的那个：否则进分类详情页时
-				// 「文章>图谱」(/categories/) 与「分类」会一起亮
+				// 多项同时命中时只高亮最具体的那个：/categories/xx/ 比 /categories/ 更具体
+				// （2026-10-29 起「分类」已并入「文章」下拉，不再有指向同一 URL 的两个导航项抢高亮，
+				//  但这段「取最长命中」的判定仍需保留，用于分类详情页与其它前缀相同的链接）
 				if (matchedLen > activeLen) {
 					activeLen = matchedLen;
 					activeItem = item;
