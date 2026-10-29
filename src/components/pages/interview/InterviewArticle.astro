@@ -1,0 +1,104 @@
+---
+import { render } from "astro:content";
+import Markdown from "@components/common/Markdown.astro";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { formatDateI18n } from "@utils/date-utils";
+import type { InterviewItem } from "@utils/interview-tree";
+import { Icon } from "astro-icon/components";
+import "@/styles/features/interview.css";
+
+interface Props {
+	item: InterviewItem;
+	listUrl: string;
+	prev: InterviewItem | null;
+	next: InterviewItem | null;
+}
+
+const { item, listUrl, prev, next } = Astro.props;
+const { Content, headings, remarkPluginFrontmatter } = await render(item.entry);
+
+const words = Number(remarkPluginFrontmatter.words) || 0;
+const questionNo = item.slug.slice(0, 2);
+---
+
+<MainGridLayout
+	title={item.entry.data.title}
+	description={item.entry.data.description}
+	setOGTypeArticle={true}
+	postSlug={`interview/${item.entry.id}`}
+	headings={headings}
+>
+	<div class="card-base z-10 px-4 py-6 md:px-9 relative w-full min-h-32">
+		<nav class="iv-crumb" aria-label="面包屑">
+			<a href="/interview/">面经</a>
+			<span>/</span>
+			<a href="/interview/">{item.major}</a>
+			<span>/</span>
+			<a href={listUrl}>{item.sub}</a>
+		</nav>
+
+		<header class="iv-article__head">
+			<h1
+				class="iv-article__title"
+				data-pagefind-body
+				data-pagefind-weight="10"
+				data-pagefind-meta="title"
+			>
+				{item.entry.data.title}
+			</h1>
+
+			<div class="iv-article__meta">
+				<span>第 {questionNo} 题</span>
+				{
+					item.entry.data.published && (
+						<>
+							<span class="iv-article__meta-dot">·</span>
+							<span>{formatDateI18n(item.entry.data.published)}</span>
+						</>
+					)
+				}
+				{
+					words > 0 && (
+						<>
+							<span class="iv-article__meta-dot">·</span>
+							<span>
+								{words.toLocaleString()} {i18n(I18nKey.wordsCount)}
+							</span>
+						</>
+					)
+				}
+				<span class="iv-article__meta-dot">·</span>
+				<a href={listUrl}>返回列表</a>
+			</div>
+		</header>
+
+		<Markdown class="markdown-content">
+			<Content />
+		</Markdown>
+
+		<div class="iv-navpair">
+			{
+				prev ? (
+					<a class="iv-navpair__btn" href={prev.url}>
+						<Icon name="material-symbols:chevron-left-rounded" />
+						<span class="iv-navpair__text">{prev.entry.data.title}</span>
+					</a>
+				) : (
+					<span />
+				)
+			}
+			{
+				next ? (
+					<a class="iv-navpair__btn iv-navpair__btn--next" href={next.url}>
+						<span class="iv-navpair__text">{next.entry.data.title}</span>
+						<Icon name="material-symbols:chevron-right-rounded" />
+					</a>
+				) : (
+					<span />
+				)
+			}
+		</div>
+	</div>
+</MainGridLayout>

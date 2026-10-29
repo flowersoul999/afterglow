@@ -92,6 +92,7 @@ scripts/TTS服务/cache/
 #      要先 git rm -r --cached "src/content/xxx" 才会真正从仓库移除（本地文件保留）。
 src/content/*/
 !src/content/文章/
+!src/content/面经/
 !src/content/页面/
 !src/content/动态/
 !src/content/影视/

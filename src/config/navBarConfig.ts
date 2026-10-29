@@ -46,6 +46,13 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			],
 		},
 
+		// 面经（独立内容板块，路由 /interview/，内容在 src/content/面经/）
+		{
+			name: "面经",
+			url: "/interview/",
+			icon: "material-symbols:quiz-outline",
+		},
+
 		// 分类（下拉里的各项在构建时从文章目录自动生成，见 utils/nav-categories.ts；
 		// 这里只放按钮本身，新加分类文件夹后无需改本文件）
 		...(siteConfig.pages.categories

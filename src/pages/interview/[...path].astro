@@ -1,0 +1,113 @@
+---
+import InterviewArticle from "@components/pages/interview/InterviewArticle.astro";
+import InterviewList from "@components/pages/interview/InterviewList.astro";
+import {
+	getInterviewItems,
+	getInterviewSubUrl,
+	getInterviewTree,
+	type InterviewItem,
+} from "@utils/interview-tree";
+
+/**
+ * 面经板块的两个页面共用这一个 catch-all 路由：
+ *   /interview/<大类>/<子分类>/             → 题目列表
+ *   /interview/<大类>/<子分类>/<题号-标题>/ → 题目详情
+ *
+ * 为什么合成一个：`[major]/[sub]/index.astro` 与 `[major]/[sub]/[slug].astro` 这种
+ * 双层动态目录在 Astro 里会与 `[major]` 目录互相争抢路由，单 catch-all 按段数分发最稳。
+ * 视图拆到 components/pages/interview/ 下，本文件只负责算路径与分发。
+ */
+
+interface ListProps {
+	kind: "list";
+	majorName: string;
+	subName: string;
+	items: InterviewItem[];
+}
+
+interface ArticleProps {
+	kind: "article";
+	item: InterviewItem;
+	listUrl: string;
+	prev: InterviewItem | null;
+	next: InterviewItem | null;
+}
+
+export async function getStaticPaths() {
+	const items = await getInterviewItems();
+	const tree = await getInterviewTree();
+
+	const paths: Array<{
+		params: { path: string };
+		props: ListProps | ArticleProps;
+	}> = [];
+
+	for (const major of tree) {
+		for (const sub of major.subs) {
+			paths.push({
+				params: { path: `${major.name}/${sub.name}` },
+				props: {
+					kind: "list",
+					majorName: major.name,
+					subName: sub.name,
+					items: sub.items,
+				},
+			});
+		}
+	}
+
+	const byGroup = new Map<string, InterviewItem[]>();
+	for (const item of items) {
+		const key = `${item.major}\u0000${item.sub}`;
+		const list = byGroup.get(key);
+		if (list) {
+			list.push(item);
+		} else {
+			byGroup.set(key, [item]);
+		}
+	}
+
+	for (const item of items) {
+		const siblings = byGroup.get(`${item.major}\u0000${item.sub}`) ?? [];
+		const index = siblings.findIndex((s) => s.slug === item.slug);
+
+		paths.push({
+			params: { path: `${item.major}/${item.sub}/${item.slug}` },
+			props: {
+				kind: "article",
+				item,
+				listUrl: getInterviewSubUrl(item.major, item.sub),
+				prev: index > 0 ? siblings[index - 1] : null,
+				next: index >= 0 && index < siblings.length - 1 ? siblings[index + 1] : null,
+			},
+		});
+	}
+
+	return paths;
+}
+
+const current = Astro.props as ListProps | ArticleProps;
+const listProps = current.kind === "list" ? current : null;
+const articleProps = current.kind === "article" ? current : null;
+---
+
+{
+	listProps && (
+		<InterviewList
+			majorName={listProps.majorName}
+			subName={listProps.subName}
+			items={listProps.items}
+		/>
+	)
+}
+
+{
+	articleProps && (
+		<InterviewArticle
+			item={articleProps.item}
+			listUrl={articleProps.listUrl}
+			prev={articleProps.prev}
+			next={articleProps.next}
+		/>
+	)
+}
