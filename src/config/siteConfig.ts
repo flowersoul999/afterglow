@@ -155,8 +155,9 @@ export const siteConfig: SiteConfig = {
 	pages: {
 		// 赞助页面开关
 		sponsor: true,
-		// 留言板页面开关，需要配置评论系统
-		guestbook: true,
+		// 聊天式留言板（/guestbook/）开关：该页硬依赖 Waline 后端
+		// 未部署 Waline 时保持 false，导航的「留言板」已改为指向 giscus 版 /life/guestbook/
+		guestbook: false,
 		// 原番组计划页面开关（已拆分，保留关闭）
 		bangumi: false,
 		// 书架页面开关

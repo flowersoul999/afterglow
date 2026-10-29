@@ -78,7 +78,9 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			},
 			{
 				name: "留言板",
-				url: "/guestbook/",
+				// 走 giscus 版留言板（/life/guestbook/）
+				// 原 /guestbook/ 是聊天式页面，硬依赖 Waline 后端，未部署故已关闭
+				url: "/life/guestbook/",
 				icon: "material-symbols:edit-outline",
 			},
 			// 朋友圈

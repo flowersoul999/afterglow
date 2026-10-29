@@ -30,7 +30,8 @@ export const LinkPresets: { [key in LinkPreset]: NavBarLink } = {
 	},
 	[LinkPreset.Guestbook]: {
 		name: i18n(I18nKey.guestbook),
-		url: "/guestbook/",
+		// giscus 版留言板；原 /guestbook/ 为 Waline 聊天版，未部署故已关闭
+		url: "/life/guestbook/",
 		icon: "material-symbols:chat",
 	},
 	[LinkPreset.Bangumi]: {
