@@ -192,12 +192,12 @@
     padding-left: 0.5rem;
     padding-right: 0.5rem;
   }
-  .navbar-nav .navbar-icon {
-    margin-right: 0.375rem;
+  .navbar-nav .navbar-trigger-icon {
+    margin-right: 0.3rem;
   }
 }
 
-/* ── 右段：搜索按钮 + 快捷键徽章 ── */
+/* ── 右段：工具按钮（悬停浮出工具面板，见 navbar-dropdown.css） ── */
 .navbar-seg--right .btn-plain {
   background-color: transparent !important;
 }
@@ -209,37 +209,7 @@
   background-color: transparent !important;
 }
 
-.nav-search-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding-inline: 0.5rem;
-}
-
-.nav-search-btn__shortcut {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.4rem;
-  height: 1.15rem;
-  padding: 0 0.3rem;
-  font-size: 0.65rem;
-  font-weight: 600;
-  line-height: 1;
-  color: var(--deep-text);
-  background: transparent;
-  border: none;
-  opacity: 0.75;
-  white-space: nowrap;
-  overflow: hidden;
-  transition:
-    max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    padding-inline 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 收缩状态：右段成球，只保留搜索图标 */
+/* 收缩状态：右段成球，只保留工具按钮 */
 #navbar.scrolled .navbar-seg--right {
   width: 2.25rem;
   min-width: 2.25rem;
@@ -250,30 +220,6 @@
   padding: 0;
   border-radius: 9999px;
   overflow: hidden;
-}
-
-#navbar.scrolled .nav-search-btn__shortcut {
-  max-width: 0;
-  min-width: 0;
-  opacity: 0;
-  transform: translateX(-6px);
-  padding-inline: 0;
-  border-width: 0;
-  pointer-events: none;
-}
-
-#navbar.scrolled .nav-search-btn {
-  padding-inline: 0;
-  width: 100%;
-  justify-content: center;
-  gap: 0;
-}
-
-/* 移动端：徽章始终隐藏（空间紧凑） */
-@media (max-width: 768px) {
-  .nav-search-btn__shortcut {
-    display: none;
-  }
 }
 
 /* 移动端：滚动收缩不触发（左右段保持展开） */
@@ -348,7 +294,7 @@
 .navbar-nav .dropdown-container:hover > button,
 .navbar-nav .dropdown-container.nav-item-active .navbar-link-text,
 .navbar-nav .dropdown-container:hover .navbar-link-text,
-.navbar-nav .dropdown-container.dropdown-open .navbar-link-text {
+.navbar-nav .dropdown-container.is-dropdown-open .navbar-link-text {
   color: var(--navbar-highlight-text) !important;
 }
 
@@ -365,16 +311,16 @@
 /* 点击展开下拉后，鼠标要移向下方面板、必然离开按钮 → 按钮失去 :hover，
    只剩上面那条反色白字压在浅灰胶囊上，整项等于消失。
    展开态且没悬停时不反色，保持常态深色字（滑块此时也不在它身上）。 */
-.navbar-nav .dropdown-container.dropdown-open:not(:hover) > a,
-.navbar-nav .dropdown-container.dropdown-open:not(:hover) > button,
-.navbar-nav .dropdown-container.dropdown-open:not(:hover) .navbar-link-text {
+.navbar-nav .dropdown-container.is-dropdown-open:not(:hover) > a,
+.navbar-nav .dropdown-container.is-dropdown-open:not(:hover) > button,
+.navbar-nav .dropdown-container.is-dropdown-open:not(:hover) .navbar-link-text {
   color: var(--deep-text) !important;
 }
 
 /* 同理，高亮块上的「渐变下划线」也要收掉：黑底上一条线很脏，参考站也没有 */
 .navbar-nav .dropdown-container.nav-item-active .navbar-link-text::after,
 .navbar-nav .dropdown-container:hover .navbar-link-text::after,
-.navbar-nav .dropdown-container.dropdown-open .navbar-link-text::after {
+.navbar-nav .dropdown-container.is-dropdown-open .navbar-link-text::after {
   transform: scaleX(0) !important;
 }
 

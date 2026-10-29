@@ -92,6 +92,9 @@ const NO_SIDEBAR_PAGE_TYPES: SidebarPageType[] = [
 	"movies-games",
 	// 2026-09-30：相册页变成一整面照片墙，左右小组件全去掉
 	"album-list",
+	// 2026-10-29：七张技能图（/cs/ /skills/ /backend/ /agent/ /music/ /english/ /finance/）
+	// 技能图本身就很宽（最多十层方块），塞进两栏会挤成一团，整页交给自己排版。
+	"skills",
 ];
 // data-no-sidebar 的值写成**具体页面类型**，这样 CSS 里能按页面单独设内容宽度
 // （站长要逐页调整左右留白，共用一条规则会互相牵连）
@@ -238,7 +241,7 @@ const navLinks = await resolveNavLinks(navBarConfig.links);
             {/* 主内容区包装器 - 包含静态栏位和swup容器，作为单个grid item */}
             <div id="main-content-wrapper" class={staticBarClass}>
                 {/* 主内容区 - 始终渲染，确保 Swup 容器存在 */}
-                <main id="swup-container" class="transition-main transition-swup-fade">
+                <main id="swup-container" class="transition-swup-main">
                 {/* 携带网格布局类名，用于JS更新父容器 */}
                 <div id="grid-class-carrier" data-grid-class={gridCols} class="hidden"></div>
                 {/* 备用 h1 标题 - 提供隐藏的主标题，满足 Swup A11y 和无 h1 页面的可访问性 */}
@@ -247,7 +250,7 @@ const navLinks = await resolveNavLinks(navBarConfig.links);
                     相关文章视图由 [...slug] 算好透传（加密文章无数据 → 面板退化为纯目录）；
                     控制器见 src/utils/article-toc-panel-controller.ts */}
                 {isPostPage && <ArticleTocPanel relatedCards={relatedCards} />}
-                <div id="content-wrapper" class="onload-animation transition-leaving" data-no-sidebar={noSidebarPageType}>
+                <div id="content-wrapper" class="onload-animation" data-no-sidebar={noSidebarPageType}>
                     <slot></slot>
 
                 </div>
