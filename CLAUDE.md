@@ -263,6 +263,8 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 - **视图组件**：`src/components/pages/interview/InterviewList.astro`（列表）、`InterviewArticle.astro`（详情，含面包屑/题号/字数/上下题）。样式在 `src/styles/features/interview.css`（类名 `iv-` 前缀）。
 - **分类树逻辑**：`src/utils/interview-tree.ts` 的 `getInterviewTree()` / `getInterviewItems()`，排序用**题号自然序**（`localeCompare(..., { numeric: true })`，避免 10 排在 2 前面）。URL **不做 encodeURIComponent**，与 posts 一致直出中文（dist 目录本身就是中文名）。
 - **`.gitignore` 必须放行**：`src/content/*/` 默认忽略所有内容目录，新增内容目录要在 `.gitignore` 补 `!src/content/面经/`，否则文件不进仓库、线上构建不到。
+- **入口不在主导航**（2026-10-29 起）：面经是独立板块，不占导航栏位置；入口在 `/categories/` 页顶部的浮层卡片（`.iv-hub--overlay`，`src/pages/categories.astro`）。该页是全屏 fixed 画布，任何入口都必须自己 `position: fixed`，`z-index` 取 20（画布 10 / 悬浮工具栏 70 之间）。
+- **导航栏「分类」已并入「文章」下拉**（文章列表 → 分类 → 归档），不再有独立「分类」按钮；`MobileMenuSheet.astro` 是**硬编码的移动端菜单**，改导航必须两边同步改，否则手机和桌面不一致。
 - 详情页复用 `MainGridLayout` + `Markdown.astro`，因此 mermaid / callout / 代码高亮等与文章页一致；右侧目录面板的「累计记录 X 字」目前只统计 posts（面经为 0），属已知限制。
 
 ---

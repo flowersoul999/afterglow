@@ -5,7 +5,10 @@ import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { siteConfig } from "@/config";
 import { getKnowledgeGraphData } from "@/utils/content-utils";
+import { getInterviewTree } from "@/utils/interview-tree";
 import { getCategoryUrl, url } from "@/utils/url-utils";
+import { Icon } from "astro-icon/components";
+import "@/styles/features/interview.css";
 
 // 页面开关：关闭时重定向到 404（与 archive / music 等页面保持一致）
 if (!siteConfig.pages.categories) {
@@ -14,6 +17,13 @@ if (!siteConfig.pages.categories) {
 
 // 只取 meta（几百字节）内联；节点与边走 /api/knowledge-graph.json
 const { meta } = await getKnowledgeGraphData();
+
+// 面经板块入口（2026-10-29：面经从导航栏撤下，改由本页进入）
+const interviewTree = await getInterviewTree();
+const interviewTotal = interviewTree.reduce((sum, m) => sum + m.count, 0);
+const interviewMeta = interviewTree
+	.map((m) => `${m.name} ${m.count} 篇`)
+	.join(" · ");
 
 const title = i18n(I18nKey.tagGraphPageTitle);
 const description = i18n(I18nKey.tagGraphPageDescription);
@@ -45,4 +55,22 @@ const description = i18n(I18nKey.tagGraphPageDescription);
   <div class="graph-page">
     <KnowledgeGraph meta={meta} />
   </div>
+
+  {/* 面经板块入口：画布是 position:fixed 全屏层（z-index 10），
+      所以这里也用 fixed 叠在上面，z-index 取 20 —— 高于画布、低于
+      #floating-dock(70)/#top-row(260)，不会盖住主题切换与移动端 dock。
+      位置落在画布顶部安全区 --kg-top-inset（该区域本就不放节点）。 */}
+  {interviewTotal > 0 && (
+    <a class="iv-hub iv-hub--overlay" href="/interview/">
+      <span class="iv-hub__icon">
+        <Icon name="material-symbols:quiz-outline" is:inline />
+      </span>
+      <span class="iv-hub__text">
+        <span class="iv-hub__title">面经</span>
+        <span class="iv-hub__meta">{interviewMeta}</span>
+      </span>
+      <span class="sr-only">共 {interviewTotal} 篇</span>
+      <Icon name="material-symbols:chevron-right-rounded" class="iv-hub__arrow" is:inline />
+    </a>
+  )}
 </MainGridLayout>

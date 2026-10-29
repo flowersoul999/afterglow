@@ -1,20 +1,14 @@
 ---
 import { getCollection } from "astro:content";
 import { Icon } from "astro-icon/components";
-import { commentConfig, navCategoryConfig } from "@/config";
+import { commentConfig } from "@/config";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
-import { getNavCategoryLinks } from "@/utils/nav-categories";
 
 const allPosts = await getCollection("posts", ({ data }) => {
 	return import.meta.env.PROD ? data.draft !== true : true;
 });
 const postCount = allPosts.length;
-
-// 「分类」分组：与桌面导航栏同一个数据源（文章目录），不手维护
-const navCategories = siteConfig.pages.categories
-	? await getNavCategoryLinks(navCategoryConfig)
-	: [];
 
 const startDate = new Date(siteConfig.siteStartDate || Date.now());
 const now = new Date();
@@ -42,12 +36,12 @@ const groups = [
 				label: "文章列表",
 				url: "/posts/",
 			},
-			// 知识图谱（原「分类」三视图页已被 /categories/ 的四层图谱取代）
+			// 分类（2026-10-29：与桌面导航同步，原「图谱」改名并合并进文章下拉）
 			...(siteConfig.pages.categories
 				? [
 						{
-							icon: "material-symbols:hub-outline",
-							label: "图谱",
+							icon: "material-symbols:folder-outline",
+							label: "分类",
 							url: "/categories/",
 						},
 					]
@@ -55,22 +49,6 @@ const groups = [
 			{ icon: "material-symbols:archive", label: "归档", url: "/archive/" },
 		],
 	},
-	// 分类：子项来自文章目录（标了 count/depth 的会在下面渲染成徽标与缩进）
-	...(navCategories.length > 0
-		? [
-				{
-					icon: "material-symbols:folder-outline",
-					label: "分类",
-					children: navCategories.map((category) => ({
-						icon: category.icon,
-						label: category.name,
-						url: category.url,
-						count: category.count,
-						depth: category.depth,
-					})),
-				},
-			]
-		: []),
 	{
 		icon: "material-symbols:local-cafe",
 		label: "动态",
