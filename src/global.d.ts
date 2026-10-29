@@ -12,6 +12,8 @@ declare global {
 		spineModelInitialized?: boolean;
 		floatingTOCListenersInitialized?: boolean;
 		__navMenuListenersReady?: boolean;
+		/** 左下角悬浮音乐播放器（MusicPlayerWidget）的一次性初始化守卫 */
+		__musicPlayerWidgetReady?: boolean;
 		// biome-ignore lint/suspicious/noExplicitAny: External library
 		spinePlayerInstance?: any;
 		pagefind: {

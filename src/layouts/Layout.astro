@@ -6,6 +6,7 @@ import SearchModal from "@components/controls/SearchModal.svelte";
 import FancyboxManager from "@components/features/FancyboxManager.astro";
 import FontManager from "@components/features/FontManager.astro";
 import MusicManager from "@components/features/MusicManager.astro";
+import MusicPlayerWidget from "@components/features/MusicPlayerWidget.astro";
 import PageLoader from "@components/features/PageLoader.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
@@ -443,6 +444,10 @@ const siteLang = lang.replace("_", "-");
     <ConfigCarrier />
     <MusicManager />
     <slot />
+
+    <!-- 左下角悬浮音乐播放器：挂 Swup 容器（#swup-container）外，
+         DOM 跨导航持久存在，不随页面切换重建（CLAUDE.md §8-9） -->
+    <MusicPlayerWidget />
 
 
 
