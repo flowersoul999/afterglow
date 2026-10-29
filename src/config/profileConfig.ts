@@ -45,7 +45,7 @@ export const profileConfig: ProfileConfig = {
 		{
 			name: "GitHub",
 			icon: "simple-icons:github",
-			url: "https://github.com/tianshihao2003",
+			url: "https://github.com/flowersoul999",
 			showName: false,
 		},
 		{
