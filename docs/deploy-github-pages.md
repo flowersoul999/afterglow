@@ -25,7 +25,15 @@ checkout → pnpm 9.14.4 + Node 22 → pnpm install --frozen-lockfile
 → deploy-pages
 ```
 
-`enablement: true` 让首次运行时自动创建 Pages 站点并把 Source 设为 **GitHub Actions**。若因权限失败，手动走：仓库 `Settings → Pages → Build and deployment → Source: GitHub Actions`。
+首次运行前**必须手工**在仓库 `Settings → Pages → Build and deployment → Source` 选择 **GitHub Actions**，否则 `deploy-pages` 会报「Get Pages site failed」。本流程刻意**不使用** `configure-pages` 的 `enablement: true`——它需要 `pages: write` 之外的建站权限，`GITHUB_TOKEN` 会被拒（`Resource not accessible by integration`）。
+
+若想用命令行一次搞定，可用有 admin 权限的 token 调 API：
+
+```bash
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+  https://api.github.com/repos/flowersoul999/afterglow/pages \
+  -d '{"build_type":"workflow"}'
+```
 
 ### 2. 自定义域名
 
@@ -33,17 +41,25 @@ checkout → pnpm 9.14.4 + Node 22 → pnpm install --frozen-lockfile
 
 ### 3. 环境变量
 
-构建需要 13 个 `PUBLIC_*`，缺任何一个都不会让构建失败，只会让对应功能静默降级（评论无后端、统计空白、图床上传不可用等）。在 `Settings → Secrets and variables → Actions` 添加：
+构建读取 10 个 `PUBLIC_*`，**全部可选**——缺任何一个都不会让构建失败，只会让对应功能静默降级。在 `Settings → Secrets and variables → Actions → New repository secret` 逐个添加：
 
-```
-PUBLIC_AMAP_KEY            PUBLIC_UMAMI_BASE          PUBLIC_IMAGEBED_URL
-PUBLIC_AMAP_KEY_PLACES     PUBLIC_UMAMI_USERNAME      PUBLIC_IMAGEBED_AUTH_CODE
-PUBLIC_BIXYH_QJHXRZP_HR    PUBLIC_UMAMI_PASSWORD      PUBLIC_IMAGEBED_FOLDER
-PUBLIC_UMAMI_SHARE_ID      PUBLIC_WALINE_SERVER       PUBLIC_IMAGEBED_API_TOKEN
-PUBLIC_TTS_SERVER
-```
+| 名称 | 用途 | 不配的后果 |
+|---|---|---|
+| `PUBLIC_AMAP_KEY` | 高德地图 Web端(JS API) Key | 「足迹」页地图不显示 |
+| `PUBLIC_AMAP_KEY_PLACES` | 高德地图 Web服务 Key（地点搜索） | 足迹地点搜不出坐标 |
+| `PUBLIC_UMAMI_BASE` | 自建 Umami 实例地址 | 统计脚本不加载 |
+| `PUBLIC_UMAMI_WEBSITE_ID` | Umami 站点 ID | 首页统计空白 |
+| `PUBLIC_UMAMI_SHARE_ID` | Umami 公开分享 ID（免账号密码拉数据） | 首页访客数走 API 代理，可能空白 |
+| `PUBLIC_UMAMI_USERNAME` | Umami 账号（服务端代理拉数用） | 同上 |
+| `PUBLIC_UMAMI_PASSWORD` | Umami 密码（同上） | 同上 |
+| `PUBLIC_WALINE_SERVER` | Waline 后端地址 | **已切 giscus，可不配** |
+| `PUBLIC_IMAGEBED_URL` | 自建 CloudFlare ImgBed 地址 | 相册/说说不能从后台上传图 |
+| `PUBLIC_IMAGEBED_API_TOKEN` | ImgBed API Token | 同上（且无法上传前查重） |
+| `PUBLIC_TTS_SERVER` | 朗读服务后端地址 | 文章「朗读」按钮不可用 |
 
-清单来源见根目录 `.env.example`。
+> 已从工作流移除 `PUBLIC_BIXYH_QJHXRZP_HR`、`PUBLIC_IMAGEBED_AUTH_CODE`、`PUBLIC_IMAGEBED_FOLDER`：这三者在 `src/` 中从未被 `import.meta.env` 读取，属于上游遗留。
+
+清单来源见根目录 `.env.example`。评论系统走 giscus（GitHub Discussions），**不需要**任何密钥，但需要在仓库上安装 giscus GitHub App（见「四、评论」）。
 
 ## 二、EdgeOne 侧
 
@@ -90,7 +106,29 @@ curl -skI https://jojocode.cn/ | grep -iE "EO-Cache-Status|Server|Content-Length
 curl -s https://jojocode.cn/ | grep -o "<title>[^<]*</title>"
 ```
 
-## 四、已知坑
+## 四、评论系统（giscus）
+
+评论走 **giscus**，本质是把每个页面的评论存成仓库的一条 GitHub Discussion，零后端、零密钥。
+
+`src/config/commentConfig.ts` 里的值已经填好，**不需要**再去 giscus.app 点一遍（那只是给人看的配置生成器）：
+
+| 字段 | 值 | 来源 |
+|---|---|---|
+| `type` | `giscus` | — |
+| `giscus.repo` | `flowersoul999/afterglow` | — |
+| `giscus.repoId` | `R_kgDOVaquiQ` | `GET /repos/{o}/{r}` 的 `node_id` |
+| `giscus.category` | `Announcements` | 只有维护者能新建讨论，防止游客在 Discussions 页乱建 |
+| `giscus.categoryId` | `DIC_kwDOVaquic4DJ5QM` | GraphQL `discussionCategories` 查询 |
+
+前置条件（前两步已完成，第三步必须人工）：
+
+1. 仓库是 **public**（private 仓库 giscus 读不到）。
+2. **Discussions 已开启**：`Settings → General → Features → Discussions` 勾上。也可用 API：`PATCH /repos/{o}/{r}` 传 `{"has_discussions": true}`。
+3. **安装 giscus App**：打开 https://github.com/apps/giscus → `Install` → 选中 `afterglow`（或 `All repositories`）→ 授权。**只有仓库 owner 能在浏览器里完成这一步**，API 无法代做。未安装时评论框会显示 `giscus: 仓库未安装 giscus app` 之类的报错。
+
+验证：任意文章页滑到底，能看到评论区并成功发一条测试评论；仓库 `Discussions` 里会出现一条以页面标题命名的讨论（`mapping: "title"`）。
+
+## 五、已知坑
 
 1. **回源 HOST 忘记改** → 全站 404 或显示 GitHub 404 页。这是该方案最高频的故障。
 2. **裸域 CNAME** → DNS 服务商拒绝保存。用 ALIAS/ANAME，或改用 `www`。
