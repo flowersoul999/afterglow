@@ -50,7 +50,7 @@
 ```
 src/
 ├── assets/images/       # 头像、封面等构建时图片
-├── components/          # 按功能域组织的组件（133 个文件）
+├── components/          # 按功能域组织的组件（157 个文件）
 │   ├── analytics/       # GA, Clarity, Umami (3)
 │   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
@@ -60,9 +60,12 @@ src/
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
 │   ├── moments/         # 动态卡片与评论弹窗
 │   ├── pages/           # 页面级组件：bangumi, books（Bookshelf/BookCard：3D 书本卡片 + 影视页同款胶囊筛选（分类+读过/在读/想读）+ ClientPagination 分页 8/6 本每页，SSR 隐藏非首页防闪烁）, interview（面经列表/详情）, movies-games, music (11)
+│   ├── skills/          # 七张技能图（18，2026-10-29 自 jojo! 站迁入）：SkillTree.svelte 是**唯一引擎**（83KB：依赖分层/连线/水位/解锁判定），Cs/Backend/Agent/English/Finance/Music 六套只是换数据 + 换等级体系的包装；CultivationPanel（修为条）/ RealmGate（境界门禁）/ BreakthroughRite（突破仪式）/ StoryInbox + SagaLibrary（飞剑传书 + 话本）/ CultivationDock（右下角浮标）/ RecordPanel + 三个 *RecordPanel（修行录属性面板）/ SkillGraphSwitch.astro（页间切换条）
 │   └── widget/          # 侧栏 Widget (27)
 ├── config/              # 站点配置（27 个 .ts，index.ts barrel export）
 ├── constants/           # 常量：页面尺寸、主题模式、图标、链接预设
+├── data/                # 技能图数据层（29 个 .ts，2026-10-29 迁入）：七套 Skills（依赖图）+ Icons（内联 SVG path，不依赖图标集）+ Checks（勾选清单）三件套；cultivation.ts 是修为体系（四图 key/境界/属性/解锁），cultivationStories.ts 是故事文本，saga.ts + saga/{types,vol1-4} 是四卷话本
+├── lib/                 # sfx.ts —— WebAudio 程序化合成音效（斩妖/连斩/突破/传书），**不塞 mp3**，静音开关存 localStorage
 ├── content/             # Astro Content Collections（12 个集合；集合键名 posts/spec/moments/bangumi/places/album/daohang/ziyuan/friends/tombstones/changelog/interview —— **键名是英文，不随磁盘目录改名，getCollection() 一律用键名**）
 │   ├── 文章/ 页面/ 动态/ 影视/ 足迹/ 相册/ 导航/ 资源/ 更新日志/   # 对应集合键 posts/spec/moments/bangumi/places/album/daohang/ziyuan/changelog
 │   ├── 面经/            # interview 集合：**独立内容板块**，路由 /interview/，不参与文章列表/归档/RSS
@@ -76,11 +79,16 @@ src/
 │   └── languages/       # zh_CN.ts
 ├── layouts/             # Layout.astro (591行), MainGridLayout.astro (305行)
 ├── content/notes/       # Obsidian 笔记（不发布；2026-10-08 从 src/notes 并入，Obsidian 库根 = src/content）
-├── pages/               # 路由（34 个文件；admin 后台已删除，勿重建）
+├── pages/               # 路由（44 个文件；admin 后台已删除，勿重建）
 │   ├── api/             # JSON API (2)：calendar.json.ts, home-stats.json.ts
 │   ├── album/ bangumi/ books/ categories/ interview/ life/ moments/ posts/ // moments/[slug] 已删除
+│   ├── **技能图七页**（2026-10-29 迁入，均为扁平单层路由）：
+│   │   cs(计算机基础) / skills(前端) / backend / agent / music / english / finance
+│   │   ⚠️ 七页共用页型 `skills`（page-type.ts 的 SKILL_GRAPH_PATHS 精确匹配），
+│   │   MainGridLayout 的 NO_SIDEBAR_PAGE_TYPES 已收，宽度与 overflow: clip 在
+│   │   styles/features/no-sidebar-pages.css。改这几页的左右留白只动那一处。
 │   └── 404, about, archive, apps, changelog, circle, debug-urls, friends,
-│       guestbook, movies-games/, music, projects, search,
+│       guestbook, movies-games/, projects, search,
 │       sponsor, rss, robots.txt, og
 ├── plugins/             # 自定义 remark/rehype 插件 (10)
 ├── styles/              # CSS 样式（84 个文件，含 about 技术栈/时间线/更新日志图谱）
@@ -516,6 +524,13 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - ⚠️ **手机底部那条浮岛（`MobileDock` + `src/styles/components/mobile-dock.css`）不在这次统一范围内，保持原样**（透明按钮 + 中间凸出的黑色圆钮 + 胶囊圆角）—— 站长 2026-09-30 明确要求改回来，别再顺手「统一规格」。它的总高 `4.25rem`（按钮 3.25rem + 上下留白 0.5rem）被 `dock-drawer`、动态页那 3 个按钮的 `bottom` 偏移按写死的值引用，**改它高度要同步改那两处**。
 - ⚠️ **图标空白 = sprite 丢符号**（本次踩到）：页面里的 `<Icon>` 默认走 astro-icon 的 sprite（`<use href="#ai:…">`），这份 sprite 有已知的丢符号问题（`src/components/common/Icon.astro` 就是为绕开它而写的包装组件）。症状是图标**整块空白**而不报错，`document.querySelector("symbol#ai:…")` 能确认缺没缺。判断/修复：给那个 `<Icon>` 加 `is:inline`（路径直接内联），或改用 `@/components/common/Icon.astro`。
 
+### 5.20 导航收敛：七张技能图合并为单一「技能」入口（2026-11-02）
+
+- **改了什么**：原先「开心」下拉里挂着 7 个技能图入口（计算机基础 / 前端技能图 / 后端技能图 / Agent 开发 / 音乐（修行录）/ 英语（修行录）/ 理财（修行录）），菜单过长。现合并成**唯一一项「技能」**，落在 `/skills/`（前端技能图），图标 `material-symbols:account-tree-rounded`。
+- **只删导航入口，不删路由**：`/cs/` `/skills/` `/backend/` `/agent/` `/music/` `/english/` `/finance/` 七条路由、七套 `src/data/*Skills.ts`、`src/components/skills/*`、`page-type.ts` 的 `SKILL_GRAPH_PATHS` 与 `skills` 页型（满宽无侧栏）**全部原样保留**。页间跳转靠每页顶部的 `SkillGraphSwitch` 切换条，它才是七张图的真正总入口 —— 别再把它当装饰删掉。
+- **两份硬编码要同步改**：桌面走 `src/config/navBarConfig.ts` 的 `recordChildren`，「开心」分组；移动端抽屉 `src/components/layout/MobileMenuSheet.astro` 的 `groups` 是另写的一份（**不从 navBarConfig 读**）。以后增删「开心」下拉项，两处必须一起改，否则手机端和桌面端会不一致。
+- **「开心」默认跳转未变**：仍是 `/books/` → `/movies-games/` → `/changelog/` 兜底。
+
 ### 5.19 动态图片写在正文（2026-10-21）
 
 - **约定**：动态（moments）的图片一律以标准 Markdown 语法写进**正文**，一行一张，不再写 frontmatter 的 `images`。目的是让 Obsidian 打开 md 时能直接看到图。
@@ -607,7 +622,9 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 
 ### 5.14 四个页面已下线（2026-10-03）
 
-- **/schedules/ 日历、/bills/ 账单、/apps/ 应用展示、/music/ 音乐页面**的路由文件与导航入口（导航栏 + 移动菜单的「我的」分组）已删除；navBarConfig「记录」分组的默认跳转已从 /music/ 改为 /archive/。
+- **/schedules/ 日历、/bills/ 账单、/apps/ 应用展示、/music/ 音乐页面**的路由文件与导航入口（导航栏 + 移动菜单的「我的」分组）已删除。
+- ⚠️ **`/music/` 这个路由 2026-10-29 被重新占用了**：现在是「音乐（修行录）」技能图（`src/pages/music.astro`），和当年那个音乐播放页毫无关系。别再按「音乐页已下线」去理解这个路径，也别因为它跳过来就把这个页面删了。
+- 「开心」分组（原「记录」，2026-10-29 改名）的默认跳转：/books/ → /movies-games/ → /changelog/（兜底**不再**用 /music/，原因同上）。
 - ⚠️ **不要顺手删这几个集合与内容**：bills(117) / schedules(7) / apps(1) 的 schema 与 md 都还在（页面先下线、数据保留），SiteStats 仍在用 bills 统计。想彻底清掉要站长确认。
 - ⚠️ **音乐功能与音乐页面无关**：右下角悬浮坞的音乐按钮/抽屉 + musicConfig + bangumi 的 music 条目是另一条链路，删页面时不要动它们。
 

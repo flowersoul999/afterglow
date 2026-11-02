@@ -1,0 +1,31 @@
+---
+// 音乐（修行录第一图，2026-10-29 自 jojo! 站迁入）：从耳朵开始的一张图
+// 数据见 src/data/musicSkills.ts（技能与依赖）· musicIcons.ts（图标）· musicChecks.ts（学习清单）
+// 组件见 src/components/skills/MusicSkillTree.svelte（属性面板见 MusicRecordPanel.svelte）
+//
+// ⚠️ 这张图和前四张不一样，是**修行录**：
+//   · 没有境界门禁（不放 RealmGate），任何时候都能进
+//   · 不加修为、不进九境界、不发飞剑传书、不领话本签（SkillTree 传了 noCultivation）
+//   · 顶部显示的是音准 / 技法 / 作品三个属性，不是修为条
+// 所以它既不挂 CultivationPanel，也不挂 BreakthroughRite。
+import MusicRecordPanel from "@/components/skills/MusicRecordPanel.svelte";
+import MusicSkillTree from "@/components/skills/MusicSkillTree.svelte";
+import SkillGraphSwitch from "@/components/skills/SkillGraphSwitch.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const title = "音乐技能图";
+const description =
+	"从耳朵开始的一张修行录：听觉与训练、乐理与记谱、演奏、人声、创作编曲、制作混音，最后到演出与表达。每一条清单都写成了能自己验收的标准 —— 唱准几个音、能听出哪两个音程、录下来回放听得出问题在哪。不用境界也能进，练音乐不结丹，但耳朵是真的会变好。";
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="card-base z-10 relative w-full overflow-hidden">
+		<div class="px-3 sm:px-5 md:px-7 py-5 sm:py-7 max-w-[78rem] mx-auto">
+			<MusicRecordPanel client:load />
+			<SkillGraphSwitch current="mu" />
+			<div class="relative">
+				<MusicSkillTree client:load />
+			</div>
+		</div>
+	</div>
+</MainGridLayout>

@@ -1,0 +1,291 @@
+---
+// 技能图切换条：站内每张技能图的页面顶部都放一条，用来在几张图之间来回换。
+// 用纯 <a> 而不是 <button>：每张图各有独立地址，能新开标签、能被分享，
+// 而且不依赖 JS —— 技能图岛屿万一没加载出来，这个入口照样能点。
+//
+// 分两组：
+//   修行路 —— cs / fe / be / ag，有境界门禁，算修为、发飞剑传书
+//   修行录 —— 音乐 / 英语 / 理财 / 睡眠 …，无门禁、不算修为，只给属性点
+// 两组之间没有先后关系，所以别把修行录接在修行路后面，那会让人误以为要按顺序解锁。
+import { Icon } from "astro-icon/components";
+
+interface Props {
+	/** 当前所在的那张图，用来把对应项点亮 */
+	current: string;
+}
+
+const { current } = Astro.props;
+
+/**
+ * 想加下一张图时，往对应组里加一项、再写个页面就行。
+ * meta 里的「N 方块 · M 层」是实测值，改完数据记得同步，不然和图里对不上。
+ */
+const ROAD = [
+	{
+		id: "cs",
+		name: "计算机基础",
+		meta: "68 个方块 · 10 层",
+		href: "/cs/",
+		icon: "material-symbols:school",
+	},
+	{
+		id: "fe",
+		name: "前端技能图",
+		meta: "78 个方块 · 9 层",
+		href: "/skills/",
+		icon: "material-symbols:account-tree-rounded",
+	},
+	{
+		id: "be",
+		name: "后端技能图",
+		meta: "51 个方块 · 9 层",
+		href: "/backend/",
+		icon: "material-symbols:storage",
+	},
+	{
+		id: "ag",
+		name: "Agent 开发",
+		meta: "43 个方块 · 9 层",
+		href: "/agent/",
+		icon: "material-symbols:smart-toy",
+	},
+] as const;
+
+const RECORD = [
+	{
+		id: "mu",
+		name: "音乐",
+		meta: "43 个方块 · 13 层",
+		href: "/music/",
+		icon: "material-symbols:music-note",
+	},
+	{
+		id: "en",
+		name: "英语",
+		meta: "71 个方块 · 14 层",
+		href: "/english/",
+		icon: "material-symbols:translate",
+	},
+	{
+		id: "fn",
+		name: "理财",
+		meta: "56 个方块 · 16 层",
+		href: "/finance/",
+		icon: "material-symbols:savings",
+	},
+] as const;
+---
+
+<nav class="sg-switch" aria-label="技能图切换">
+	<span class="sg-switch__cap">
+		<Icon is:inline name="material-symbols:swap-horiz-rounded" />
+		技能图
+	</span>
+
+	<div class="sg-switch__group">
+		<span class="sg-switch__label">修行路 · 有门禁</span>
+		<ul class="sg-switch__list">
+			{
+				ROAD.map((g) => (
+					<li>
+						<a
+							class:list={["sg-switch__item", g.id === current && "is-active"]}
+							href={g.href}
+							aria-current={g.id === current ? "page" : undefined}
+						>
+							<span class="sg-switch__icon" aria-hidden="true">
+								<Icon is:inline name={g.icon} />
+							</span>
+							<span class="sg-switch__text">
+								<span class="sg-switch__name">{g.name}</span>
+								<span class="sg-switch__meta">{g.meta}</span>
+							</span>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+
+	<div class="sg-switch__group">
+		<span class="sg-switch__label sg-switch__label--record">修行录 · 无门禁</span>
+		<ul class="sg-switch__list">
+			{
+				RECORD.map((g) => (
+					<li>
+						<a
+							class:list={[
+								"sg-switch__item",
+								"sg-switch__item--record",
+								g.id === current && "is-active",
+							]}
+							href={g.href}
+							aria-current={g.id === current ? "page" : undefined}
+						>
+							<span class="sg-switch__icon" aria-hidden="true">
+								<Icon is:inline name={g.icon} />
+							</span>
+							<span class="sg-switch__text">
+								<span class="sg-switch__name">{g.name}</span>
+								<span class="sg-switch__meta">{g.meta}</span>
+							</span>
+						</a>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</nav>
+
+<style>
+	/* 配色与 SkillTree.svelte 的 .sk-root 保持同一套（暖纸 + 金），
+	   因为这条切换条在页面里、不在岛屿内，拿不到那边的变量，只能自带一份。
+	   改色时两边一起改。 */
+	.sg-switch {
+		--sg-gold: #c9a44c;
+		--sg-gold-dp: #8a6d24;
+		--sg-jade: #4a8c7c;
+		--sg-jade-dp: #2f6459;
+		--sg-ink: #4a4335;
+		--sg-ink-2: #857d6c;
+		--sg-panel: #fffdf7;
+		--sg-line: rgba(150, 128, 76, 0.22);
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem 1.1rem;
+		margin-bottom: 1.15rem;
+		padding: 0.5rem 0.6rem 0.5rem 0.75rem;
+		border-radius: 16px;
+		border: 1px solid var(--sg-line);
+		background: var(--sg-panel);
+	}
+
+	:global(html.dark) .sg-switch {
+		--sg-gold: #d9b45f;
+		--sg-gold-dp: #a9862f;
+		--sg-jade: #7fc0ac;
+		--sg-jade-dp: #5a9c88;
+		--sg-ink: #e9e1ce;
+		--sg-ink-2: #a79d88;
+		--sg-panel: #211b13;
+		--sg-line: rgba(214, 178, 96, 0.16);
+	}
+
+	.sg-switch__cap {
+		display: flex;
+		align-items: center;
+		gap: 0.28rem;
+		font-size: 0.66rem;
+		font-weight: 700;
+		letter-spacing: 0.16em;
+		color: color-mix(in srgb, var(--sg-gold-dp) 88%, transparent);
+	}
+
+	/* 两组各自成一块：标签在左，图列表在右 */
+	.sg-switch__group {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.sg-switch__label {
+		font-size: 0.6rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		white-space: nowrap;
+		padding: 0.14rem 0.4rem;
+		border-radius: 6px;
+		color: color-mix(in srgb, var(--sg-gold-dp) 92%, transparent);
+		background: color-mix(in srgb, var(--sg-gold) 12%, transparent);
+	}
+
+	.sg-switch__label--record {
+		color: color-mix(in srgb, var(--sg-jade-dp) 92%, transparent);
+		background: color-mix(in srgb, var(--sg-jade) 14%, transparent);
+	}
+
+	.sg-switch__list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.sg-switch__item {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0.42rem 0.78rem;
+		border-radius: 11px;
+		border: 1px solid color-mix(in srgb, var(--sg-gold) 26%, transparent);
+		color: var(--sg-ink-2);
+		text-decoration: none;
+		transition:
+			background 180ms ease,
+			border-color 180ms ease,
+			color 180ms ease;
+	}
+
+	.sg-switch__item:hover {
+		background: color-mix(in srgb, var(--sg-gold) 10%, transparent);
+		border-color: color-mix(in srgb, var(--sg-gold) 46%, transparent);
+		color: var(--sg-ink);
+	}
+
+	.sg-switch__item.is-active {
+		background: color-mix(in srgb, var(--sg-gold) 16%, transparent);
+		border-color: color-mix(in srgb, var(--sg-gold) 58%, transparent);
+		color: var(--sg-ink);
+	}
+
+	/* 修行录项：改用青玉色 + 虚线边，一眼能和修行路区分开 */
+	.sg-switch__item--record {
+		border-style: dashed;
+		border-color: color-mix(in srgb, var(--sg-jade) 34%, transparent);
+	}
+
+	.sg-switch__item--record:hover {
+		background: color-mix(in srgb, var(--sg-jade) 10%, transparent);
+		border-color: color-mix(in srgb, var(--sg-jade) 52%, transparent);
+		color: var(--sg-ink);
+	}
+
+	.sg-switch__item--record.is-active {
+		background: color-mix(in srgb, var(--sg-jade) 16%, transparent);
+		border-color: color-mix(in srgb, var(--sg-jade) 60%, transparent);
+		border-style: solid;
+		color: var(--sg-ink);
+	}
+
+	.sg-switch__icon {
+		display: flex;
+		font-size: 1.05rem;
+		color: color-mix(in srgb, var(--sg-gold-dp) 92%, transparent);
+	}
+
+	.sg-switch__item--record .sg-switch__icon {
+		color: color-mix(in srgb, var(--sg-jade-dp) 92%, transparent);
+	}
+
+	.sg-switch__text {
+		display: flex;
+		flex-direction: column;
+		line-height: 1.25;
+	}
+
+	.sg-switch__name {
+		font-size: 0.82rem;
+		font-weight: 700;
+	}
+
+	.sg-switch__meta {
+		font-size: 0.64rem;
+		font-weight: 400;
+		opacity: 0.72;
+		font-variant-numeric: tabular-nums;
+	}
+</style>

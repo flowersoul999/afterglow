@@ -1,0 +1,27 @@
+---
+// 后端技能图（2026-10-29 自 jojo! 站迁入）：站在「已经有前端基础」上往全栈转，最上面两个起点方块默认点亮
+// 数据见 src/data/backendSkills.ts（技能与依赖）· backendIcons.ts（图标）· backendChecks.ts（学习清单）
+// 组件见 src/components/skills/BackendSkillTree.svelte
+import BackendSkillTree from "@/components/skills/BackendSkillTree.svelte";
+import CultivationPanel from "@/components/skills/CultivationPanel.svelte";
+import RealmGate from "@/components/skills/RealmGate.svelte";
+import SkillGraphSwitch from "@/components/skills/SkillGraphSwitch.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const title = "后端技能图";
+const description =
+	"站在前端基础之上往全栈转的技能图：从运行时的进程与内存，到接口、数据、缓存与消息，再到认证、部署、可观测性与架构演进。最上面两层是默认点亮的起点（前端底子和会写简单接口），往下每一层才是真正要补的。需修至结丹期方可入内。";
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="card-base z-10 relative w-full overflow-hidden">
+		<div class="px-3 sm:px-5 md:px-7 py-5 sm:py-7 max-w-[78rem] mx-auto">
+			<CultivationPanel here="be" client:load />
+			<SkillGraphSwitch current="be" />
+			<div class="relative">
+				<BackendSkillTree client:load />
+				<RealmGate graph="be" client:load />
+			</div>
+		</div>
+	</div>
+</MainGridLayout>

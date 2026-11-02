@@ -1,0 +1,30 @@
+---
+// 前端技能图（2026-10-29 自 jojo! 站迁入）：按前置依赖自动分层的技能图，方块上是真实技术 logo
+// 数据见 src/data/skills.ts（依赖关系）、src/data/techIcons.ts（图标）、src/data/skillChecks.ts（学习清单）
+// 组件见 src/components/skills/SkillTree.svelte
+//
+// 布局：本页归入「技能」页面类型，由 MainGridLayout 打上 data-no-sidebar 标记，
+// 宽度规则在 src/styles/features/no-sidebar-pages.css（技能图需要比文章页宽得多）。
+import CultivationPanel from "@/components/skills/CultivationPanel.svelte";
+import RealmGate from "@/components/skills/RealmGate.svelte";
+import SkillGraphSwitch from "@/components/skills/SkillGraphSwitch.astro";
+import SkillTree from "@/components/skills/SkillTree.svelte";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const title = "前端技能图";
+const description =
+	"把前端从前端小白到技术专家的学习路径，排成一张有真实依赖关系的技能图。方块上是真实的技术 logo，连线代表「先会了上面，才能解锁下面」，节点越亮说明掌握得越扎实。需修至筑基期方可入内。";
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="card-base z-10 relative w-full overflow-hidden">
+		<div class="px-3 sm:px-5 md:px-7 py-5 sm:py-7 max-w-[78rem] mx-auto">
+			<CultivationPanel here="fe" client:load />
+			<SkillGraphSwitch current="fe" />
+			<div class="relative">
+				<SkillTree client:load />
+				<RealmGate graph="fe" client:load />
+			</div>
+		</div>
+	</div>
+</MainGridLayout>

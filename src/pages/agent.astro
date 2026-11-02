@@ -1,0 +1,27 @@
+---
+// Agent 开发技能图（2026-10-29 自 jojo! 站迁入）：从模型本身讲起到上线一个 Agent 产品
+// 数据见 src/data/agentSkills.ts（技能与依赖）· agentIcons.ts（图标）· agentChecks.ts（学习清单）
+// 组件见 src/components/skills/AgentSkillTree.svelte
+import AgentSkillTree from "@/components/skills/AgentSkillTree.svelte";
+import CultivationPanel from "@/components/skills/CultivationPanel.svelte";
+import RealmGate from "@/components/skills/RealmGate.svelte";
+import SkillGraphSwitch from "@/components/skills/SkillGraphSwitch.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const title = "Agent 开发技能图";
+const description =
+	"把大模型做成能交付的产品，需要补哪些东西：从模型与 Token 的底子，到提示与上下文工程、检索增强 RAG、工具调用与编排、记忆与状态、评测与可观测，最后落到流式、鉴权、成本与上线。需修至元婴期方可入内。";
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="card-base z-10 relative w-full overflow-hidden">
+		<div class="px-3 sm:px-5 md:px-7 py-5 sm:py-7 max-w-[78rem] mx-auto">
+			<CultivationPanel here="ag" client:load />
+			<SkillGraphSwitch current="ag" />
+			<div class="relative">
+				<AgentSkillTree client:load />
+				<RealmGate graph="ag" client:load />
+			</div>
+		</div>
+	</div>
+</MainGridLayout>

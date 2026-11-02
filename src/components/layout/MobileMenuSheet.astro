@@ -78,8 +78,8 @@ const groups = [
 		],
 	},
 	{
-		icon: "material-symbols:camera-outdoor",
-		label: "记录",
+		icon: "material-symbols:auto-awesome",
+		label: "开心",
 		children: [
 			{ icon: "material-symbols:book-5", label: "书架", url: "/books/" },
 			{ icon: "material-symbols:movie", label: "影视", url: "/movies-games/" },
@@ -93,46 +93,12 @@ const groups = [
 				label: "更新日志",
 				url: "/changelog/",
 			},
-		],
-	},
-	{
-		icon: "material-symbols:account-tree-rounded",
-		label: "技能",
-		children: [
-			{
-				icon: "material-symbols:school",
-				label: "计算机基础",
-				url: "/cs/",
-			},
+			// 技能（2026-11-02 收敛）：原先 7 张技能图各占一行，与桌面导航同步合并成
+			// 唯一一个「技能」入口，直达 /skills/；其余 6 张图靠该页顶部的切换条跳转。
 			{
 				icon: "material-symbols:account-tree-rounded",
-				label: "前端技能图",
+				label: "技能",
 				url: "/skills/",
-			},
-			{
-				icon: "material-symbols:storage",
-				label: "后端技能图",
-				url: "/backend/",
-			},
-			{
-				icon: "material-symbols:smart-toy",
-				label: "Agent 开发",
-				url: "/agent/",
-			},
-			{
-				icon: "material-symbols:music-note",
-				label: "音乐（修行录）",
-				url: "/music/",
-			},
-			{
-				icon: "material-symbols:translate",
-				label: "英语（修行录）",
-				url: "/english/",
-			},
-			{
-				icon: "material-symbols:savings",
-				label: "理财（修行录）",
-				url: "/finance/",
 			},
 		],
 	},

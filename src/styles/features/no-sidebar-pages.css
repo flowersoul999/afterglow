@@ -171,3 +171,19 @@ html:has(#content-wrapper[data-no-sidebar="movies-games"]) #main-content-wrapper
 html:has(#content-wrapper[data-no-sidebar="album-list"]) #main-content-wrapper {
 	overflow: clip;
 }
+
+/* 技能图七页 /cs/ /skills/ /backend/ /agent/ /music/ /english/ /finance/（2026-10-29 迁入）
+   —— 技能图最多十层、每层好几个方块，塞进两栏会挤成一团，所以整页只留内容区。
+   宽度取满：内容本身在页面里已经用 `max-w-[78rem] mx-auto` 自己收口了，
+   这里再压一次会和外层的 1248px 打架，两边都对不齐。 */
+@media (min-width: 768px) {
+	html:has(#content-wrapper[data-no-sidebar="skills"]) #content-wrapper {
+		max-width: 100%;
+	}
+}
+
+/* 技能图里「属性面板 / 修为条」是 sticky 的，祖先 #main-content-wrapper 的 overflow: hidden
+   会把它变成滚动容器、sticky 直接失效（与导航站/动态页同一个坑），本页换 clip。 */
+html:has(#content-wrapper[data-no-sidebar="skills"]) #main-content-wrapper {
+	overflow: clip;
+}

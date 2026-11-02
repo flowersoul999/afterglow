@@ -1,0 +1,23 @@
+---
+// 计算机基础技能图（2026-10-29 自 jojo! 站迁入）：和前端技能图共用同一个组件，换一套数据
+// 数据见 src/data/csSkills.ts（技能与依赖）· csIcons.ts（图标）· csChecks.ts（学习清单）
+// 组件见 src/components/skills/CsSkillTree.svelte
+import CsSkillTree from "@/components/skills/CsSkillTree.svelte";
+import CultivationPanel from "@/components/skills/CultivationPanel.svelte";
+import SkillGraphSwitch from "@/components/skills/SkillGraphSwitch.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const title = "计算机基础";
+const description =
+	"把计算机专业的基础课排成一张有真实依赖关系的技能图：数学打底，再往上长语言、数据结构与算法、组成原理、操作系统、计算机网络、数据库、编译原理与软件工程。连线代表「先会了上面，才能解锁下面」。这也是修仙路的入道之地——从这里打坐，修为够了再去别的图。";
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="card-base z-10 relative w-full overflow-hidden">
+		<div class="px-3 sm:px-5 md:px-7 py-5 sm:py-7 max-w-[78rem] mx-auto">
+			<CultivationPanel here="cs" client:load />
+			<SkillGraphSwitch current="cs" />
+			<CsSkillTree client:load />
+		</div>
+	</div>
+</MainGridLayout>

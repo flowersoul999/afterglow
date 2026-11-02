@@ -9,11 +9,9 @@ import { siteConfig } from "./siteConfig";
 
 // 根据页面开关动态生成导航栏配置
 const getDynamicNavBarConfig = (): NavBarConfig => {
-	// 基础导航栏链接
+	// 基础导航栏链接（2026-10-29 站长定稿：导航 / 文章 / 动态 / 开心 / 关于）
+	// 「主页」项已去掉：左侧站点 Logo 本身就是回首页的链接，不必再占一个位置。
 	const links: (NavBarLink | LinkPreset)[] = [
-		// 主页
-		LinkPreset.Home,
-
 		// 网站导航（页面在 /projects/）
 		{
 			name: "导航",
@@ -86,7 +84,9 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		],
 	});
 
-	// 记录入口 - 书架、影视与游戏、音乐、规划、足迹
+	// 记录入口（2026-10-29 站长要求改名 AETHER —— 不要真词，要「字母抽一起」的招牌感：
+	// 与站名 Aemeath 同以 Ae- 起手，像一枚徽章，和旁边的中文项形成节奏对比）——
+	// 书架、影视与游戏、音乐、规划、足迹
 	const recordChildren: (NavBarLink | LinkPreset)[] = [];
 	if (siteConfig.pages.books) {
 		recordChildren.push(LinkPreset.Books);
@@ -105,75 +105,35 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		icon: "material-symbols:location-on",
 	});
 
+	// 技能（2026-11-02 站长收敛）：原先 7 张技能图各占一个下拉项
+	// （计算机基础 / 前端 / 后端 / Agent 开发 / 音乐 / 英语 / 理财），菜单过长，
+	// 现合并成唯一一个「技能」入口，直达 /skills/ 前端技能图。
+	// 该页顶部就有 SkillGraphSwitch 切换条，7 张图之间可以互相跳转，
+	// 所以这里删掉的只是导航里的重复入口 —— 7 条独立路由（/cs/ /backend/ /agent/
+	// /music/ /english/ /finance/）与对应页面全部保留，别顺手删了。
+	recordChildren.push({
+		name: "技能",
+		url: "/skills/",
+		icon: "material-symbols:account-tree-rounded",
+	});
+
 	if (recordChildren.length > 0) {
 		const defaultUrl = siteConfig.pages.books
 			? "/books/"
 			: siteConfig.pages.moviesGames
 				? "/movies-games/"
-				: "/music/";
+				: // 兜底刻意不用 /music/（音乐技能图所在路由）：跳过去会让「开心」这一栏
+					// 莫名其妙。更新日志是所有站点都开着的。
+					"/changelog/";
 
 		links.push({
-			name: "记录",
+			// 2026-10-29 站长定的名字：开心（AI 搭档的名字，也是这一栏的气质）
+			name: "开心",
 			url: defaultUrl,
-			icon: "material-symbols:camera-outdoor",
+			icon: "material-symbols:auto-awesome",
 			children: recordChildren,
 		});
 	}
-
-	// 技能图（2026-10-29 自 jojo! 站迁入）—— 独立顶层入口，不塞进「记录」里：
-	// 七张图本身是学习体系，跟书架/影视/足迹这些生活记录不是一类。
-	// 分两组（顺序即截图里的顺序）：
-	//   修行路（有境界门禁、算修为）：计算机基础 → 前端 → 后端 → Agent 开发
-	//   修行录（无门禁、不算修为）：音乐 / 英语 / 理财
-	// 每张图内部还有顶部切换条可以互跳（SkillGraphSwitch），这里只是给导航一个直达入口。
-	// 父项带 children 时 Navbar 会渲染成按钮（不是链接），所以这里的 url 只是兜底。
-	links.push({
-		name: "技能",
-		url: "/skills/",
-		icon: "material-symbols:account-tree-rounded",
-		children: [
-			// 计算机基础技能图（数学 / 组原 / 操作系统 / 网络 / 数据库 …）
-			{
-				name: "计算机基础",
-				url: "/cs/",
-				icon: "material-symbols:school",
-			},
-			// 前端技能图
-			{
-				name: "前端技能图",
-				url: "/skills/",
-				icon: "material-symbols:account-tree-rounded",
-			},
-			// 后端技能图（在前端基础上往全栈转）
-			{
-				name: "后端技能图",
-				url: "/backend/",
-				icon: "material-symbols:storage",
-			},
-			// Agent 开发技能图（大模型应用：提示 / RAG / 工具编排 / 评测 / 上线）
-			{
-				name: "Agent 开发",
-				url: "/agent/",
-				icon: "material-symbols:smart-toy",
-			},
-			// 修行录三张：与修行路无先后关系，不计修为
-			{
-				name: "音乐（修行录）",
-				url: "/music/",
-				icon: "material-symbols:music-note",
-			},
-			{
-				name: "英语（修行录）",
-				url: "/english/",
-				icon: "material-symbols:translate",
-			},
-			{
-				name: "理财（修行录）",
-				url: "/finance/",
-				icon: "material-symbols:savings",
-			},
-		],
-	});
 
 	// 关于及其子菜单
 	links.push({

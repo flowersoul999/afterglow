@@ -29,6 +29,8 @@ export type SidebarPageType =
 	| "search"
 	| "changelog"
 	| "sponsor"
+	/** 七张技能图（2026-10-29 迁入）：/cs/ /skills/ /backend/ /agent/ /music/ /english/ /finance/ */
+	| "skills"
 	| "other";
 
 /** 全部页面类型（供文档/校验参考，顺序与判定无关） */
@@ -54,8 +56,25 @@ export const SIDEBAR_PAGE_TYPES: readonly SidebarPageType[] = [
 	"search",
 	"changelog",
 	"sponsor",
+	"skills",
 	"other",
 ] as const;
+
+/**
+ * 七张技能图的扁平路由（2026-10-29 自 jojo! 站迁入）。
+ * 修行路：/cs/ 计算机基础、/skills/ 前端、/backend/ 后端、/agent/ Agent 开发；
+ * 修行录：/music/ 音乐、/english/ 英语、/finance/ 理财。
+ * 路由是固定的单层路径，直接精确匹配即可，不做 startsWith（避免误吞将来的子路由）。
+ */
+const SKILL_GRAPH_PATHS: ReadonlySet<string> = new Set([
+	"/cs",
+	"/skills",
+	"/backend",
+	"/agent",
+	"/music",
+	"/english",
+	"/finance",
+]);
 
 /** 去掉 query / hash / 尾部斜杠，`""` 归一为 `"/"` */
 function normalizePath(pathname: string): string {
@@ -106,6 +125,11 @@ export function getSidebarPageType(pathname: string): SidebarPageType {
 	if (path === "/search") return "search";
 	if (path === "/changelog") return "changelog";
 	if (path === "/sponsor") return "sponsor";
+
+	// 技能图（2026-10-29 自 jojo! 站迁入）—— 七张图共用一个页面类型：
+	// 修行路四张（无门禁之前都算同一类）+ 修行录三张，排版完全相同（满宽、无侧栏）。
+	// 逐个精确匹配而不是 startsWith：这几条都是单层扁平路由。
+	if (SKILL_GRAPH_PATHS.has(path)) return "skills";
 
 	return "other";
 }

@@ -1,0 +1,32 @@
+---
+// 英语（修行录第二图，2026-10-29 自 jojo! 站迁入）：从字母拼读到能用它办成事
+// 数据见 src/data/englishSkills.ts（技能/依赖/专属等级体系）· englishIcons.ts（图标）· englishChecks.ts（学习清单）
+// 组件见 src/components/skills/EnglishSkillTree.svelte（属性面板见 EnglishRecordPanel.svelte）
+//
+// ⚠️ 这张图和前五张都不一样，是**修行录**：
+//   · 无境界门禁（不放 RealmGate），任何时候都能进
+//   · 不加修为、不进九境界、不发飞剑传书、不领话本签（SkillTree 传了 noCultivation）
+//   · 顶部显示的是语音 / 词汇 / 语法 / 表达四个属性，不是修为条
+// 另外它还传了自己的 EN_LEVELS：技术图那套「未接触→大师」的判定语
+// （做过可运行的东西、写过被广泛使用的库）放到英语上全是空话。
+import EnglishRecordPanel from "@/components/skills/EnglishRecordPanel.svelte";
+import EnglishSkillTree from "@/components/skills/EnglishSkillTree.svelte";
+import SkillGraphSwitch from "@/components/skills/SkillGraphSwitch.astro";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+
+const title = "英语技能图";
+const description =
+	"从字母拼读一路到能用英语办成事的一张修行录：语音与拼写、词汇、语法、听力、口语、阅读、写作，最后是学术与商务两条出口。方向按真实的能力增长顺序排——不会读就没法听说，所以语音排在最前。每一条清单都写成能自己验收的标准：默写正确率、精听能填出几个空、录音回放听得出语法错。不用境界也能进，背多少词不重要，能不能用出来才重要。";
+---
+
+<MainGridLayout title={title} description={description}>
+	<div class="card-base z-10 relative w-full overflow-hidden">
+		<div class="px-3 sm:px-5 md:px-7 py-5 sm:py-7 max-w-[78rem] mx-auto">
+			<EnglishRecordPanel client:load />
+			<SkillGraphSwitch current="en" />
+			<div class="relative">
+				<EnglishSkillTree client:load />
+			</div>
+		</div>
+	</div>
+</MainGridLayout>
