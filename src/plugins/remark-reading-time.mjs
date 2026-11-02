@@ -24,7 +24,8 @@ export function remarkReadingTime() {
 		const enWords = readingTime.words;
 		const totalWords = enWords + cjkCount;
 
-		const minutes = enWords / EN_WORDS_PER_MINUTE + cjkCount / CJK_WORDS_PER_MINUTE;
+		const minutes =
+			enWords / EN_WORDS_PER_MINUTE + cjkCount / CJK_WORDS_PER_MINUTE;
 
 		data.astro.frontmatter.words = totalWords;
 		data.astro.frontmatter.minutes = Math.max(1, Math.round(minutes));
