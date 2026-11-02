@@ -269,3 +269,75 @@
 	--graph-chip-checked: oklch(0.75 0.12 190);
 	--mobile-dock-surface: #181818;
 }
+
+/* ===== 动态心情标签（说说卡片头部） ===== */
+/* 八套低饱和「底 / 字 / 边」三件套。词表在 utils/moment-mood.ts，
+   新增心情只改那边的 tone，颜色直接复用这八套 */
+:root {
+	--mood-amber-bg: oklch(0.965 0.028 85);
+	--mood-amber-fg: oklch(0.47 0.085 72);
+	--mood-amber-bd: oklch(0.9 0.045 85);
+
+	--mood-slate-bg: oklch(0.955 0.004 260);
+	--mood-slate-fg: oklch(0.44 0.012 260);
+	--mood-slate-bd: oklch(0.885 0.006 260);
+
+	--mood-blue-bg: oklch(0.955 0.018 255);
+	--mood-blue-fg: oklch(0.46 0.085 255);
+	--mood-blue-bd: oklch(0.885 0.033 255);
+
+	--mood-red-bg: oklch(0.96 0.02 25);
+	--mood-red-fg: oklch(0.47 0.1 25);
+	--mood-red-bd: oklch(0.89 0.038 25);
+
+	--mood-violet-bg: oklch(0.958 0.019 300);
+	--mood-violet-fg: oklch(0.44 0.085 300);
+	--mood-violet-bd: oklch(0.885 0.032 300);
+
+	--mood-pink-bg: oklch(0.96 0.021 350);
+	--mood-pink-fg: oklch(0.47 0.095 350);
+	--mood-pink-bd: oklch(0.89 0.036 350);
+
+	--mood-teal-bg: oklch(0.96 0.017 185);
+	--mood-teal-fg: oklch(0.42 0.055 185);
+	--mood-teal-bd: oklch(0.885 0.03 185);
+
+	--mood-sand-bg: oklch(0.96 0.016 80);
+	--mood-sand-fg: oklch(0.45 0.04 70);
+	--mood-sand-bd: oklch(0.89 0.028 80);
+}
+
+/* 暗色：底用低透明度，字提亮，描边压深，避免在纯黑底上发光刺眼 */
+:root.dark {
+	--mood-amber-bg: oklch(0.28 0.045 75 / 0.5);
+	--mood-amber-fg: oklch(0.86 0.09 80);
+	--mood-amber-bd: oklch(0.4 0.04 75);
+
+	--mood-slate-bg: oklch(0.22 0.004 260 / 0.7);
+	--mood-slate-fg: oklch(0.78 0.01 260);
+	--mood-slate-bd: oklch(0.34 0.004 260);
+
+	--mood-blue-bg: oklch(0.26 0.035 255 / 0.55);
+	--mood-blue-fg: oklch(0.8 0.07 250);
+	--mood-blue-bd: oklch(0.37 0.035 255);
+
+	--mood-red-bg: oklch(0.27 0.04 25 / 0.55);
+	--mood-red-fg: oklch(0.81 0.075 30);
+	--mood-red-bd: oklch(0.38 0.04 25);
+
+	--mood-violet-bg: oklch(0.26 0.04 300 / 0.55);
+	--mood-violet-fg: oklch(0.8 0.07 300);
+	--mood-violet-bd: oklch(0.37 0.04 300);
+
+	--mood-pink-bg: oklch(0.27 0.04 350 / 0.55);
+	--mood-pink-fg: oklch(0.82 0.07 350);
+	--mood-pink-bd: oklch(0.38 0.04 350);
+
+	--mood-teal-bg: oklch(0.25 0.03 185 / 0.55);
+	--mood-teal-fg: oklch(0.82 0.055 185);
+	--mood-teal-bd: oklch(0.36 0.03 185);
+
+	--mood-sand-bg: oklch(0.26 0.03 80 / 0.55);
+	--mood-sand-fg: oklch(0.82 0.045 80);
+	--mood-sand-bd: oklch(0.37 0.03 80);
+}

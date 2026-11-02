@@ -6,6 +6,7 @@ import { Icon } from "astro-icon/components";
 import Markdown from "@/components/common/Markdown.astro";
 import { formatDateToYYYYMMDD } from "@/utils/date-utils";
 import { resolveMomentMedia, stripMomentMedia } from "@/utils/moment-media";
+import { splitTags } from "@/utils/moment-mood";
 import { getTagUrl } from "@/utils/url-utils";
 
 interface Props {
@@ -16,6 +17,9 @@ const { moment } = Astro.props;
 const { Content } = await render(moment);
 const { author, avatar, published, images, tags, location, pinned } =
 	moment.data;
+
+// tags 第一项是心情（如「平平淡淡」），单独提到头部；其余继续当话题标签
+const { mood, topics } = splitTags(tags);
 
 // 获取 moments 资产目录下的所有图片
 const momentAssets = import.meta.glob<{ default: ImageMetadata }>(
@@ -152,6 +156,12 @@ const formatTimeAgo = (date: Date): string => {
 						<span>置顶</span>
 					</span>
 				)}
+				{mood && (
+					<span class={`mood-badge mood-${mood.tone}`} title={`心情：${mood.label}`}>
+						<span class="mood-emoji" aria-hidden="true">{mood.emoji}</span>
+						<span class="mood-label">{mood.label}</span>
+					</span>
+				)}
 			</div>
 			<div class="meta-row">
 				<time
@@ -226,7 +236,9 @@ const formatTimeAgo = (date: Date): string => {
 				const isLastVisible = index === gridMax - 1 && imagesArray.length > gridMax;
 
 				return (
-					<div class={`image-item ${isHidden ? "hidden-image" : ""}`}>
+					<div
+						class={`image-item ${isHidden ? "hidden-image" : ""} ${isLastVisible ? "has-more" : ""}`}
+					>
 						{typeof img === "string" ? (
 							<img
 								src={img}
@@ -260,9 +272,9 @@ const formatTimeAgo = (date: Date): string => {
 
 	<!-- 底部：标签 + 评论按钮 -->
 	<div class="card-bottom-row">
-		{tags && tags.length > 0 && (
+		{topics.length > 0 && (
 			<div class="card-tags">
-				{tags.map((tag) => (
+				{topics.map((tag) => (
 					<a href={getTagUrl(tag)} class="tag-item">
 						#{tag.trim()}
 					</a>
@@ -360,6 +372,91 @@ const formatTimeAgo = (date: Date): string => {
 		font-size: 0.9375rem;
 		font-weight: 600;
 		color: var(--primary);
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	/* ============================================
+	 * 心情标签（tags 第一项，emoji + 两个字）
+	 * ============================================ */
+	.mood-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3125rem;
+		flex-shrink: 0;
+		margin-left: auto;
+		padding: 0.125rem 0.625rem 0.125rem 0.4375rem;
+		border: 1px solid;
+		border-radius: 9999px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		line-height: 1.6;
+		letter-spacing: 0.01em;
+		white-space: nowrap;
+		transition:
+			filter 0.2s ease,
+			transform 0.2s ease;
+	}
+
+	.mood-badge:hover {
+		filter: brightness(0.97);
+	}
+
+	.mood-emoji {
+		font-size: 0.75rem;
+		line-height: 1;
+		font-family:
+			"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+	}
+
+	.mood-amber {
+		background: var(--mood-amber-bg);
+		color: var(--mood-amber-fg);
+		border-color: var(--mood-amber-bd);
+	}
+
+	.mood-slate {
+		background: var(--mood-slate-bg);
+		color: var(--mood-slate-fg);
+		border-color: var(--mood-slate-bd);
+	}
+
+	.mood-blue {
+		background: var(--mood-blue-bg);
+		color: var(--mood-blue-fg);
+		border-color: var(--mood-blue-bd);
+	}
+
+	.mood-red {
+		background: var(--mood-red-bg);
+		color: var(--mood-red-fg);
+		border-color: var(--mood-red-bd);
+	}
+
+	.mood-violet {
+		background: var(--mood-violet-bg);
+		color: var(--mood-violet-fg);
+		border-color: var(--mood-violet-bd);
+	}
+
+	.mood-pink {
+		background: var(--mood-pink-bg);
+		color: var(--mood-pink-fg);
+		border-color: var(--mood-pink-bd);
+	}
+
+	.mood-teal {
+		background: var(--mood-teal-bg);
+		color: var(--mood-teal-fg);
+		border-color: var(--mood-teal-bd);
+	}
+
+	.mood-sand {
+		background: var(--mood-sand-bg);
+		color: var(--mood-sand-fg);
+		border-color: var(--mood-sand-bd);
 	}
 
 	.pinned-badge {
@@ -455,32 +552,42 @@ const formatTimeAgo = (date: Date): string => {
 	 * ============================================ */
 	.card-images {
 		display: grid;
-		gap: 0.375rem;
+		gap: 4px;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		max-width: 486px;
 		margin-bottom: 0.75rem;
 	}
 
+	/* 1 张：单张大图，4:3 不裁成方块 */
 	.image-cols-1 {
-		grid-template-columns: 100px;
+		grid-template-columns: minmax(0, 1fr);
+		max-width: 260px;
 	}
 
+	.image-cols-1 .image-item {
+		aspect-ratio: 4 / 3;
+	}
+
+	/* 2 张 / 4 张：两列，宽度正好卡在三列的两格上 */
 	.image-cols-2 {
-		grid-template-columns: repeat(2, 100px);
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		max-width: 324px;
 	}
 
 	.image-cols-3 {
-		grid-template-columns: repeat(3, 90px);
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		max-width: 486px;
 	}
 
 	.image-item {
 		position: relative;
-		border-radius: var(--radius);
+		border-radius: 4px;
 		overflow: hidden;
 		cursor: pointer;
-		background: var(--bg-secondary);
+		background: var(--btn-regular-bg-hover);
 		aspect-ratio: 1;
 	}
 
-	
 	.image-img {
 		width: 100%;
 		height: 100%;
@@ -492,9 +599,13 @@ const formatTimeAgo = (date: Date): string => {
 		transform: scale(1.03);
 	}
 
-	.hidden-image { display: none !important; }
-.has-more .image-img {
-		filter: brightness(0.6);
+	.hidden-image {
+		display: none;
+	}
+
+	/* 第 9 格：压暗 + 居中 +N，暗示后面还有 */
+	.has-more .image-img {
+		filter: brightness(0.55);
 	}
 
 	.more-overlay {
@@ -570,6 +681,11 @@ const formatTimeAgo = (date: Date): string => {
 
 		.card-images {
 			gap: 0.25rem;
+		}
+
+		/* 手机上卡片本来就窄，单图不用再收着 */
+		.image-cols-1 {
+			max-width: 100%;
 		}
 
 		.more-text {
