@@ -48,7 +48,7 @@ export const siteConfig: SiteConfig = {
 	favicon: [
 		{
 			// 图标文件路径
-			src: "/assets/ziyuan/tx.webp",
+			src: "/assets/ziyuan/logo.webp",
 			// 可选，指定主题 'light' | 'dark'
 			// theme: "light",
 			// 可选，图标大小
@@ -66,8 +66,8 @@ export const siteConfig: SiteConfig = {
 		// 4. 网络图片: { type: "url", value: "https://example.com/logo.png", alt: "Logo" }
 		logo: {
 			type: "image",
-			value: "assets/images/firefly.png",
-			alt: "🍀",
+			value: "/assets/ziyuan/logo.webp",
+			alt: "jojostar",
 		},
 		// 导航栏标题
 		title: "jojostar",
@@ -153,10 +153,11 @@ export const siteConfig: SiteConfig = {
 
 	// 页面开关配置 - 控制特定页面的访问权限，设为false会返回404
 	pages: {
-		// 赞助页面开关
-		sponsor: true,
-		// 留言板页面开关，需要配置评论系统
-		guestbook: true,
+		// 赞助页面开关（已关闭：还没有自己的收款码，避免访客看到空白页）
+		sponsor: false,
+		// 聊天式留言板（/guestbook/）开关：该页硬依赖 Waline 后端
+		// 未部署 Waline 时保持 false，导航的「留言板」已改为指向 giscus 版 /life/guestbook/
+		guestbook: false,
 		// 原番组计划页面开关（已拆分，保留关闭）
 		bangumi: false,
 		// 书架页面开关
@@ -222,7 +223,7 @@ export const siteConfig: SiteConfig = {
 			scriptUrl: import.meta.env.PUBLIC_UMAMI_BASE
 				? `${import.meta.env.PUBLIC_UMAMI_BASE}/script.js`
 				: "",
-			shareId: import.meta.env.PUBLIC_UMAMI_SHARE_ID || "axPq9bMWEDi1N6am",
+			shareId: import.meta.env.PUBLIC_UMAMI_SHARE_ID || "",
 		},
 	},
 

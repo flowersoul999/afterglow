@@ -37,8 +37,9 @@ const navItems: NavItem[] = [
 	{
 		icon: "material-symbols:chat",
 		label: "留言板",
-		url: "/guestbook/",
-		show: !!siteConfig.pages.guestbook,
+		// giscus 版留言板（/life/guestbook/），不依赖 siteConfig.pages.guestbook
+		url: "/life/guestbook/",
+		show: true,
 	},
 	{
 		icon: "material-symbols:chat-bubble-outline",

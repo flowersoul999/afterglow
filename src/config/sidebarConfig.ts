@@ -156,8 +156,9 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 	rightComponents: [
 		{
 			// 组件类型：恋爱计时小组件
+			// 已关闭：原配置是上游作者的名字/纪念日/情侣头像，需先改成自己的信息再启用
 			type: "relationship",
-			enable: true,
+			enable: false,
 			position: "top",
 			showOnPostPage: false,
 		},
@@ -227,9 +228,9 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 		},
 		{
 			// 组件类型：恋爱计时小组件
+			// 是否启用该组件（已关闭，原因同上）
 			type: "relationship",
-			// 是否启用该组件
-			enable: true,
+			enable: false,
 			// 是否在文章详情页显示
 			showOnPostPage: true,
 		},
