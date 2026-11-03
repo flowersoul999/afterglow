@@ -526,6 +526,13 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - ⚠️ **手机底部那条浮岛（`MobileDock` + `src/styles/components/mobile-dock.css`）不在这次统一范围内，保持原样**（透明按钮 + 中间凸出的黑色圆钮 + 胶囊圆角）—— 站长 2026-09-30 明确要求改回来，别再顺手「统一规格」。它的总高 `4.25rem`（按钮 3.25rem + 上下留白 0.5rem）被 `dock-drawer`、动态页那 3 个按钮的 `bottom` 偏移按写死的值引用，**改它高度要同步改那两处**。
 - ⚠️ **图标空白 = sprite 丢符号**（本次踩到）：页面里的 `<Icon>` 默认走 astro-icon 的 sprite（`<use href="#ai:…">`），这份 sprite 有已知的丢符号问题（`src/components/common/Icon.astro` 就是为绕开它而写的包装组件）。症状是图标**整块空白**而不报错，`document.querySelector("symbol#ai:…")` 能确认缺没缺。判断/修复：给那个 `<Icon>` 加 `is:inline`（路径直接内联），或改用 `@/components/common/Icon.astro`。
 
+### 5.21 导航首位补回「主页」（2026-11-03）
+
+- **现状顺序**：主页 / 导航 / 文章 / 动态 / 开心 / 关于。
+- **为什么加回**：2026-10-29 删掉「主页」的理由是「左上 Logo 本身就是 `<a href="/">`」，但视觉上 Logo 只是「头像 + JOJOSTAR」的胶囊，没有可点暗示，站长自己在导航里找不到回首页的路。**别再以「Logo 能回首页」为由删掉这一项。**
+- **两份硬编码同样要一起改**：桌面在 `src/config/navBarConfig.ts` 的 `links` 首位放 `LinkPreset.Home`（名称走 i18n 的 `I18nKey.home`、图标 `material-symbols:home`）；移动端抽屉 `MobileMenuSheet.astro` 的 `groups` 首位手写一项 `{ icon: "material-symbols:home", label: "主页", url: "/", single: true }`。
+- ⚠️ **高亮别删那个特判**：`src/utils/navbar-active-motion.ts` 的 `pathMatches()` 里 `if (hp === "/") return cp === "/";` —— 去掉后 `startsWith("/")` 对任何页面都成立，「主页」会在全站常亮。
+
 ### 5.20 导航收敛：七张技能图合并为单一「技能」入口（2026-11-02）
 
 - **改了什么**：原先「开心」下拉里挂着 7 个技能图入口（计算机基础 / 前端技能图 / 后端技能图 / Agent 开发 / 音乐（修行录）/ 英语（修行录）/ 理财（修行录）），菜单过长。现合并成**唯一一项「技能」**，落在 `/skills/`（前端技能图），图标 `material-symbols:account-tree-rounded`。
