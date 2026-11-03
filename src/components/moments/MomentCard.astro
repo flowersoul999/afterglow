@@ -17,6 +17,7 @@ const { moment } = Astro.props;
 const { Content } = await render(moment);
 const { author, avatar, published, images, tags, location, pinned } =
 	moment.data;
+const title = (moment.data.title ?? "").trim();
 
 // tags 第一项是心情（如「平平淡淡」），单独提到头部；其余继续当话题标签
 const { mood, topics } = splitTags(tags);
@@ -188,6 +189,9 @@ const formatTimeAgo = (date: Date): string => {
 
 	<!-- 内容 -->
 	<div class="card-content">
+		{title && (
+			<h3 class="moment-title text-[var(--text-color)]">{title}</h3>
+		)}
 		<div
 			class="moment-markdown text-[var(--text-color)] text-[0.9375rem] leading-[1.75]"
 		>
@@ -282,6 +286,27 @@ const formatTimeAgo = (date: Date): string => {
 			</div>
 		)}
 			<div class="card-comment-toggle">
+			<!-- 站长专属：未登录时整组 display:none，靠 <html>.is-editor 开关 -->
+			<div class="moment-edit-actions">
+				<button
+					class="moment-edit-btn"
+					type="button"
+					data-edit-moment={moment.id}
+					aria-label="编辑这条说说"
+					title="编辑"
+				>
+					<Icon name="material-symbols:edit-outline" class="moment-edit-icon" />
+				</button>
+				<button
+					class="moment-edit-btn is-danger"
+					type="button"
+					data-delete-moment={moment.id}
+					aria-label="删除这条说说"
+					title="删除"
+				>
+					<Icon name="material-symbols:delete-outline" class="moment-edit-icon" />
+				</button>
+			</div>
 			<button
 				class="comment-toggle-btn"
 				data-moment-id={moment.id}
@@ -509,6 +534,15 @@ const formatTimeAgo = (date: Date): string => {
 		margin-bottom: 0.75rem;
 	}
 
+	/* 动态标题（2026-11-03 起支持，可为空） */
+	.moment-title {
+		font-size: 1.0625rem;
+		font-weight: 600;
+		line-height: 1.5;
+		margin-bottom: 0.375rem;
+		word-break: break-word;
+	}
+
 	.moment-markdown :global(p) {
 		margin-bottom: 0.375rem;
 		word-break: break-word;
@@ -698,7 +732,72 @@ const formatTimeAgo = (date: Date): string => {
 	 * ============================================ */
 	.card-comment-toggle {
 		display: flex;
+		align-items: center;
 		flex-shrink: 0;
+	}
+
+	/* ============================================
+	 * 站长编辑按钮（未登录时整组不出现）
+	 * 注意：这里的祖先必须包 :global()。Astro 的 scoped CSS 会把
+	 * `:root.is-editor` 这类前缀连同作用域一起处理掉，编译后前缀直接消失，
+	 * 结果就是按钮永远显示（或永远不显示），排查过一轮。
+	 * ============================================ */
+	.moment-edit-actions {
+		display: none;
+		align-items: center;
+		gap: 0.375rem;
+		margin-right: 0.375rem;
+	}
+
+	:global(html.is-editor) .moment-edit-actions {
+		display: flex;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.18s ease;
+	}
+
+	:global(html.is-editor) .moment-card:hover .moment-edit-actions,
+	:global(html.is-editor) .moment-card:focus-within .moment-edit-actions {
+		opacity: 1;
+		pointer-events: auto;
+	}
+
+	/* 触屏没有 hover，登录后直接常显，别让人找不到 */
+	@media (hover: none) {
+		:global(html.is-editor) .moment-edit-actions {
+			opacity: 1;
+			pointer-events: auto;
+		}
+	}
+
+	.moment-edit-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		padding: 0;
+		border: 1.5px solid var(--line-color);
+		border-radius: 9999px;
+		background: transparent;
+		color: var(--content-meta);
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.moment-edit-btn:hover {
+		border-color: var(--primary);
+		color: var(--primary);
+	}
+
+	.moment-edit-btn.is-danger:hover {
+		border-color: oklch(0.55 0.19 25);
+		color: oklch(0.55 0.19 25);
+	}
+
+	.moment-edit-icon {
+		width: 1rem;
+		height: 1rem;
 	}
 
 	.comment-toggle-btn {

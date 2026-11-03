@@ -52,11 +52,12 @@
 ```
 src/
 ├── assets/images/       # 头像、封面等构建时图片
-├── components/          # 按功能域组织的组件（157 个文件）
+├── components/          # 按功能域组织的组件（161 个文件）
 │   ├── analytics/       # GA, Clarity, Umami (3)
 │   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
 │   ├── controls/        # 交互控件：搜索、归档三视图树（ArchivePanel/ArchiveTree）、主题、Dock (8)
+│   ├── editor/          # 站长在线编辑（2026-11-03）：EditorNavButton 导航入口 / EditorLoginModal 令牌登录 / MomentDrawer 说说抽屉 / EditorRoot 常驻外壳（唯一 import editor.css 的地方） (4)
 │   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器)
 │   ├── layout/          # 布局组件：Navbar, Footer, SideBar, HomeHero... (19)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
@@ -93,7 +94,7 @@ src/
 │       guestbook, movies-games/, projects, search,
 │       sponsor, rss, robots.txt, og
 ├── plugins/             # 自定义 remark/rehype 插件 (10)
-├── styles/              # CSS 样式（84 个文件，含 about 技术栈/时间线/更新日志图谱）
+├── styles/              # CSS 样式（85 个文件，含 about 技术栈/时间线/更新日志图谱）
 │   ├── tokens/          # 设计令牌：colors, breakpoints, animation, z-index
 │   ├── base/            # reset, utilities
 │   ├── components/      # 组件样式
@@ -103,8 +104,9 @@ src/
 │   ├── transitions/     # Swup 过渡动画
 │   └── vendor/          # 第三方覆盖
 ├── types/               # TypeScript 类型：config.ts, bangumi.ts, guestbook-chat.ts
-└── utils/               # 工具函数（58 个文件，含 changelog.ts / tag-graph 控制器 / tts-text 正文提取 / music-player-controller 播放器形态机等）
+└── utils/               # 工具函数（62 个文件，含 changelog.ts / tag-graph 控制器 / tts-text 正文提取 / music-player-controller 播放器形态机等）
     ├── 8 个控制器模块   # 见第 10 节
+    ├── editor/          # 站长编辑（2026-11-03）：github-client.ts（Contents API 读写删）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化）
     └── 33 个业务工具    # content-utils, category-tree（文件夹即分类，多级 `a/b` 推导 + CategoryNode 树）, date-utils, image-utils, url-utils, tts-text（朗读正文提取）...
 
 # 根目录其他重要文件
@@ -1075,6 +1077,8 @@ return controller;
 | 用文件 mtime 做集合排序/展示的兜底依据 | CI（EdgeOne/GitHub Actions）每次全新 clone，所有文件 mtime 都等于构建时刻、比任何业务日期都新——缺字段的旧条目会永远霸占"最新"区块（2026-09 友链页"新朋友"事故） | 排序只认 frontmatter 业务字段（如 friends 的 `added`）；字段缺失时构建期 `console.warn` 并让条目落到最后 |
 | 拿 Astro content 集合的 `item.id` 拼磁盘路径 / 匹配 public 静态文件 | id 是 github-slugger 规则（小写 + 移除标点、空格转连字符），与磁盘文件名不一致（`39-胡超，作品集.md` → id `39-胡超作品集`、`33-RAGNote.md` → `33-ragnote`），Linux CI 大小写敏感必失配 | 文件名 ↔ id 换算必须走同一 slug 规则（截图脚本 `scripts/友链截图/index.mjs` 已内置 github-slugger）；新增含大写/标点文件名的友链后核对 `public/assets/friends-shots/` 截图命名 |
 | dev server 开着同时跑 `pnpm build` | 两者抢 `node_modules/.astro/data-store.json` 锁，报 `EPERM ... data-store.json.tmp -> data-store.json`，易被误判为代码错误 | 先关 dev（或杀掉残留 node/astro 进程）再构建，见 §18.1 |
+| 在组件 `<style>`（scoped）里用 `:root.xxx` / `html.xxx` 当**祖先选择器**（如 `:root.is-editor .foo{}`） | Astro 的作用域处理会把前缀连同作用域一起吃掉，编译后只剩 `.foo[data-astro-cid]`，条件样式变成无条件生效（2026-11-03 说说编辑按钮「登录前后都显示」事故，产物里 `:root.is-editor` 直接消失） | 跨作用域的祖先一律包 `:global()`：`:global(html.is-editor) .foo{}`，编译后前缀原样保留 |
+| 在纯静态站（无 adapter）里做「密码登录」 | 没有服务端就没有可信的校验点，密码只能在前端比对，读源码即可绕过，等于没有密码 | 要么上服务端（Edge Function / Worker，令牌放服务端、前端只拿 HttpOnly Cookie），要么直接让用户填能真正决定权限的凭证（见 §24） |
 
 ---
 
@@ -1302,3 +1306,45 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 它把 `src/content/学习笔记` 只读同步到自己的 `docs/posts`，操作手册在该目录的 `DEPLOY.md`。
 **本站任何 `pnpm build` / `pnpm check` / biome 都不覆盖它**，改它不影响本站。
 未建该仓库时，本节视为规划，不必执行。
+
+---
+
+## 24. 站长在线编辑（2026-11-03）
+
+站内改内容，不用回本地开编辑器。**只对说说开放**，文章集合目前为空、面经体量太大，都还没接。
+
+### 架构
+
+```
+EditorRoot.svelte（挂 Navbar.astro 内，Swup 容器外 → 换页不重建）
+├── EditorNavButton.svelte   # 右侧入口：未登录=登录按钮，已登录=头像+菜单
+├── EditorLoginModal.svelte  # 复用 .privacy-modal 骨架
+├── MomentDrawer.svelte      # 新建/编辑/删除说说
+└── editor.toast             # 提交提示
+```
+
+| 文件 | 职责 |
+|------|------|
+| `src/utils/editor/github-client.ts` | Contents API 读/写/删；中文路径逐段 `encodeURIComponent` |
+| `src/utils/editor/editor-store.ts` | 登录态（store 契约）、错误翻译、toast |
+| `src/utils/editor/editor-ui.ts` | 弹窗/抽屉的开合、抽屉模式与意图 |
+| `src/utils/editor/moment-serializer.ts` | 说说 md ↔ 草稿；**未知 frontmatter 字段收进 `extra` 原样吐回**，不吃作者数据 |
+| `src/styles/components/editor.css` | 全部样式，**只由 EditorRoot import 一次** |
+
+### 三条硬约束
+
+1. **没有服务端。** Astro 纯静态输出，做不了真密码登录（§15 有对应反模式）。凭证直接是 GitHub 细粒度令牌，只授权 `flowersoul999/afterglow` 单仓库 + `Contents: Read and write`。
+2. **令牌存 `sessionStorage`**（key `jojo-editor-token`），关标签页即失效。**不要改成 localStorage** —— 那是明文长期驻留，页面里任何脚本都能读。
+3. **提交 ≠ 上线。** 文件 push 上去后 EdgeOne Pages 要重新构建，1~3 分钟才可见。所以文案一律写「已提交，正在重新构建」，不要写「已发布」。
+
+### 编辑按钮的显隐
+
+`MomentCard.astro` 里那组按钮默认 `display:none`，靠 `<html class="is-editor">` 打开（登录成功时由 `editor-store` 的 `syncDocumentFlag` 加上）。**祖先选择器必须包 `:global()`**，否则 Astro 会把前缀优化掉，见 §15。
+
+### 删除的二次确认
+
+卡片上点垃圾桶不会直接删，而是打开抽屉、底部按钮变成「确认删除？」，再点一次才提交（`editor-ui.ts` 的 `momentIntent`）。误触代价不对等，宁可多点一步。
+
+### 换服务端时改哪里
+
+只想替换「凭证怎么走」时，**只改 `github-client.ts` 的三个导出函数签名内部**（改成请求自己的 Edge Function / Worker），`editor-store` 的登录流程与全部 UI 都不用动。

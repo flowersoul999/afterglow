@@ -52,6 +52,7 @@ const momentsCollection = defineCollection({
 			id: z.string().optional().default(""),
 			author: z.string().optional().default("jojo"),
 			avatar: z.string().optional().default("/assets/ziyuan/tx.webp"),
+			title: z.string().optional().default(""),
 			pinned: z.boolean().optional().default(false),
 			published: z.date(),
 			images: z
