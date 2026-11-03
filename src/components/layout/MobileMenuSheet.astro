@@ -21,6 +21,14 @@ const walineServerURL =
 	commentConfig.type === "waline" ? commentConfig.waline?.serverURL || "" : "";
 
 const groups = [
+	// 主页（2026-11-03 与桌面导航同步补回：此前只有抽屉顶部的品牌 Logo 能回首页，
+	// 站长找不到入口）。桌面那份在 src/config/navBarConfig.ts 的 links 首位，两处要一起改。
+	{
+		icon: "material-symbols:home",
+		label: "主页",
+		url: "/",
+		single: true,
+	},
 	{
 		icon: "material-symbols:public",
 		label: "网站导航",

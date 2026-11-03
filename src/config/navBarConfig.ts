@@ -9,9 +9,16 @@ import { siteConfig } from "./siteConfig";
 
 // 根据页面开关动态生成导航栏配置
 const getDynamicNavBarConfig = (): NavBarConfig => {
-	// 基础导航栏链接（2026-10-29 站长定稿：导航 / 文章 / 动态 / 开心 / 关于）
-	// 「主页」项已去掉：左侧站点 Logo 本身就是回首页的链接，不必再占一个位置。
+	// 基础导航栏链接（2026-11-03 起：主页 / 导航 / 文章 / 动态 / 开心 / 关于）
+	// 「主页」项 2026-11-03 重新加回：此前（2026-10-29）去掉的理由是「左侧 Logo 已能回首页」，
+	// 但 Logo 在视觉上只是一块头像 + 站名，不像可点的入口，站长自己也找不到回首页的路。
+	// 故显式保留第一项「主页」→ /（LinkPreset.Home，图标 material-symbols:home）。
+	// 注意：navbar-active-motion.ts 的 pathMatches 对 href="/" 有特判（只匹配根路径），
+	// 不会因为前缀匹配把其它页面的高亮抢到「主页」上。
 	const links: (NavBarLink | LinkPreset)[] = [
+		// 主页（/）
+		LinkPreset.Home,
+
 		// 网站导航（页面在 /projects/）
 		{
 			name: "导航",
