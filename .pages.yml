@@ -649,6 +649,199 @@ content:
                 type: string
                 required: true
 
+
+  # ============================================================
+  # 🎬 影视 / 📜 更新日志 / 📚 面经 / 📄 页面
+  # ============================================================
+  - name: media-content
+    label: 🎬 影视与更新日志
+    type: group
+    items:
+      - name: bangumi
+        label: 🎬 影视条目
+        type: collection
+        path: src/content/影视
+        format: yaml-frontmatter
+        filename:
+          template: "{primary}.md"
+          field: title
+        view:
+          primary: title
+          fields: [title, type, status, rating, tags]
+          sort: ["title asc"]
+          search: [title, description]
+        fields:
+          - name: title
+            label: 标题
+            type: string
+            required: true
+
+          - name: type
+            label: 类型
+            type: string
+            description: 电影 / 电视剧 / 动画 / 综艺
+            default: 电影
+
+          - name: status
+            label: 状态
+            type: string
+            description: 想看 / 在看 / 看完
+            default: 想看
+
+          - name: rating
+            label: 评分
+            type: number
+
+          - name: description
+            label: 简介
+            type: text
+
+          - name: cover
+            label: 封面
+            type: image
+
+          - name: tags
+            label: 标签
+            type: list
+
+          - name: body
+            label: 正文
+            type: rich-text
+
+      - name: changelog
+        label: 📜 更新日志
+        type: collection
+        path: src/content/更新日志
+        format: yaml-frontmatter
+        filename:
+          template: "{year}-{month}-{day}-{primary}.md"
+          field: date
+        view:
+          primary: version
+          fields: [version, date, type, description]
+          sort: ["date desc", "version desc"]
+          search: [version, description]
+          default:
+            sort: date
+            order: desc
+        fields:
+          - name: version
+            label: 版本号
+            type: string
+            required: true
+            description: 形如 v6.7.0
+            default: v1.0.0
+
+          - name: date
+            label: 日期
+            type: date
+            required: true
+            options:
+              time: false
+              format: yyyy-MM-dd
+
+          - name: time
+            label: 时间
+            type: string
+            description: 形如 17:55
+            default: "00:00"
+
+          - name: type
+            label: 类型
+            type: string
+            description: feature / fix / refactor / chore
+            default: feature
+
+          - name: description
+            label: 说明
+            type: text
+            required: true
+
+  - name: interview-content
+    label: 📚 面经
+    type: group
+    items:
+      - name: interview
+        label: 📚 八股文
+        type: collection
+        path: src/content/面经/八股文
+        format: yaml-frontmatter
+        filename:
+          template: "{primary}.md"
+          field: title
+        view:
+          primary: title
+          fields: [title, published, tags, order]
+          sort: ["order asc", "title asc"]
+          search: [title, description, tags]
+        fields:
+          - name: title
+            label: 标题
+            type: string
+            required: true
+
+          - name: published
+            label: 发布日期
+            type: date
+            required: true
+            options:
+              time: false
+              format: yyyy-MM-dd
+
+          - name: description
+            label: 摘要
+            type: text
+
+          - name: image
+            label: 封面
+            type: image
+
+          - name: tags
+            label: 标签
+            type: list
+            description: 第一个标签建议为「面经」
+
+          - name: order
+            label: 排序权重
+            type: number
+            description: 数字越小越靠前
+            default: 999
+
+          - name: body
+            label: 正文
+            type: rich-text
+
+  - name: page-content
+    label: 📄 页面
+    type: group
+    items:
+      - name: pages
+        label: 📄 独立页面
+        type: collection
+        path: src/content/页面
+        format: yaml-frontmatter
+        filename:
+          template: "{primary}.md"
+          field: title
+        exclude: ["about.mdx"]
+        view:
+          primary: title
+          fields: [title, description]
+          sort: ["title asc"]
+          search: [title, description]
+        fields:
+          - name: title
+            label: 标题
+            type: string
+            required: true
+
+          - name: description
+            label: 描述
+            type: text
+
+          - name: body
+            label: 正文
+            type: rich-text
 settings:
   content:
     merge: false
