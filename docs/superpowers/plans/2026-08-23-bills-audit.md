@@ -101,7 +101,7 @@ git commit -m "test(bills): add 08-23 3 bills for audit"
 ### Task 2: 11 项对账脚本与修复
 
 **Files:**
-- Create: `C:\Users\dumplingandcake\AppData\Local\Temp\opencode\bills-audit.mjs` (临时对账脚本)
+- Create: `C:\Users\lwb\AppData\Local\Temp\opencode\bills-audit.mjs` (临时对账脚本)
 - Modify: `src/utils/bill-adapter.ts` 若发现偏差
 - Modify: `src/components/bills/DailyTrendCard.astro` 若锚点仍错（已在 2026-08-23 前修为 today-1，此 Task 仅复验）
 
@@ -119,7 +119,7 @@ import { getCollection } from "astro:content"; // 实际用时以 node 直接读
 - [ ] **Step 2: 运行脚本**
 
 ```bash
-node "C:\Users\dumplingandcake\AppData\Local\Temp\opencode\bills-audit.mjs"
+node "C:\Users\lwb\AppData\Local\Temp\opencode\bills-audit.mjs"
 ```
 
 Expected: 11 行 `OK` 差值 0

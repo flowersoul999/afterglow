@@ -32,14 +32,16 @@
 
 | 项 | 值 |
 |---|---|
-| 名称 | Firefly v6.6.13 — "团子和蛋糕的博客" |
+| 名称 | Firefly v6.6.13 — "jojostar"（jojo 的个人博客） |
 | 框架 | Astro 7.1.6 + Svelte 5 + Tailwind CSS v4 |
 | 包管理 | pnpm 9.14.4 (ESM, `preinstall` 强制) |
 | 运行时 | Node.js >= 22 |
-| 部署 | **EdgeOne Pages**（GitHub 集成自动构建并托管 blog.tsh520.cn，2026-09-04 从 GitHub Pages 迁移，见 `docs/deploy-edgeone-pages.md`；GitHub Pages 的遗留配置 `pages.yml` 与 `public/CNAME` 已于 2026-09-21 删除，GitHub Pages 站点内容保留但不再更新） |
-| 线上 | https://blog.tsh520.cn/ |
-| 后台 | PagesCMS 自托管（Vercel + EdgeOne 加速）：https://cms.tsh520.cn/（配置见第 19 节） |
-| 来源 | Fork 自 CuteLeaf/Firefly ← saicaca/fuwari，已深度定制为独立演化 |
+| 部署 | **EdgeOne Pages**（GitHub 集成：push `main` 自动 `pnpm build` 并托管 jojocode.cn，见 `docs/deploy-edgeone-pages.md`；仓库不含 GitHub Pages 遗留配置 `pages.yml` / `public/CNAME`，不再有第二个托管出口） |
+| 线上 | https://jojocode.cn/ |
+| 仓库 | `flowersoul999/afterglow`（main） |
+| 后台 | PagesCMS 自托管方案（**当前未部署**；配置声明在仓库根 `.pages.yml`，部署步骤见第 19 节） |
+| 附属服务 | 图床 / TTS / 后台 CMS 目前**均未部署**，相关配置留空即自动降级（发图报未配置、朗读用系统语音） |
+| 来源 | Fork 自 CuteLeaf/Firefly ← saicaca/fuwari，已深度定制为「jojostar」独立站点 |
 
 > ⚠️ **Astro 版本已升级至 7.x**（`feat/astro-7-upgrade` 已合并），勿再按 6.4.x 文档操作。
 
@@ -222,7 +224,7 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 > - ⚠️ **悬浮时的站点截图预览（`#friend-preview`）是保留功能**，站长明确要它：靠卡片上的 `data-screenshot` 触发，`friend-preview.css` 与 `friends.astro` 里的预览脚本都没动（白边 2px 也保持原样）。只删了卡片自己的截图背景层。
 > - ⚠️ **朋友圈抓取点必须保留**：`.friend-card` 的 `data-title` / `data-siteurl` 与 `.friend-card-avatar__img` 的 `data-src` —— 解析器（`hexo-circle-of-friends` 的 `css_rules.yaml`）就靠它们，2026-08 曾因改 class 停更 6 天。
 
-> ⚠️ **朋友圈数据链路（强制提醒义务）**：友链朋友圈页（`/circle/`）的数据来自 `cir.tsh520.cn/data.json`，由独立仓库 `E:\GithubProgect\OtherRunProject\hexo-circle-of-friends`（GitHub: tianshihao2003/hexo-circle-of-friends）每 2 小时生成并提交。该程序的 firefly 主题解析器**依赖本博客友链页卡片结构**（`css_rules.yaml`）：名字=[`.friend-card`]`data-title`、链接=[`.friend-card`]`data-siteurl`、头像=[`.friend-card-avatar__img`]`data-src`。**凡是修改友链页卡片 HTML/friends 集合字段/友链 Card 组件结构，必须同步检查并提醒站长**：一是确认 `css_rules.yaml` 的 firefly 选择器仍匹配新结构（必要时同步修改并推送到 hexo-circle-of-friends 仓库）；二是验证「data.json 的 last_updated_time 与文章数」确实更新（抓一次页面或等下一轮 Action）。2026-08 曾因友链卡 class 从 `.friend-card-name/.friend-card-link` 改为 data 属性导致朋友圈停更 6 天，务必引以为戒。
+> ⚠️ **朋友圈数据链路（当前未启用）**：友链朋友圈页（`/circle/`）读 `src/config/circleConfig.ts#dataUrl`，**现在是空字符串 = 未启用**，页面显示「暂无数据」，不会请求任何外部地址。要启用就自己跑一份 `hexo-circle-of-friends`（Simple Mode 生成 `data.json`，扔到任一可公开访问的地址），再把 `dataUrl` 填上；`dataUrl` 指向谁的服务器由站长自己决定，**不要再借用别人的域名**。启用后：该程序的 firefly 主题解析器**依赖本博客友链页卡片结构**（`css_rules.yaml`）：名字=[`.friend-card`]`data-title`、链接=[`.friend-card`]`data-siteurl`、头像=[`.friend-card-avatar__img`]`data-src`，凡是改友链卡片 HTML / friends 集合字段 / 友链 Card 组件结构，必须同步检查解析器选择器，否则朋友圈会静默停更（2026-08 因把 class 改成 data 属性停更过 6 天）。
 
 > **分类系统（2026-08-20 文件夹即分类）**：`posts` 的 `category` 已从 `src/content.config.ts` 的 Zod schema 移除，分类 100% 由 `src/utils/category-tree.ts#getCategoryFromId(entry.id)` 的文件夹路径推导（`编程学习/Java学习` → `CategoryNode{fullPath, count, directCount, children}`），URL 分段编码 `src/utils/url-utils.ts#getCategoryUrl` + 路由 `src/pages/categories/[...category].astro`（catch-all，子树聚合 `startsWith(parent+"/")`），卡片 `src/components/widget/CategoryFolders.astro` 递归树（有子展开看子树/无子整卡跳转，已删右侧跳转按钮），`.pages.yml` 已删 `category` 字段，`scripts/新建文章/index.js` 不再写 `category`，Obsidian 插件 `plug-in/Obsidian/obsidian-category-autofill` 已废弃写入（`logic.ts#getTargetCategory` 恒返回 null，模板移除 `category`）。**禁止再写 `frontmatter.category`，分类只靠建文件夹**。
 
@@ -267,7 +269,7 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 
 ### 3.9 文章朗读（TTS，2026-09-15 新增）
 
-文章页提取正文（自动跳过代码块/表格/公式）→ `POST PUBLIC_TTS_SERVER/tts` 流式合成 mp3 → `<audio>` 播放（倍速 0.8x~2x + 7 种音色，选择记忆），服务不可用时降级浏览器 Web Speech 系统语音。服务端代码与部署见 `docs/deploy-edge-tts.md`（`scripts/TTS服务/`，CORS 白名单含 blog.tsh520.cn 与本地 4321）；开关在 `src/config/ttsConfig.ts`。
+文章页提取正文（自动跳过代码块/表格/公式）→ `POST PUBLIC_TTS_SERVER/tts` 流式合成 mp3 → `<audio>` 播放（倍速 0.8x~2x + 7 种音色，选择记忆），服务不可用时降级浏览器 Web Speech 系统语音。服务端代码与部署见 `docs/deploy-edge-tts.md`（`scripts/TTS服务/`，CORS 白名单含 jojocode.cn 与本地 4321）；开关在 `src/config/ttsConfig.ts`。
 
 ### 3.10 面经板块（interview，2026-10-29 新增）
 
@@ -544,7 +546,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 
   用了半年了才知道…
 
-  ![](https://img.tsh520.cn/file/blog/moments/xxx.jpg)
+  ![](https://img.jojocode.cn/file/blog/moments/xxx.jpg)
   ```
 
 - ⚠️ **必须写空 alt**（`![](url)`）。开了 alt 会被 `rehype-figure`（`src/plugins/rehype-figure.mjs`）包成 `<figure>` + `<figcaption>`，卡片里就多出一行图注。
@@ -556,22 +558,14 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **心情标签（2026-11-02）**：`tags` 第一项当心情，由 `src/utils/moment-mood.ts#splitTags()` 拆成「心情 + 其余话题」——心情渲染到卡片右上角（emoji + 两个字，八套 `--mood-*` 配色在 `tokens/colors.css`，浅深各一份），剩余标签继续留底部当话题。**词表未命中的标签（如「额的圣剑！」「功能」）不算心情**，免得非情绪词抢占头部；要加新心情改 `MOODS` 的 aliases 即可，颜色复用现有八套。
 - ⚠️ **九宫格规则写了两份**：`MomentCard.astro` 的 scoped 样式 + `src/styles/features/moments.css` 里 `#moments-feed` 与 `#pinned-feed` 两块。后者带 ID 选择器、特异性更高，**只改组件不生效**（2026-11-02 踩过：构建后 cell 仍是旧的 100×100），改尺寸/列数必须两份一起改。
 
-### 5.20 站点名改为「团子和蛋糕的网站」（2026-10-22）
+### 5.21 站点身份「jojostar」（当前值）
 
-- 定位从「博客」升级为「网站」（内容早就不止文章：动态 / 影视 / 足迹 / 相册 / 导航等），`siteConfig.title` 由「团子和蛋糕的博客」改为「团子和蛋糕的网站」。
+- `src/config/siteConfig.ts`：`title` = **jojostar**，`subtitle` =「jojo 的个人博客」，`site_url` = `https://jojocode.cn`，`navbar.title` = **jojostar**（导航栏与站点名同名，不存在「导航栏一个名、标签页另一个名」的情况）。
 - ⚠️ **一处配置牵动多处**，改 `siteConfig.title` 前先想清楚：首页名字徽章 `homeConfig.nameBadge`（**直接取 `siteConfig.title`**）、浏览器标签页标题后缀（`Layout.astro` 的 `${title} - ${siteConfig.title}`）、`og:site_name`、SEO 结构化数据 `name`、Artalk 评论的 `site`、TTS 的 `artist`。
-- ⚠️ **导航栏标题不受影响**：它是 `siteConfig.navbar.title`（现为「团子和蛋糕」），`Navbar.astro` / `NavMenuPanel.astro` 只在 `navbar.title` 为空时才回退 `siteConfig.title`。要改导航栏名字得改那一处。
+- ⚠️ **导航栏标题是独立字段**：`siteConfig.navbar.title`，`Navbar.astro` / `NavMenuPanel.astro` 只在它为空的时才回退 `siteConfig.title`。要改导航栏名字得改那一处。
 - ⚠️ **两处硬编码文案必须手动跟着改**（grep `siteConfig.title` 抓不到）：`src/utils/tab-title-controller.ts` 的「欢迎回来，这里是…」、`src/config/homeConfig.ts` 的对话 intro。改名时**直接全仓 grep 中文旧名**最保险。
-
-### 5.21 站点名又改回「团子和蛋糕的博客」（2026-10-26）
-
-- 站长要求改回「博客」。当前值：`siteConfig.title` = **团子和蛋糕的博客**；导航栏仍是 `siteConfig.navbar.title` =「团子和蛋糕」（不受影响）。
-- 本次一并改的文案（都属于「名字出现的地方」，不在 `siteConfig.title` 的传播链上，需单独维护）：
-  `src/config/siteConfig.ts` 的 `description` / `keywords` / `portal.announcement.text`；
-  `src/config/homeConfig.ts` 的对话 intro；`src/utils/tab-title-controller.ts` 的「欢迎回来…」。
-- 文档同步：`README.md` / `README.en.md` 标题、`AGENTS.md` 与 `CLAUDE.md` 第 1 节名称表、`.pages.yml` 首行注释。
-- **不动的地方**：`src/content/更新日志/2026-10-22-…` 与 `src/content/临时收集/…/待办笔记.md` 里的旧名 —— 那是历史记录，改了就失真。
-- 再次提醒 §5.20 的教训：改名前全仓 `grep -rn "中文旧名"`，光改 `siteConfig.title` 会漏。
+- 文档同步：`README.md` 标题、`AGENTS.md` 与 `CLAUDE.md` 第 1 节名称表、`.pages.yml` 首行注释。
+- **不动的地方**：`src/content/更新日志/` 与 `src/content/` 里的历史记录 —— 那是当时的真实状态，改了就失真。
 
 ### 5.22 左下角唱片播放器（2026-10-29 新增，从参考站搬入）
 
@@ -1167,27 +1161,27 @@ scope: layout | config | i18n | styles | utils | components | content
 
 ## 19. PagesCMS 后台（2026-08 接入）
 
-博客后台使用 **PagesCMS 自托管**（Vercel 部署 + EdgeOne 加速），后台地址 `https://cms.tsh520.cn/`。
+> **当前状态：未部署。** 仓库根目录的 `.pages.yml` 已按 `src/content.config.ts` 写好，但 PagesCMS 实例（Vercel）与后台域名都还没起来——**所以现在改内容只能改文件 / 走 Obsidian / 走 AstrBot 插件**，不要去后台找不存在的入口。要开后台按下面这套架构自建，域名用自己的 `cms.jojocode.cn`（源站另起一个 `cms-origin.jojocode.cn`）。
 
-### 架构
+### 架构（部署后应长这样）
 
 ```text
-用户访问 cms.tsh520.cn（DNS → EdgeOne 加速）
-    ↓ EdgeOne 回源（Host: cms-origin.tsh520.cn）
-Vercel（PagesCMS 实例，绑定 cms-origin.tsh520.cn）
+用户访问 cms.jojocode.cn（DNS → EdgeOne 加速）
+    ↓ EdgeOne 回源（Host: cms-origin.jojocode.cn）
+Vercel（PagesCMS 实例，绑定 cms-origin.jojocode.cn）
     ↓ GitHub API 写回
-仓库 main 分支（内容文件）
-    ↓ GitHub Webhook
-EdgeOne Pages（GitHub 集成自动构建：pnpm build → dist/，需配 13 个构建环境变量）
+仓库 main 分支 flowersoul999/afterglow（内容文件）
+    ↓ GitHub Webhook / EdgeOne 自动构建
+EdgeOne Pages（GitHub 集成自动构建：pnpm build → dist/）
     ↓
-博客站点（EdgeOne Pages 托管，https://blog.tsh520.cn）
+博客站点 https://jojocode.cn
 ```
 
-- **源站域名分离**：Vercel 绑定 `cms-origin.tsh520.cn`（DNS → vercel.app），用户域名 `cms.tsh520.cn` 走 EdgeOne（回源 Host = cms-origin）——Vercel 的域名验证机制要求 DNS 持续指向它，不能直接套 CDN
-- **配置声明**：仓库根目录 `.pages.yml` 声明 9 个内容集合（posts 按分类拆 13 个集合、moments/friends/daohang/album/ziyuan 拆 2/places 1、tombstones 2026-08 新增；notebooks 2026-10-20 随笔记功能下线一并删除），字段与 `src/content.config.ts` 的 zod 对齐
-- **自定义字段**：imgbed（图床上传，走服务端代理）+ amap-geocode（高德坐标，保存时展开为 lat/lng）——在 pagescms 仓库（`E:\GithubProgect\MyRunProject\pagescms`）的 `fields/custom/` 定义，注册在 `fields/registry.ts`
+- **源站域名分离**：Vercel 绑定 `cms-origin.jojocode.cn`（DNS → vercel.app），用户域名 `cms.jojocode.cn` 走 EdgeOne（回源 Host = cms-origin）——Vercel 的域名验证机制要求 DNS 持续指向它，不能直接套 CDN
+- **配置声明**：仓库根目录 `.pages.yml` 声明 9 个内容集合（posts 按分类拆 13 个集合、moments/friends/daohang/album/ziyuan 拆 2/places 1；notebooks 2026-10-20 随笔记功能下线一并删除），字段与 `src/content.config.ts` 的 zod 对齐
+- **自定义字段**：imgbed（图床上传，走服务端代理）+ amap-geocode（高德坐标，保存时展开为 lat/lng）——在 pagescms 实例仓库的 `fields/custom/` 定义，注册在 `fields/registry.ts`（仓库需自己 fork/自建，当前本机没有该目录）
 - **凭证**：Vercel 环境变量（GITHUB_APP_*、IMAGEBED_*、AMAP_KEY 等）；图床/高德代理路由在 pagescms 的 `app/api/` 下（凭证服务端持有）
-- **朗读服务**：EdgeOne Pages 构建环境变量新增 `PUBLIC_TTS_SERVER`（第 13 个，指向自建 edge-tts 服务，部署见 `docs/deploy-edge-tts.md`）；留空时文章朗读自动降级浏览器系统语音
+- **朗读服务**：EdgeOne Pages 构建环境变量 `PUBLIC_TTS_SERVER`（第 13 个，指向自建 edge-tts 服务，部署见 `docs/deploy-edge-tts.md`）；**留空时文章朗读自动降级浏览器系统语音**，目前就是留空状态
 - **修改 .pages.yml 后**：字段必须与 zod 对齐（merge: false，未声明字段保存时被丢弃）；校验脚本已随 Decap 遗留一并删除——**当前 .pages.yml 的字段对齐靠手动检查 + 构建验证**
 
 > ⚠️ 曾使用 Decap CMS（public/admin/ 目录 + config.yml）；该遗留已随 `validate-sveltia-config.mjs` 等脚本于 2026-08 删除，现统一用 PagesCMS。
@@ -1205,8 +1199,7 @@ EdgeOne Pages（GitHub 集成自动构建：pnpm build → dist/，需配 13 个
    - 升级/降级依赖 → 更新第 16 节技术栈版本
    - 发现新的坑/规范/反模式 → 写入对应章节（或第 15 节反模式清单）
    - 完成模块/功能 → 按第 21 节更新 `changelog`，按第 22 节做收尾
-   - **Obsidian 插件 `plug-in/Obsidian/obsidian-image-manager/` 功能变更 → 必须同步更新博客文章 `src/content/文章/技术分享/Obsidian插件系列-ImageManager图床上传管理指南.md`（功能说明/设置项/操作步骤），并在文末"版本历史"加一行；同时升插件 manifest.json 版本号并重新 `pnpm build`**
-   - **image-manager 已独立开源**：`tianshihao2003/obsidian-image-manager`（该目录自己就是独立 git 仓库，与本站 git 无关）。发版 = `pnpm build` + `gh release create vX.Y.Z main.js manifest.json styles.css`（manifest 与 package 的 version 一起升，BRAT 靠它判断更新）；**绝不提交 `data.json`**（图床管理员密码明文）。
+   - **AstrBot 插件 `plug-in/AstrBot/astrbot_plugin_blog_writer/` 有改动 → 必须跑 `python -m unittest discover -s tests`（129 个用例）+ 重打 `plug-in/AstrBot/打包/astrbot_plugin_blog_writer-v1.0.0.zip`（用 Python `zipfile` 打，`Compress-Archive` 会把中文文件名打成乱码）；该目录被主仓整体 gitignore，**改动不进 git，必须自己另存备份**；部署方式见 `plug-in/AstrBot/部署/部署手册.md`
 3. **新增规范**（本次添加）：文档不准确时（数字过时、功能删除等），及时修正，禁止"文档写的和实际不一致还照着做"
 4. **验证**：按第 18 节分级——日常小改不必 build，**推送线上前**跑 `pnpm build`；文档修改与代码修改在同一提交或相邻提交
 
@@ -1269,8 +1262,8 @@ description: 一句话概括（显示在列表页）
    git 会读取仓库内**每一层目录**的 `.gitignore`，这个文件会被**博客主仓一并读取**，
    于是 `文章/`、`页面/`、`笔记本/`、`更新日志/` 被整体忽略，**新文章/新更新日志静默提交不上去**
    （当时 `更新日志/2026-10-26-*.md` 两个新文件就这样被藏了）。备份仓库的规则只能写 `.git/info/exclude`。
-2. **注意命令作用域**：在 `dumplingandcakeblog/` 执行 git 操作的是博客主仓；
-   在 `dumplingandcakeblog/src/content/` 执行的是备份仓库。两个仓库的 `git status` 互不兼容。
+2. **注意命令作用域**：在 `afterglow/`（本机 `D:\前端资源\我的博客\main-blog`）执行 git 操作的是博客主仓；
+   在 `afterglow/src/content/` 执行的是备份仓库。两个仓库的 `git status` 互不兼容。
 3. **新增公开集时要两边都改**：主仓 `.gitignore` 加 `!src/content/xx/` + `src/content.config.ts` 加 collection
    + 路由 + `.pages.yml`；**同时**在备份仓库 `.git/info/exclude` 加 `xx/`，否则公开内容会被重复备份。
 
@@ -1293,11 +1286,12 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 - **`.obsidian/plugins/*/data.json` 永不入库**（图床密码 / LiveSync token / 微信读书 cookie 明文）；
   `main.js`、`styles.css` 也不入库（插件装得回来）。
 - **不要给 `学习笔记/` 再单独 `git init`**（会形成三层嵌套）。
-- `.git/info/exclude` 不随 clone 走：换机器要手动抄一份（内容见 `dumplingandcake-notes/DEPLOY.md`）。
+- `.git/info/exclude` 不随 clone 走：换机器要手动抄一份（内容见 `afterglow-notes/DEPLOY.md`，若未建笔记站可忽略）。
 
 ### 关联但独立的项目
 
-学习笔记的**发布站**是另一个仓库：`E:/GithubProgect/MyRunProject/dumplingandcake-notes`
+学习笔记若要单独发布，是**另一个仓库**（当前尚未建立，`afterglow-notes` 为预留名）
 （VitePress + `@sugarat/theme`，与本站构建、部署、依赖全部无关）。
 它把 `src/content/学习笔记` 只读同步到自己的 `docs/posts`，操作手册在该目录的 `DEPLOY.md`。
 **本站任何 `pnpm build` / `pnpm check` / biome 都不覆盖它**，改它不影响本站。
+未建该仓库时，本节视为规划，不必执行。

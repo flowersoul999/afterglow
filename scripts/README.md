@@ -115,7 +115,7 @@ python scripts/下载音乐/fetch-lrc.py ./downloads/ --md
 
 - Python 3
 - mutagen（`pip install mutagen`）
-- 已部署的 Meting API（默认 `https://mu.tsh520.cn/api`）
+- 已部署的 Meting API（自己搭一个，地址填进 `src/config/musicConfig.ts` 的 `api`；当前留空 = 未接入）
 
 ### 下载音乐/extract-lrc.py — 歌词提取
 

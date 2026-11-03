@@ -50,7 +50,7 @@ services:
 
 1. 装 Syncthing（Windows 版；配 Syncthing Tray 更省心），**设成开机自启**——不是要电脑一直开，是让你一开机它就自动把错过的内容同步补上。
 2. 添加三个文件夹，指向：
-   - `E:\GithubProgect\MyRunProject\dumplingandcakeblog\src\content`
+   - `E:\GithubProgect\MyRunProject\afterglow\src\content`
    - `…\src\notes`
    - `…\src\临时收集`
    类型 **发送与接收**；版本保留也开 **Staggered**。
@@ -76,7 +76,7 @@ services:
 | 设备 | content | notes | 临时收集 |
 |---|---|---|---|
 | 服务器 | `/var/syncthing/vault/content` | `…/vault/notes` | `…/vault/临时收集` |
-| 电脑 | `…\dumplingandcakeblog\src\content` | `…\src\notes` | `…\src\临时收集` |
+| 电脑 | `…\afterglow\src\content` | `…\src\notes` | `…\src\临时收集` |
 | 手机 | `<库目录>/content` | `<库目录>/notes` | `<库目录>/临时收集` |
 
 ## 六、验证清单（逐条过）

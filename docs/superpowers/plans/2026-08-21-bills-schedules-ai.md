@@ -9,7 +9,7 @@
 **Tech Stack:** Python 3.11, httpx, apscheduler 3.10, AstrBot >=4.22 (weixin_oc), lunar-javascript 不涉及, lunar 已在博客侧
 
 ## Global Constraints
-- 插件目录 `E:\GithubProgect\MyRunProject\dumplingandcakeblog\plug-in\AstrBot\AstrBot BlogWriter\` 为独立 git 仓库，博客 `.gitignore` 已忽略 `/plug-in/`
+- 插件目录 `E:\GithubProgect\MyRunProject\afterglow\plug-in\AstrBot\AstrBot BlogWriter\` 为独立 git 仓库，博客 `.gitignore` 已忽略 `/plug-in/`
 - 纯逻辑 `blog_writer_core.py` 禁止 import astrbot，必须可 `python -m unittest discover -s tests` 单测
 - `main.py` 粘合层双路径兼容 `from .blog_writer_core import ...` 回退 `from blog_writer_core import ...`
 - 配置经 `__init__(self, context, config)` 注入，`_cfg()` 读取，`_conf_schema.json` 与 `main.py` 同步

@@ -10,7 +10,7 @@
  *   ---
  *   published: 2026-10-20 12:06:46
  *   images:
- *     - https://img.tsh520.cn/.../a.jpg
+ *     - https://img.jojocode.cn/.../a.jpg
  *   ---
  *   用了半年了才知道…
  *
@@ -20,7 +20,7 @@
  *   ---
  *   用了半年了才知道…
  *
- *   ![](https://img.tsh520.cn/.../a.jpg)
+ *   ![](https://img.jojocode.cn/.../a.jpg)
  *
  * 用法:
  *   node scripts/动态图片迁入正文/index.mjs [--dry-run] [--force]

@@ -11,7 +11,7 @@
 | 支持认证方式 | `publickey, gssapi-keyex, gssapi-with-mic, password` | ⚠️ **password 开着 = 可被爆破** |
 | `root` 账号 | 存在且可达认证阶段 | 爆破机器人默认就冲 root |
 | 本机公钥是否已装到服务器 | ❌ **没有**（publickey 认证失败） | 所以第 1 步必须先装密钥，否则关不掉密码登录 |
-| 22 / 80 / 443 | 全部开放 | 80/443 是 nginx（`tts.tsh520.cn`、`img.tsh520.cn`） |
+| 22 / 80 / 443 | 全部开放 | 80/443 是 nginx（`tts.jojocode.cn`、`img.jojocode.cn`） |
 | 另一台 47.94.55.218 | 22/80/443 全不通 | 已停机或安全组全封，本次不管 |
 
 ## 影响面（先说结论：不会影响已部署的服务）
@@ -247,7 +247,7 @@ sudo apt remove --purge -y fail2ban
 - [ ] `fail2ban-client status sshd` 有输出、banned 计数在涨
 - [ ] `sudo sshd -T | grep passwordauthentication` = `no`
 - [ ] 断网重连仍能进（模拟一次"新连接"）
-- [ ] 顺手确认业务没受影响：`curl -I https://img.tsh520.cn` 和 `curl -I https://tts.tsh520.cn` 返回 200/30x
+- [ ] 顺手确认业务没受影响：`curl -I https://img.jojocode.cn` 和 `curl -I https://tts.jojocode.cn` 返回 200/30x
 - [ ] 把新密码/密钥位置记到自己的密码管理器（别只存在脑子里）
 
 ## 日常复查（每月一次，30 秒）

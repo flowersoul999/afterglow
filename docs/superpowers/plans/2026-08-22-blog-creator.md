@@ -397,7 +397,7 @@ from astrbot.api import logger
 from blog_creator_core import route_via_llm, clean_filename_part
 from writers.registry import get_writer
 
-@register("astrbot_plugin_blog_creator","tianshihao2003","自然语言新增博客文件", "v1.0.0")
+@register("astrbot_plugin_blog_creator","jojo","自然语言新增博客文件", "v1.0.0")
 class BlogCreator(Star):
     def __init__(self, context, config=None):
         super().__init__(context); self.config=config or {}; self._sessions={}
@@ -460,7 +460,7 @@ git commit -m "feat(blog-creator): star integration preview/confirm/github"
 
 Run: `python -m unittest discover -s tests -v` Expected: `OK 30+`
 
-Run: `pnpm build` (in `E:\GithubProgect\MyRunProject\dumplingandcakeblog`) Expected: `built in 40-60s` 0 error
+Run: `pnpm build` (in `E:\GithubProgect\MyRunProject\afterglow`) Expected: `built in 40-60s` 0 error
 
 Run: `pnpm check` Expected: `0 errors`
 

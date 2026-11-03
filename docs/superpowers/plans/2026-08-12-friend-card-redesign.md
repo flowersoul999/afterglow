@@ -33,7 +33,7 @@
 - [ ] **Step 1: 检查并提交**
 
 ```bash
-cd E:/GithubProgect/MyRunProject/dumplingandcakeblog
+cd E:/GithubProgect/MyRunProject/afterglow
 git add -A
 git status --short | wc -l   # 期望 50
 git commit -m "feat(friends): 友链页区块化改版（新朋友/我的朋友们/更多伙伴 + added/group 字段回填）"

@@ -3,7 +3,7 @@
 /**
  * 从 Hao Wallpaper 导入壁纸脚本
  * 功能：
- * 1. 扫描 C:\Users\dumplingandcake\AppData\Roaming\Hao Wallpaper\WallpaperDownloads 中的所有子文件夹
+ * 1. 扫描 %USERPROFILE%\AppData\Roaming\Hao Wallpaper\WallpaperDownloads 中的所有子文件夹
  * 2. 复制每个子文件夹中的 wallpaper.png 到 public/assets/images/sjtapi/
  * 3. 重命名为数字形式并更新配置文件
  *
@@ -14,8 +14,13 @@
 import { readdirSync, copyFileSync, existsSync, statSync } from "fs";
 import { join, extname } from "path";
 import { execSync } from "child_process";
+import { homedir } from "os";
 
-const HAO_WALLPAPER_DIR = "C:/Users/dumplingandcake/AppData/Roaming/Hao Wallpaper/WallpaperDownloads";
+// 用当前用户的家目录，换机器不用改代码
+const HAO_WALLPAPER_DIR = join(
+	homedir(),
+	"AppData/Roaming/Hao Wallpaper/WallpaperDownloads",
+);
 const TARGET_DIR = join(process.cwd(), "public/assets/images/sjtapi");
 
 function main() {
