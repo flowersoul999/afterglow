@@ -180,3 +180,100 @@ curl -sI https://jojocode.cn/about/ | grep -i cache-control   # 期望 no-cache
 curl -sI https://jojocode.cn/_astro/ 2>/dev/null | head -1     # 资源不受影响
 ```
 
+## 七、站长登录（Cloudflare Worker）
+
+> 2026-11-04 新增。站内编辑要先确认「你是站长」。
+
+### 为什么必须先有个 Worker
+
+站点是**纯静态**的 GitHub Pages，任何地方都跑不了代码。而 GitHub OAuth 换 `access_token` 有两个硬前提：
+
+1. 需要 `client_secret` —— 不能放前端，浏览器里的一切都是公开的；
+2. GitHub 的 token 端点**不支持跨域** —— 浏览器根本发不出这个请求（Decap CMS 这类工具必须挂 OAuth 代理就是这个原因）。
+
+所以「纯静态站也能点一下 GitHub 登录」是不成立的。Worker 只补上缺的那块「能跑代码的地方」，**只接管 `/api/*`**，GitHub Pages 保持原样，两者互不干扰。
+
+### 1. 建 GitHub OAuth App
+
+<https://github.com/settings/developers> → **OAuth Apps** → **New OAuth App**
+
+| 字段 | 值 |
+|---|---|
+| Application name | 随意，比如 `jojocode 站内编辑` |
+| Homepage URL | `https://jojocode.cn` |
+| Authorization callback URL | `https://jojocode.cn/api/auth/callback` ← **必须一字不差** |
+
+建完记下 **Client ID**；点 **Generate a new client secret** 记下 **Client secret**（只显示一次）。
+
+### 2. 部署 Worker
+
+Cloudflare 控制台 → **Workers & Pages** → Create → **Worker**（不同版本入口名可能叫 `Create application` / `Start with Hello World!`）→ 起个名字比如 `jojo-auth` → Deploy。
+
+然后在 Worker 详情页点 **Edit code**，把仓库里 `cloudflare-worker/index.js` 的**全文**粘进去 → **Deploy**。
+
+> 不需要 `wrangler`、不需要 CLI、不用装任何东西。Worker 不是 npm 依赖，不参与 `pnpm build`。
+
+### 3. 配两个 Secret
+
+Worker 详情页 → **Settings** → **Variables and Secrets** → Add：
+
+| 名称 | 值 | 类型 |
+|---|---|---|
+| `GITHUB_CLIENT_ID` | 第 1 步的 Client ID | Text 或 Secret 都行 |
+| `GITHUB_CLIENT_SECRET` | 第 1 步的 Client secret | **务必选 Secret**（加密存储） |
+
+可选变量：
+
+| 名称 | 默认 | 说明 |
+|---|---|---|
+| `OWNER_LOGIN` | `flowersoul999` | 换站长时改这个，不用改代码 |
+| `AUTH_SECRET` | 由 client_secret 派生 | Cookie 加密密钥的额外盐 |
+| `SITE_ORIGIN` | 请求的 origin | 一般不用配，线上自动是 `https://jojocode.cn` |
+
+> ⚠️ 不要给这两个变量加 `PUBLIC_` 前缀 —— 那是给 Astro 构建期用的，带 `PUBLIC_` 的会被打进前端产物。
+
+### 4. 挂 Route（最容易出错的一步）
+
+Worker 详情页 → **Settings** → **Triggers** → **Routes** → **Add route**，加 **两条**（Zone 都选 `jojocode.cn`）：
+
+```
+jojocode.cn/api/auth/*
+jojocode.cn/api/github/*
+```
+
+⚠️ **不要图省事写成 `jojocode.cn/api/*`**。站点自己有 `/api/calendar.json`、`/api/home-stats.json`、`/api/knowledge-graph.json` 三个静态端点（由 `src/pages/api/*.json.ts` 生成，首页统计、日历、知识图谱都靠它们），`/api/*` 会把它们一起吞进 Worker，表现是**首页统计和日历静默变空** —— 不报错，就是没数据，排查起来很费劲。
+
+更不要写成 `jojocode.cn/*`，那会让整站都变 404。
+
+> Worker 代码里有防呆：收到不属于自己的路径会返回一段带说明的纯文本 404。但那是兜底，别依赖它。
+>
+> 前提：`jojocode.cn` 的 NS 要指向 Cloudflare 且代理开启（橙云）。本项目已经满足。
+
+### 5. 验证
+
+```bash
+# 预期 302 到 github.com，并带回一个 jojo_oauth_state Cookie
+curl -sI https://jojocode.cn/api/auth/login | grep -iE "HTTP/|location|set-cookie"
+
+# 预期 401（未登录）
+curl -s -o /dev/null -w "%{http_code}\n" https://jojocode.cn/api/auth/me
+
+# 预期 200（站点本身没被 Worker 影响）
+curl -sI https://jojocode.cn/ | head -1
+```
+
+浏览器实测：打开首页 → 鼠标移到左上角 `JOJOSTAR` → 资料卡里点「登录」→ 弹窗里点「使用 GitHub 登录」→ GitHub 点 Authorize → 回到站内看到绿色提示「GitHub 登录成功」，每条说说 hover 出现编辑/删除。
+
+### 排障
+
+| 现象 | 原因 |
+|---|---|
+| 点登录提示「登录服务未部署」 | Worker 没部署，或 Route 没加 / 加错 |
+| 整站 404，页面上写着「这个 Worker 只接管 /api/auth/*」 | Route 被配成了 `jojocode.cn/*` |
+| 点登录提示「还没配 GitHub OAuth」 | 第 3 步两个 Secret 没填，或填完没重新 Deploy |
+| GitHub 报 `redirect_uri_mismatch` | 第 1 步 Callback URL 和 `https://jojocode.cn/api/auth/callback` 不一致 |
+| 回跳后仍是未登录 | Cookie 没写进去：必须走 HTTPS；用 `*.workers.dev` 测试域名登录时也会失败（callback 域名对不上） |
+| 提示「这个 GitHub 账号不是站长」 | 登录的账号不是 `flowersoul999`，判定在服务端 |
+
+改完 Worker 代码想在本地验证，跑 `node .workbuddy/preview/test-worker.mjs`（24 项断言，不依赖外网）。
+

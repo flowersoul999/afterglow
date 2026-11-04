@@ -36,7 +36,7 @@
 | 框架 | Astro 7.1.6 + Svelte 5 + Tailwind CSS v4 |
 | 包管理 | pnpm 9.14.4 (ESM, `preinstall` 强制) |
 | 运行时 | Node.js >= 22 |
-| 部署 | **EdgeOne Pages**（GitHub 集成：push `main` 自动 `pnpm build` 并托管 jojocode.cn，见 `docs/deploy-edgeone-pages.md`；仓库不含 GitHub Pages 遗留配置 `pages.yml` / `public/CNAME`，不再有第二个托管出口） |
+| 部署 | **GitHub Pages**（Actions `deploy-pages.yml`：push `main` → `pnpm build` → 上传 Pages，域名 jojocode.cn，见 `docs/deploy-github-pages.md`；`public/CNAME` 必须保留）。`build.yml` 并存作 CI 质量门。⚠️ `docs/deploy-edgeone-pages.md` 是从上游搬来的残留文档，方案从未执行，别照着操作 |
 | 线上 | https://jojocode.cn/ |
 | 仓库 | `flowersoul999/afterglow`（main） |
 | 后台 | PagesCMS 自托管方案（**当前未部署**；配置声明在仓库根 `.pages.yml`，部署步骤见第 19 节） |
@@ -115,10 +115,10 @@ src/
 pagefind.yml              # Pagefind 索引排除配置（katex、搜索面板等）
 scripts/                  # 开发脚本：12 个中文命名脚本目录（生成图标/新建文章/生成摘要/生成封面/转WebP/添加导航/下载影视/下载音乐/回填友链字段/友链截图/友链状态检测/TTS服务）+ cli.js、vision.mjs（图片识别）、compress-images.mjs、rename-images.mjs、import-wallpapers.mjs、check-svelte-warnings.mjs（脚本清单见第 0 节；生成封面 见第 2 节「文章封面生成」；TTS服务 为 edge-tts 朗读服务，部署产物，教程见 docs/deploy-edge-tts.md）
 docs/                     # 部署文档（deploy-pagescms-vercel.md 等）+ ssh-hardening.md（服务器 SSH 加固操作手册，2026-10-20）+ superpowers/{specs,plans}（改版设计稿与实现计划，2026-09-30 起）
-edge-functions/           # ⚠️ EdgeOne Pages 边缘函数（2026-11-04）：博主登录 + GitHub Contents 代理。
-                          # **唯一有服务端逻辑的地方**，不走 Astro 构建、不进 dist/。
-                          # `_lib/auth.js` 公共件 / `api/auth/[action].js`（login·callback·me·logout）/ `api/github/[action].js`（读·写·删）
-                          # 运行时是 V8 边缘不是 Node，坑见第 24 节
+cloudflare-worker/        # ⚠️ 站长登录用的 Cloudflare Worker（2026-11-04）：只接管 /api/*。
+                          # **唯一有服务端逻辑的地方**，不参与 Astro 构建、不是 npm 依赖，
+                          # 靠 Cloudflare 控制台粘贴 index.js 部署（Route: jojocode.cn/api/*）。
+                          # 站点本身仍是 GitHub Pages 托管，两者互不干扰。说明见第 24 节
 ```
 
 **禁止在 `components/` 根目录平铺组件文件，必须放入对应功能域子目录。**
@@ -1328,20 +1328,39 @@ EditorRoot.svelte（挂 Navbar.astro 内，Swup 容器外 → 换页不重建）
 ├── MomentDrawer.svelte      # 新建/编辑/删除说说
 └── editor.toast             # 提交提示
 
-edge-functions/              # EdgeOne Pages 边缘函数（唯一有服务端逻辑的地方）
-├── _lib/auth.js             # Cookie / AES-GCM 信封加密 / JSON 响应 / GitHub 头
-├── api/auth/[action].js     # login · callback · me · logout
-└── api/github/[action].js   # Contents API 代理（读 / 写 / 删）
+cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地方）
+                             # 靠控制台粘贴部署，不是 npm 依赖、不参与构建
 ```
 
 | 文件 | 职责 |
 |------|------|
-| `src/utils/editor/github-client.ts` | 浏览器侧封装：会话探测、读/写/删（全部走 `/api`）；`probeLoginService` 负责在跳转前确认边缘函数在不在 |
+| `src/utils/editor/github-client.ts` | 浏览器侧封装：会话探测、读/写/删（全部走 `/api`）；`probeLoginService` 负责在跳转前确认 Worker 在不在 |
 | `src/utils/editor/editor-store.ts` | 登录态（store 契约）、OAuth 回跳原因翻译、错误翻译、toast |
 | `src/utils/editor/editor-ui.ts` | 弹窗/抽屉的开合、抽屉模式与意图 |
 | `src/utils/editor/moment-serializer.ts` | 说说 md ↔ 草稿；**未知 frontmatter 字段收进 `extra` 原样吐回**，不吃作者数据 |
 | `src/styles/components/editor.css` | 全部样式，**只由 EditorRoot import 一次** |
-| `edge-functions/_lib/auth.js` | 服务端公共件：Cookie 读写、AES-GCM 信封加密、`redirect`/`json`、路径编码 |
+| `cloudflare-worker/index.js` | 服务端全部逻辑：7 个路由 + Cookie + AES-GCM 信封加密 + 路径护栏 |
+
+### 为什么需要 Worker（关键认知）
+
+站点是**纯静态**的 GitHub Pages，任何地方都跑不了代码。而 GitHub OAuth 换 `access_token` 有两个硬前提：
+
+1. 需要 `client_secret`，不能放前端；
+2. GitHub 的 token 端点**不支持跨域**，浏览器根本发不出这个请求。
+
+所以「纯静态站做 GitHub 登录」不成立。Worker 就是补上缺的那块「能跑代码的地方」，**只接管 `/api/*`**，站点本身仍由 GitHub Pages 托管，互不干扰。
+
+### 部署（控制台粘贴，不需要 CLI）
+
+1. Cloudflare 控制台 → Workers & Pages → Create → Worker
+2. 把 `cloudflare-worker/index.js` 全文粘进在线编辑器 → Deploy
+3. Settings → Variables and Secrets 加两个 **Secret**：`GITHUB_CLIENT_ID`、`GITHUB_CLIENT_SECRET`
+   可选：`OWNER_LOGIN`（默认 `flowersoul999`）、`AUTH_SECRET`、`SITE_ORIGIN`
+4. Settings → Triggers → Routes，加 **两条**：`jojocode.cn/api/auth/*` 和 `jojocode.cn/api/github/*`
+
+⚠️ **不要写成 `jojocode.cn/api/*`** —— 站点自己有 `/api/calendar.json`、`/api/home-stats.json`、`/api/knowledge-graph.json` 三个静态端点（首页统计、日历、知识图谱都靠它们），那条 Route 会把它们一起吞掉，表现为首页统计静默变空、很难查。更不要写 `jojocode.cn/*`，那会让整站变 404。代码里有防呆（不属于自己的路径返回带说明的 404），但别依赖它兜底。
+
+> `SITE_ORIGIN` 通常不用配：默认取请求的 origin，线上就是 `https://jojocode.cn`，`redirect_uri` 自动正确。
 
 ### 登录链路
 
@@ -1361,18 +1380,21 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 
 ### 四条硬约束
 
-1. **token 绝不进前端。** 换 token、验站长全在边缘函数里做，结果封进 **HttpOnly Cookie**。别为了省事把 token 回传给页面存 `sessionStorage` —— 那等于把仓库钥匙交给任何一段注入脚本。
-2. **secret 只在 `context.env`。** `GITHUB_CLIENT_SECRET` 配在 EdgeOne 控制台，**永远不要写进仓库，也不要用 `PUBLIC_` 前缀**（`PUBLIC_` 会被打进客户端产物）。
-3. **代理只能碰 `src/content/`。** `api/github/[action].js` 的 `assertPath` 强制前缀 + 挡 `..`。少了这道闸，拿到 Cookie 的人就能改 `.github/workflows/`。
-4. **提交 ≠ 上线。** 文件 push 上去后 EdgeOne Pages 要重新构建，1~3 分钟才可见。所以文案一律写「已提交，正在重新构建」，不要写「已发布」。
+1. **token 绝不进前端。** 换 token、验站长全在 Worker 里做，结果封进 **HttpOnly Cookie**。别为了省事把 token 回传给页面存 `sessionStorage` —— 那等于把仓库钥匙交给任何一段注入脚本。
+2. **secret 只放 Worker 的 Secrets。** `GITHUB_CLIENT_SECRET` **永远不要写进仓库**，也别加 `PUBLIC_` 前缀（带 `PUBLIC_` 的会被 Vite 打进客户端产物）。
+3. **代理只能碰 `src/content/`。** `assertPath` 强制前缀 + 挡 `..`。少了这道闸，拿到 Cookie 的人就能改 `.github/workflows/`。
+4. **提交 ≠ 上线。** 文件 push 上去后 Actions 要重新构建（约 1~3 分钟）才可见。文案一律写「已提交，正在重新构建」，不要写「已发布」。
 
-### 边缘函数的运行时坑（V8，不是 Node）
+### Worker 运行时的坑
 
-- 没有 `fs` / `crypto` 模块 / npm 包；`crypto` 是 Web Crypto（`crypto.subtle`），base64 用 `btoa`/`atob`。
-- **`Response.json()` 不存在**，必须 `new Response(JSON.stringify(x), { headers })`。
-- 路由由目录自动生成：`api/auth/[action].js` → `/api/auth/{login,callback,me,logout}`；多级通配是 `[[default]].js`。静态资源优先于函数。
-- 多值 `Set-Cookie` 要用 `response.headers.append()`，不能在 init 里传数组。
-- 限制：CPU 200ms（不含 I/O）、请求体 1MB、代码包 5MB。
+- 运行时是 V8（Service Worker 标准）：**没有** Node 内置模块、没有 npm 包；`crypto` 是 Web Crypto，base64 用 `btoa`/`atob`。
+- 出站 `fetch` **不受 CORS 限制**（这正是它能替浏览器换 token 的原因），但**不能 fetch 到自己 zone 的同 URL**（会重入 Worker）。
+- 多值 `Set-Cookie` 要用 `response.headers.append()`，在 init 里传数组无效。
+- 免费额度 10 万请求/天，本站用量远低于此。
+
+### 本地怎么测
+
+`node .workbuddy/preview/test-worker.mjs` —— 24 项断言，覆盖路由防呆、501/401/403/400、state 加解密互通、路径逃逸、登出清 Cookie。**不依赖外网**，改完 Worker 先跑它。
 
 ### 编辑按钮的显隐
 
@@ -1386,10 +1408,12 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 
 | 现象 | 原因 |
 |------|------|
-| 点登录提示「登录服务未部署」 | `edge-functions/` 没被构建进去，或该 EdgeOne 项目没开函数能力 |
-| 点登录提示「还没配置 GitHub OAuth」 | 缺 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` |
-| 回跳 404 或 GitHub 报 `redirect_uri_mismatch` | OAuth App 的 Callback URL 与 `SITE_ORIGIN + /api/auth/callback` 不一致 |
-| 回跳后仍是未登录 | Cookie 没写进去：`Secure` 要求 HTTPS；或用预览域名登录但 `SITE_ORIGIN` 填的是正式域名 |
+| 点登录提示「登录服务未部署」 | Worker 没部署，或 Route `jojocode.cn/api/*` 没加/加错 |
+| 首页统计/日历空白但页面正常 | Route 配成了 `jojocode.cn/api/*`，把静态 /api/*.json 也吞了 → 拆成 /api/auth/* 与 /api/github/* |
+| 整站 404 且提示只接管 /api/auth/* | Route 被配成了 `jojocode.cn/*` |
+| 点登录提示「还没配 GitHub OAuth」 | Worker 缺 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` |
+| GitHub 报 `redirect_uri_mismatch` | OAuth App 的 Callback URL 必须是 `https://jojocode.cn/api/auth/callback`，一字不差 |
+| 回跳后仍是未登录 | Cookie 没写进去：必须 HTTPS 访问；用 workers.dev 测试域名登录但 callback 配的是正式域名也会这样 |
 | 提示「不是站长」 | 登录的 GitHub 账号不是 `flowersoul999`（判定在服务端，前端改不了） |
 
-配置步骤见 `docs/deploy-edgeone-pages.md` 第二节之 5。
+完整操作步骤见 `docs/deploy-github-pages.md` 第七节。

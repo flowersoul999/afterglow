@@ -1,5 +1,16 @@
 # EdgeOne Pages 部署指南（GitHub 集成）
 
+> ## ⚠️ 这份文档描述的是**未采用的方案**，别照着操作
+>
+> 本文是随上游仓库一起搬过来的残留文档。本仓库**从未**迁到 EdgeOne Pages 托管，
+> 实际部署是 **GitHub Actions → GitHub Pages**（外加 CDN 回源），见 **`deploy-github-pages.md`**。
+>
+> 保留它只为对比参考。真正会误导人的两处：本文说「生产为 EdgeOne Pages 托管」、
+> 说「仓库不含 GitHub Pages 遗留配置（`public/CNAME` 已删除）」—— 两条都不符合现状：
+> `public/CNAME` 存在且必须保留，`deploy-pages.yml` 才是线上部署工作流。
+>
+> （2026-11-04 查证：`curl -I https://jojocode.cn` 响应头带 `x-github-request-id`，回源确实是 GitHub Pages。）
+
 > 博客生产部署为 **EdgeOne Pages**：push 到 `main` 后 EdgeOne 拉取仓库自动构建并托管，线上地址 `https://jojocode.cn/`。
 > 本文档是控制台操作手册，2026-09 从 GitHub Pages 迁移而来（迁移记录见第四节）。
 
