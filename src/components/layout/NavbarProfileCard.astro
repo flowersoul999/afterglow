@@ -17,6 +17,7 @@ import { getCollection } from "astro:content";
  * 暂时没做（前者要额外的右栏 pane 与文章标题数据，后者缺 navBarConfig 配置项）。
  */
 import { Icon } from "astro-icon/components";
+import EditorNavButton from "@/components/editor/EditorNavButton.svelte";
 import { profileConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -167,6 +168,8 @@ const events = [
 						<span class="nav-profile__occupation">{occupation}</span>
 					)}
 				</span>
+				<!-- 站长入口：未登录是一枚「登录」胶囊，登录后换成「说说 / 退出」 -->
+				<EditorNavButton client:load />
 			</div>
 
 			<div class="nav-profile__socials">

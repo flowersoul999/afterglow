@@ -9,8 +9,8 @@
 Push main（日常写作 / PagesCMS 后台 / 友链自动脚本）
     ↓ GitHub Webhook
 EdgeOne Pages 项目（GitHub 集成，自动构建）
-    ↓ pnpm build → dist/（生成图标 → astro build → pagefind）
-EdgeOne Pages 托管（jojocode.cn 直接绑定 Pages 项目）
+    ├─ pnpm build → dist/（生成图标 → astro build → pagefind）→ 静态托管
+    └─ edge-functions/ → 边缘函数，自动映射成 /api/*（站长登录 + GitHub 代理，2026-11-04）
     ↓ DNS（jojocode.cn CNAME → Pages 分配的默认域名）
 用户浏览器
 ```
@@ -36,7 +36,7 @@ EdgeOne Pages 托管（jojocode.cn 直接绑定 Pages 项目）
 | Node.js | 22.x |
 | 包管理器 | pnpm（仓库 `.npmrc` 强制；`packageManager` 固定 `pnpm@9.14.4`） |
 
-### 3. 环境变量（13 个，必填）
+### 3. 环境变量（13 个 `PUBLIC_*` 必填；站长登录另有 2 个，见 5.2）
 
 这些变量对应渲染期/构建期密钥，值从 GitHub 仓库 **Settings → Secrets and variables → Actions** 复制（两边必须保持同步；改任何一边都要同步另一边）：
 
@@ -59,7 +59,6 @@ EdgeOne Pages 托管（jojocode.cn 直接绑定 Pages 项目）
 > 缺失任何变量构建仍会成功，但对应功能静默降级（评论无后端、统计空白），务必逐项核对。
 
 ### 4. 首次构建与预览验证
-
 触发构建直到成功，用分配的预览域名（非正式域名）验证关键路径：
 
 - 首页渲染、Swup 导航、主题切换
@@ -68,6 +67,60 @@ EdgeOne Pages 托管（jojocode.cn 直接绑定 Pages 项目）
 - `/search/`（pagefind）、`sitemap.xml`、`robots.txt`、RSS
 - 评论 / 首页统计 / 音乐 / 相册 / 朋友圈 /circle/ / 友链状态徽标
 - 404 页、`trailingSlash` 尾斜杠路由
+
+### 5. 站长登录（GitHub OAuth + 边缘函数）
+
+> 2026-11-04 新增。站内编辑要先确认「你是站长」，纯静态站做不到，所以登录走 GitHub OAuth，
+> **换 token 与校验身份由仓库根目录 `edge-functions/` 下的边缘函数完成**（EdgeOne Pages 的函数能力，
+> 按目录自动生成路由，不需要额外配置文件）。
+> 这套东西**只在线上生效**：`pnpm dev` 不跑边缘函数，本地点登录会提示「登录服务未部署」，属正常。
+
+#### 5.1 创建 GitHub OAuth App
+
+1. 打开 <https://github.com/settings/developers> → **OAuth Apps** → **New OAuth App**
+2. 填写：
+
+| 字段 | 值 |
+|---|---|
+| Application name | 随意，比如 `jojocode 站内编辑` |
+| Homepage URL | `https://jojocode.cn` |
+| Authorization callback URL | `https://jojocode.cn/api/auth/callback` ← **必须一字不差** |
+
+3. 创建后记下 **Client ID**；点 **Generate a new client secret**，记下 **Client secret**（只显示一次，页面刷掉就没了）
+
+> Callback URL 必须精确到 `/api/auth/callback` 这个路径。填错会在授权时看到
+> GitHub 报 `redirect_uri_mismatch`，而且不会回跳到本站。
+
+#### 5.2 追加环境变量
+
+在 EdgeOne Pages 项目的环境变量设置里追加（与现有 13 个 `PUBLIC_*` 并列）：
+
+| 变量名 | 值 | 必填 | 说明 |
+|---|---|---|---|
+| `GITHUB_CLIENT_ID` | 5.1 的 Client ID | ✅ | |
+| `GITHUB_CLIENT_SECRET` | 5.1 的 Client Secret | ✅ | **机密** |
+| `SITE_ORIGIN` | `https://jojocode.cn` | — | 不填默认就是它；将来换域名才需要 |
+| `AUTH_SECRET` | 一串长随机字符 | — | 不填时用 Client Secret 派生 Cookie 加密密钥 |
+
+> ⚠️ **绝不要**给 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` 加 `PUBLIC_` 前缀。
+> 带 `PUBLIC_` 的变量会被 Vite 打进客户端产物，等于把 secret 发给每一个访客。
+
+改完环境变量必须**重新部署**才生效。
+
+#### 5.3 验证
+
+1. 打开 <https://jojocode.cn/>，鼠标移到左上角 `JOJOSTAR` 上
+2. 资料卡里出现「登录」小胶囊 → 点击
+3. 弹窗里点「使用 GitHub 登录」→ 跳 GitHub → 点 **Authorize**
+4. 回到站内应看到绿色提示「GitHub 登录成功」，每条说说 hover 出现编辑/删除按钮
+
+| 现象 | 原因 |
+|---|---|
+| 点登录提示「登录服务未部署」 | `edge-functions/` 没被构建进去；或该 Pages 项目没开函数能力 |
+| 点登录提示「还没配置 GitHub OAuth」 | 5.2 的两个变量没填 / 没重新部署 |
+| GitHub 报 `redirect_uri_mismatch` | 5.1 的 Callback URL 与 `SITE_ORIGIN + /api/auth/callback` 不一致 |
+| 回跳后仍是未登录 | Cookie 没写进去：必须 HTTPS；用预览域名登录但 `SITE_ORIGIN` 填的是正式域名也会这样 |
+| 提示「这个 GitHub 账号不是站长」 | 判定在服务端硬编码为 `flowersoul999`，改它要改 `edge-functions/_lib/auth.js` 的 `ALLOWED_LOGIN` |
 
 ## 三、域名绑定与切换（零宕机）
 

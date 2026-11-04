@@ -1,15 +1,20 @@
 /**
- * 站长在线编辑 —— GitHub Contents API 的最小客户端
+ * 站长在线编辑 —— GitHub Contents API 的浏览器侧封装
  *
  * 站点是纯静态的，内容都躺在仓库里。所谓「在线改内容」，本质是改仓库文件 +
  * 让 EdgeOne Pages 重新构建，所以**改动不会立刻上线**，构建跑完（1~3 分钟）
  * 才可见。这个限制由站点架构决定，前端只能如实提示，不能假装实时。
  *
- * 本模块只做四件事：校验令牌、读文件（连 sha）、写文件、删文件。
- * 令牌由 editor-store 保管，这里不碰任何存储，方便日后换成服务端代理。
+ * 本模块只做四件事：取登录态、读文件（连 sha）、写文件、删文件。
+ *
+ * 注意它**不再直接打 api.github.com**：GitHub 的 token 端点不支持跨域、
+ * 换 token 又需要 client_secret，所以登录和写操作都经由 `edge-functions/`
+ * 下的边缘函数中转，token 存在 HttpOnly Cookie 里，页面脚本根本读不到。
  */
 
-const API_BASE = "https://api.github.com";
+/** 边缘函数代理前缀（见 edge-functions/api/github/[action].js） */
+const GITHUB_PROXY = "/api/github";
+const AUTH_BASE = "/api/auth";
 
 /** 仓库坐标：内容就提交到这里，EdgeOne Pages 监听的也是它 */
 export const REPO_OWNER: string = "flowersoul999";
@@ -40,7 +45,13 @@ export interface WriteOptions {
 	sha?: string;
 }
 
-/** 带 HTTP 状态码的错误，调用方据此区分「令牌失效」「文件被改动」等情况 */
+/**
+ * 带 HTTP 状态码的错误，调用方据此区分「登录失效」「文件被改动」「服务没部署」。
+ *
+ * - 401：Cookie 过期或被清掉，重新登录即可
+ * - 404：边缘函数没生效（`edge-functions/` 没构建上去），这是配置问题不是网络问题
+ * - 501：边缘函数在，但环境变量没配齐
+ */
 export class EditorApiError extends Error {
 	public readonly status: number;
 
@@ -49,41 +60,6 @@ export class EditorApiError extends Error {
 		this.name = "EditorApiError";
 		this.status = status;
 	}
-}
-
-/** 路径里带中文，必须逐段编码，否则 `/` 会被转义成 %2F 导致 404 */
-function encodePath(path: string): string {
-	return path
-		.split("/")
-		.map((segment) => encodeURIComponent(segment))
-		.join("/");
-}
-
-function authHeaders(token: string): Record<string, string> {
-	return {
-		Authorization: `Bearer ${token}`,
-		Accept: "application/vnd.github+json",
-		"X-GitHub-Api-Version": "2022-11-28",
-	};
-}
-
-/** GitHub 返回的 base64 是 UTF-8 字节流，atob 只认 latin1，中文要再过一层 */
-function base64ToText(base64: string): string {
-	const binary = atob(base64.replace(/\s/g, ""));
-	const bytes = new Uint8Array(binary.length);
-	for (let i = 0; i < binary.length; i += 1) {
-		bytes[i] = binary.charCodeAt(i);
-	}
-	return new TextDecoder().decode(bytes);
-}
-
-function textToBase64(text: string): string {
-	const bytes = new TextEncoder().encode(text);
-	let binary = "";
-	for (const byte of bytes) {
-		binary += String.fromCharCode(byte);
-	}
-	return btoa(binary);
 }
 
 async function readError(response: Response): Promise<string> {
@@ -96,136 +72,135 @@ async function readError(response: Response): Promise<string> {
 }
 
 /**
- * 校验令牌并取回站长身份。
- *
- * 用 `GET /repos/:owner/:repo` 而不是 `/user` 是有意的：它同时能告诉我们
- * 令牌对**这个仓库**有没有写权限（permissions.push），顺带拿到默认分支名。
+ * 取当前登录态。
+ * 未登录会抛 401 —— 那是常态，调用方静默处理即可，别弹错误。
  */
-export async function verifyToken(token: string): Promise<EditorIdentity> {
-	const response = await fetch(`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}`, {
-		headers: authHeaders(token),
+export async function fetchSession(): Promise<EditorIdentity> {
+	const response = await fetch(`${AUTH_BASE}/me`, {
+		credentials: "same-origin",
+		cache: "no-store",
 	});
 
 	if (!response.ok) {
 		throw new EditorApiError(await readError(response), response.status);
 	}
 
-	const repo = (await response.json()) as {
-		default_branch?: string;
-		permissions?: { push?: boolean };
+	const data = (await response.json()) as {
+		login?: string;
+		name?: string;
+		avatar?: string;
+		branch?: string;
 	};
 
-	if (repo.permissions && repo.permissions.push !== true) {
-		throw new EditorApiError("令牌对这个仓库没有写权限", 403);
-	}
+	return {
+		login: data.login ?? REPO_OWNER,
+		name: data.name ?? data.login ?? REPO_OWNER,
+		avatar: data.avatar ?? "",
+		defaultBranch: data.branch ?? "main",
+	};
+}
 
-	// 仓库接口不带用户信息，再补一次 /user（失败不致命，只是头像缺省）
-	let login = REPO_OWNER;
-	let name = REPO_OWNER;
-	let avatar = "";
+/**
+ * 探测登录接口在不在，顺便把「为什么不能登录」说清楚。
+ *
+ * 直接 `location.href = "/api/auth/login"` 在函数没部署时会跳到 404 页面，
+ * 用户看到的是空白页，排查成本极高。所以先探一次：正常情况服务端会 302
+ * （`redirect: "manual"` 下变成 opaqueredirect，status 为 0），异常则
+ * 能读到具体的状态码。
+ */
+export async function probeLoginService(): Promise<{
+	ok: boolean;
+	message: string;
+}> {
 	try {
-		const userResponse = await fetch(`${API_BASE}/user`, {
-			headers: authHeaders(token),
+		const response = await fetch(`${AUTH_BASE}/login`, {
+			redirect: "manual",
+			cache: "no-store",
+			credentials: "same-origin",
 		});
-		if (userResponse.ok) {
-			const user = (await userResponse.json()) as {
-				login?: string;
-				name?: string;
-				avatar_url?: string;
-			};
-			login = user.login ?? login;
-			name = user.name ?? login;
-			avatar = user.avatar_url ?? "";
-		}
-	} catch {
-		// 头像拿不到不影响编辑，静默降级
-	}
 
-	return { login, name, avatar, defaultBranch: repo.default_branch ?? "main" };
+		if (response.status === 0 || response.type === "opaqueredirect") {
+			return { ok: true, message: "" };
+		}
+		if (response.status === 404) {
+			// 文案要短：弹窗就 26rem 宽，太长会折成三行把下面的说明挤乱。
+			// 完整的排查步骤在 docs/deploy-edgeone-pages.md 第二节之 5。
+			return { ok: false, message: "登录服务未部署：/api/auth 返回 404" };
+		}
+		if (response.status === 501) {
+			return { ok: false, message: await readError(response) };
+		}
+		return { ok: false, message: `登录服务返回 HTTP ${response.status}` };
+	} catch {
+		return { ok: false, message: "连不上登录服务，检查网络后重试" };
+	}
+}
+
+/** 跳到 GitHub 授权页（整页导航，不返回） */
+export function gotoLogin(returnTo: string): void {
+	const target = new URL(`${AUTH_BASE}/login`, window.location.origin);
+	target.searchParams.set("return", returnTo);
+	window.location.href = target.toString();
+}
+
+/** 退出登录：让服务端把 HttpOnly Cookie 清掉（前端自己是删不掉的） */
+export async function logoutSession(): Promise<void> {
+	await fetch(`${AUTH_BASE}/logout`, {
+		method: "POST",
+		credentials: "same-origin",
+		cache: "no-store",
+	});
 }
 
 /** 读文件；不存在时返回 null（用来区分「新建」和「改」） */
 export async function readFile(
-	token: string,
 	path: string,
 	branch: string,
 ): Promise<RepoFile | null> {
-	const response = await fetch(
-		`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${encodePath(path)}?ref=${encodeURIComponent(branch)}`,
-		{ headers: authHeaders(token) },
-	);
+	const query = new URLSearchParams({ path, ref: branch });
+	const response = await fetch(`${GITHUB_PROXY}/file?${query.toString()}`, {
+		credentials: "same-origin",
+		cache: "no-store",
+	});
 
-	if (response.status === 404) return null;
 	if (!response.ok) {
 		throw new EditorApiError(await readError(response), response.status);
 	}
 
-	const data = (await response.json()) as {
-		content?: string;
-		sha?: string;
-		encoding?: string;
-	};
-
-	return {
-		path,
-		sha: data.sha ?? "",
-		text:
-			data.encoding === "base64" && data.content
-				? base64ToText(data.content)
-				: "",
-	};
+	const data = (await response.json()) as { file?: RepoFile | null };
+	return data.file ?? null;
 }
 
 /** 写文件。返回新内容的 sha，供后续操作（比如连改两次）使用 */
-export async function writeFile(
-	token: string,
-	options: WriteOptions,
-): Promise<string> {
-	const response = await fetch(
-		`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${encodePath(options.path)}`,
-		{
-			method: "PUT",
-			headers: {
-				...authHeaders(token),
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				message: options.message,
-				content: textToBase64(options.text),
-				branch: options.branch,
-				...(options.sha ? { sha: options.sha } : {}),
-			}),
-		},
-	);
+export async function writeFile(options: WriteOptions): Promise<string> {
+	const response = await fetch(`${GITHUB_PROXY}/file`, {
+		method: "PUT",
+		credentials: "same-origin",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(options),
+	});
 
 	if (!response.ok) {
 		throw new EditorApiError(await readError(response), response.status);
 	}
 
-	const data = (await response.json()) as { content?: { sha?: string } };
-	return data.content?.sha ?? "";
+	const data = (await response.json()) as { sha?: string };
+	return data.sha ?? "";
 }
 
 /** 删文件。GitHub 的删除接口强制要求 sha，传错会给 409 */
-export async function deleteFile(
-	token: string,
-	options: { path: string; message: string; branch: string; sha: string },
-): Promise<void> {
-	const response = await fetch(
-		`${API_BASE}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${encodePath(options.path)}`,
-		{
-			method: "DELETE",
-			headers: {
-				...authHeaders(token),
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				message: options.message,
-				sha: options.sha,
-				branch: options.branch,
-			}),
-		},
-	);
+export async function deleteFile(options: {
+	path: string;
+	message: string;
+	branch: string;
+	sha: string;
+}): Promise<void> {
+	const response = await fetch(`${GITHUB_PROXY}/file`, {
+		method: "DELETE",
+		credentials: "same-origin",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(options),
+	});
 
 	if (!response.ok) {
 		throw new EditorApiError(await readError(response), response.status);

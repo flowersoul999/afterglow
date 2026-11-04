@@ -70,7 +70,7 @@ async function load(mode: string, id: string): Promise<void> {
 	loading = true;
 	draft = null;
 	try {
-		const file = await readFile(editor.token, momentPath(id), editor.branch);
+		const file = await readFile(momentPath(id), editor.branch);
 		if (seq !== loadSeq) return;
 		if (!file) {
 			errorText = "没找到这条说说的源文件，可能刚被改动过";
@@ -144,7 +144,7 @@ async function save(): Promise<void> {
 
 	try {
 		if (isEdit) {
-			await writeFile(editor.token, {
+			await writeFile({
 				path: momentPath(draft.id),
 				text,
 				message: `chore(moments): 更新说说 ${draft.id}`,
@@ -156,7 +156,7 @@ async function save(): Promise<void> {
 			let attempt = 1;
 			for (;;) {
 				try {
-					await writeFile(editor.token, {
+					await writeFile({
 						path: momentPath(nextMomentId(baseId, attempt)),
 						text,
 						message: `feat(moments): 新增说说 ${baseId}`,
@@ -199,7 +199,7 @@ async function remove(): Promise<void> {
 	removing = true;
 	errorText = "";
 	try {
-		await deleteFile(editor.token, {
+		await deleteFile({
 			path: momentPath(draft.id),
 			message: `chore(moments): 删除说说 ${draft.id}`,
 			branch: editor.branch,

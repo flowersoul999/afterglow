@@ -13,173 +13,89 @@
 	position: relative;
 	display: flex;
 	align-items: center;
+	gap: 0.3rem;
 }
 
-.editor-nav__login {
+/* 嵌在资料卡的「身份行」里：靠右对齐，别把名字和简介挤变形 */
+.editor-nav--card {
+	margin-left: auto;
+	flex-shrink: 0;
+}
+
+/* 卡内是一枚小胶囊 —— 资料卡只有 18.5rem 宽，按钮不能像导航栏那样有 2.25rem 高 */
+.editor-nav__chip {
 	display: inline-flex;
 	align-items: center;
-	justify-content: center;
-	gap: 0.4rem;
-	height: 2.25rem;
-	padding: 0 0.75rem;
-	border: 0;
+	gap: 0.25rem;
+	height: 1.625rem;
+	padding: 0 0.5rem;
+	border: 1px solid var(--line-color);
 	border-radius: 9999px;
 	background: transparent;
-	color: var(--btn-content);
-	font-size: 0.8125rem;
+	color: var(--content-meta);
+	font-size: 0.6875rem;
 	line-height: 1;
 	white-space: nowrap;
 	cursor: pointer;
 	transition:
-		background 0.2s ease,
-		color 0.2s ease;
+		background 0.18s ease,
+		color 0.18s ease,
+		border-color 0.18s ease;
 }
 
-.editor-nav__login:hover {
+.editor-nav__chip:hover:not(:disabled) {
+	border-color: var(--primary);
 	background: var(--btn-plain-bg-hover);
+	color: var(--primary);
 }
 
-/* 窄屏只留图标，右段本来就挤 */
-@media (max-width: 768px) {
-	.editor-nav__login-text {
-		display: none;
-	}
-
-	.editor-nav__login {
-		width: 2.25rem;
-		padding: 0;
-	}
+.editor-nav__chip:disabled {
+	opacity: 0.5;
+	cursor: default;
 }
 
-.editor-nav__avatar {
+/* 已登录态：两个只有图标的圆钮（+ 新建说说 / → 退出），比带字的胶囊省一半宽度 */
+.editor-nav__icon {
 	position: relative;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 2rem;
-	height: 2rem;
+	width: 1.625rem;
+	height: 1.625rem;
 	padding: 0;
-	border: 0;
+	border: 1px solid var(--line-color);
 	border-radius: 50%;
-	background: var(--btn-regular-bg-hover);
-	color: var(--btn-content);
-	font-size: 0.8125rem;
-	font-weight: 700;
+	background: transparent;
+	color: var(--content-meta);
 	cursor: pointer;
-	transition: transform 0.18s ease;
+	transition:
+		background 0.18s ease,
+		color 0.18s ease,
+		border-color 0.18s ease;
 }
 
-.editor-nav__avatar:hover {
-	transform: scale(1.06);
+.editor-nav__icon:hover:not(:disabled) {
+	border-color: var(--primary);
+	background: var(--btn-plain-bg-hover);
+	color: var(--primary);
 }
 
-.editor-nav__avatar img {
-	width: 100%;
-	height: 100%;
-	border-radius: 50%;
-	object-fit: cover;
+/* 退出登录：平时比「新建」更暗，hover 才亮成红的 */
+.editor-nav__icon--quiet:hover:not(:disabled) {
+	border-color: oklch(0.52 0.19 25 / 0.45);
+	color: oklch(0.52 0.19 25);
 }
 
-/* 「在线」状态点 —— 一眼确认现在处于编辑态 */
+/* 「在线」状态点 —— 一眼确认现在处于编辑态，点在新建按钮右上角 */
 .editor-nav__dot {
 	position: absolute;
+	top: -1px;
 	right: -1px;
-	bottom: -1px;
-	width: 0.5625rem;
-	height: 0.5625rem;
-	border-radius: 50%;
-	background: oklch(0.65 0.17 150);
-	border: 2px solid var(--navbar-bg);
-}
-
-.editor-nav__menu {
-	position: absolute;
-	top: calc(100% + 0.6rem);
-	right: 0;
-	z-index: 60;
-	width: 13.5rem;
-	padding: 0.375rem;
-	border: 1px solid var(--line-color);
-	border-radius: 1rem;
-	background: var(--float-panel-bg);
-	box-shadow: 0 16px 40px oklch(0 0 0 / 0.14);
-}
-
-.editor-nav__menu-head {
-	display: flex;
-	align-items: center;
-	gap: 0.625rem;
-	padding: 0.625rem 0.625rem 0.75rem;
-	margin-bottom: 0.25rem;
-	border-bottom: 1px solid var(--line-color);
-}
-
-.editor-nav__menu-avatar {
-	width: 2rem;
-	height: 2rem;
-	border-radius: 50%;
-	object-fit: cover;
-	flex-shrink: 0;
-}
-
-.editor-nav__menu-avatar.is-text {
-	display: grid;
-	place-items: center;
-	background: var(--btn-regular-bg-hover);
-	font-size: 0.8125rem;
-	font-weight: 700;
-}
-
-.editor-nav__menu-meta {
-	min-width: 0;
-}
-
-.editor-nav__menu-meta strong {
-	display: block;
-	font-size: 0.8125rem;
-	line-height: 1.3;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.editor-nav__menu-meta span {
-	display: flex;
-	align-items: center;
-	gap: 0.3rem;
-	font-size: 0.6875rem;
-	color: var(--content-meta);
-}
-
-.editor-nav__menu-meta span i {
 	width: 0.375rem;
 	height: 0.375rem;
 	border-radius: 50%;
 	background: oklch(0.65 0.17 150);
-}
-
-.editor-nav__item {
-	display: flex;
-	align-items: center;
-	gap: 0.625rem;
-	width: 100%;
-	padding: 0.5625rem 0.625rem;
-	border: 0;
-	border-radius: 0.625rem;
-	background: transparent;
-	color: var(--btn-content);
-	font-size: 0.8125rem;
-	text-align: left;
-	cursor: pointer;
-	transition: background 0.16s ease;
-}
-
-.editor-nav__item:hover {
-	background: var(--btn-plain-bg-hover);
-}
-
-.editor-nav__item--danger {
-	color: oklch(0.52 0.19 25);
+	border: 1.5px solid var(--float-panel-bg);
 }
 
 /* ============================================
@@ -211,57 +127,6 @@
 	color: var(--content-meta);
 }
 
-.editor-login__label {
-	display: block;
-	margin-bottom: 0.375rem;
-	font-size: 0.75rem;
-	color: var(--content-meta);
-}
-
-.editor-login__input-wrap {
-	position: relative;
-}
-
-.editor-login__input {
-	width: 100%;
-	height: 2.625rem;
-	padding: 0 2.5rem 0 0.875rem;
-	border: 1px solid var(--line-color);
-	border-radius: 0.75rem;
-	background: var(--btn-regular-bg-hover);
-	color: var(--deep-text);
-	font-size: 0.8125rem;
-	transition:
-		border-color 0.18s ease,
-		background 0.18s ease;
-}
-
-.editor-login__input:focus {
-	outline: none;
-	border-color: var(--primary);
-	background: var(--float-panel-bg);
-}
-
-.editor-login__reveal {
-	position: absolute;
-	top: 50%;
-	right: 0.5rem;
-	transform: translateY(-50%);
-	display: grid;
-	place-items: center;
-	width: 1.875rem;
-	height: 1.875rem;
-	border: 0;
-	border-radius: 50%;
-	background: transparent;
-	color: var(--content-meta);
-	cursor: pointer;
-}
-
-.editor-login__reveal:hover {
-	background: var(--btn-plain-bg-hover);
-}
-
 .editor-login__error {
 	margin: 0.625rem 0 0;
 	font-size: 0.75rem;
@@ -274,6 +139,7 @@
 	align-items: center;
 	justify-content: center;
 	width: 100%;
+	gap: 0.45rem;
 	height: 2.625rem;
 	margin-top: 1rem;
 	border: 0;
@@ -286,6 +152,13 @@
 	transition: opacity 0.18s ease;
 }
 
+/* GitHub 的授权页是黑底白字，按钮跟着反色 —— 用 deep-text 当底色，
+   明暗主题自动翻转，不必为暗色再写一份 */
+.editor-login__submit--github {
+	background: var(--deep-text);
+	color: var(--page-bg);
+}
+
 .editor-login__submit:hover:not(:disabled) {
 	opacity: 0.88;
 }
@@ -295,45 +168,37 @@
 	cursor: not-allowed;
 }
 
-.editor-login__help-toggle {
-	margin-top: 1rem;
+/* 权限与隐私说明：不用折叠，三行小字本来就比「点开才知道」更有效 */
+.editor-login__notes {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin: 1.125rem 0 0;
 	padding: 0;
-	border: 0;
-	background: transparent;
-	color: var(--content-meta);
-	font-size: 0.75rem;
-	text-decoration: underline;
-	text-underline-offset: 3px;
-	cursor: pointer;
+	list-style: none;
 }
 
-.editor-login__help-toggle:hover {
-	color: var(--primary);
-}
-
-.editor-login__help {
-	margin: 0.625rem 0 0;
-	padding-left: 1.125rem;
-	font-size: 0.75rem;
-	line-height: 1.85;
+.editor-login__notes li {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.4rem;
+	font-size: 0.6875rem;
+	line-height: 1.65;
 	color: var(--content-meta);
 }
 
-.editor-login__help code {
-	padding: 0.05rem 0.3rem;
+.editor-login__notes svg {
+	margin-top: 0.15rem;
+	flex-shrink: 0;
+	color: oklch(0.65 0.17 150);
+}
+
+.editor-login__notes code {
+	padding: 0.05rem 0.28rem;
 	border-radius: 0.25rem;
 	background: var(--inline-code-bg);
 	color: var(--inline-code-color);
-	font-size: 0.72rem;
-}
-
-.editor-login__help a {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.2rem;
-	color: var(--primary);
-	text-decoration: underline;
-	text-underline-offset: 2px;
+	font-size: 0.68rem;
 }
 
 .editor-login__fineprint {

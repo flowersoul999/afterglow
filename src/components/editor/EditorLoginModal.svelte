@@ -5,18 +5,14 @@
  * 复用站内既有的 `.privacy-modal` 骨架（dialog + overlay + panel），
  * 只补自己的内层样式，避免再造一套弹窗壳。
  *
- * 这里填的是 GitHub 细粒度令牌，不是密码 —— 纯静态站没有服务端，
- * 任何「密码」都只能在前端校验，等于没有。令牌能真正决定写权限，
- * 所以直接把这一点摊开说，别用一个假的密码框骗自己。
+ * 登录走 GitHub OAuth：点按钮 → 整页跳到 GitHub 授权页 → 回跳本页。
+ * 这里**不收任何凭据**，客户端也拿不到 token —— 换 token 和校验「是不是站长」
+ * 都在 EdgeOne 边缘函数里做，token 存进 HttpOnly Cookie。
  */
-import { ExternalLink, Eye, EyeOff, Lock, X } from "lucide-svelte";
+import { Github, ShieldCheck, X } from "lucide-svelte";
 import { editor } from "@/utils/editor/editor-store";
 import { editorUi } from "@/utils/editor/editor-ui";
-import { REPO_NAME, REPO_OWNER } from "@/utils/editor/github-client";
 
-let token = $state("");
-let reveal = $state(false);
-let showHelp = $state(false);
 let dialog: HTMLDialogElement | null = $state(null);
 
 const checking = $derived($editor.status === "checking");
@@ -40,13 +36,9 @@ function close(): void {
 	document.body.style.overflow = "";
 }
 
-async function submit(event: SubmitEvent): Promise<void> {
-	event.preventDefault();
-	const ok = await editor.login(token);
-	if (ok) {
-		token = "";
-		close();
-	}
+async function startLogin(): Promise<void> {
+	// 探测失败时 store 会把原因写进 error，这里不用自己管状态
+	await editor.startLogin();
 }
 </script>
 
@@ -83,85 +75,42 @@ async function submit(event: SubmitEvent): Promise<void> {
 
 		<div class="privacy-body editor-login__body">
 			<div class="editor-login__badge">
-				<Lock size={20} aria-hidden="true" />
+				<Github size={22} aria-hidden="true" />
 			</div>
 
 			<p class="editor-login__desc">
-				{$editorUi.loginHint || "只有你本人登录后，站内才会出现编辑按钮。"}
+				{$editorUi.loginHint || "用站长的 GitHub 账号登录后，页面里每个模块都会出现编辑按钮。"}
 			</p>
-
-			<form onsubmit={submit}>
-				<label class="editor-login__label" for="editor-token">
-					GitHub 访问令牌
-				</label>
-				<div class="editor-login__input-wrap">
-					<input
-						id="editor-token"
-						class="editor-login__input"
-						type={reveal ? "text" : "password"}
-						autocomplete="off"
-						spellcheck="false"
-						placeholder="github_pat_..."
-						bind:value={token}
-						disabled={checking}
-					/>
-					<button
-						type="button"
-						class="editor-login__reveal"
-						aria-label={reveal ? "隐藏令牌" : "显示令牌"}
-						onclick={() => (reveal = !reveal)}
-					>
-						{#if reveal}
-							<EyeOff size={15} aria-hidden="true" />
-						{:else}
-							<Eye size={15} aria-hidden="true" />
-						{/if}
-					</button>
-				</div>
-
-				{#if $editor.error}
-					<p class="editor-login__error">{$editor.error}</p>
-				{/if}
-
-				<button
-					type="submit"
-					class="editor-login__submit"
-					disabled={checking || token.trim() === ""}
-				>
-					{checking ? "正在验证…" : "进入编辑模式"}
-				</button>
-			</form>
 
 			<button
 				type="button"
-				class="editor-login__help-toggle"
-				aria-expanded={showHelp}
-				onclick={() => (showHelp = !showHelp)}
+				class="editor-login__submit editor-login__submit--github"
+				disabled={checking}
+				onclick={() => void startLogin()}
 			>
-				令牌从哪里来？
+				<Github size={17} aria-hidden="true" />
+				<span>{checking ? "正在前往 GitHub…" : "使用 GitHub 登录"}</span>
 			</button>
 
-			{#if showHelp}
-				<ol class="editor-login__help">
-					<li>
-						打开 GitHub 的
-						<a
-							href="https://github.com/settings/personal-access-tokens/new"
-							target="_blank"
-							rel="noopener noreferrer"
-						>
-							新建细粒度令牌 <ExternalLink size={11} aria-hidden="true" />
-						</a>
-					</li>
-					<li>只授权 <code>{REPO_OWNER}/{REPO_NAME}</code> 这一个仓库</li>
-					<li>权限里把 <code>Contents</code> 设成 <strong>Read and write</strong></li>
-					<li>有效期给短一点，过期了重新生成即可</li>
-				</ol>
+			{#if $editor.error}
+				<p class="editor-login__error">{$editor.error}</p>
 			{/if}
 
+			<ul class="editor-login__notes">
+				<li>
+					<ShieldCheck size={12} aria-hidden="true" />
+					<span>
+						只申请 <code>public_repo</code> 权限：仅能读写这个博客的公开仓库，碰不到你的其它项目
+					</span>
+				</li>
+				<li>
+					<ShieldCheck size={12} aria-hidden="true" />
+					<span>访问令牌保存在 HttpOnly Cookie 里，页面上的脚本读不到它</span>
+				</li>
+			</ul>
+
 			<p class="editor-login__fineprint">
-				令牌只存在本次会话（关掉标签页就失效），不会写进代码仓库。<br />
-				拿到令牌的人能改这个仓库，别贴到聊天窗口里。
+				不是站长也没关系，登录会在服务端被直接拒绝，不会留下任何东西。
 			</p>
 		</div>
 	</div>

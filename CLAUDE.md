@@ -57,7 +57,7 @@ src/
 │   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
 │   ├── controls/        # 交互控件：搜索、归档三视图树（ArchivePanel/ArchiveTree）、主题、Dock (8)
-│   ├── editor/          # 站长在线编辑（2026-11-03）：EditorNavButton 导航入口 / EditorLoginModal 令牌登录 / MomentDrawer 说说抽屉 / EditorRoot 常驻外壳（唯一 import editor.css 的地方） (4)
+│   ├── editor/          # 站长在线编辑（2026-11-03，11-04 改 GitHub OAuth）：EditorNavButton 资料卡内入口 / EditorLoginModal OAuth 登录 / MomentDrawer 说说抽屉 / EditorRoot 常驻外壳（唯一 import editor.css 的地方） (4)
 │   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器)
 │   ├── layout/          # 布局组件：Navbar, Footer, SideBar, HomeHero... (19)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
@@ -106,7 +106,7 @@ src/
 ├── types/               # TypeScript 类型：config.ts, bangumi.ts, guestbook-chat.ts
 └── utils/               # 工具函数（62 个文件，含 changelog.ts / tag-graph 控制器 / tts-text 正文提取 / music-player-controller 播放器形态机等）
     ├── 8 个控制器模块   # 见第 10 节
-    ├── editor/          # 站长编辑（2026-11-03）：github-client.ts（Contents API 读写删）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化）
+    ├── editor/          # 站长编辑（2026-11-03）：github-client.ts（会话 + Contents 读写删，全走 /api 代理）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化）
     └── 33 个业务工具    # content-utils, category-tree（文件夹即分类，多级 `a/b` 推导 + CategoryNode 树）, date-utils, image-utils, url-utils, tts-text（朗读正文提取）...
 
 # 根目录其他重要文件
@@ -115,6 +115,10 @@ src/
 pagefind.yml              # Pagefind 索引排除配置（katex、搜索面板等）
 scripts/                  # 开发脚本：12 个中文命名脚本目录（生成图标/新建文章/生成摘要/生成封面/转WebP/添加导航/下载影视/下载音乐/回填友链字段/友链截图/友链状态检测/TTS服务）+ cli.js、vision.mjs（图片识别）、compress-images.mjs、rename-images.mjs、import-wallpapers.mjs、check-svelte-warnings.mjs（脚本清单见第 0 节；生成封面 见第 2 节「文章封面生成」；TTS服务 为 edge-tts 朗读服务，部署产物，教程见 docs/deploy-edge-tts.md）
 docs/                     # 部署文档（deploy-pagescms-vercel.md 等）+ ssh-hardening.md（服务器 SSH 加固操作手册，2026-10-20）+ superpowers/{specs,plans}（改版设计稿与实现计划，2026-09-30 起）
+edge-functions/           # ⚠️ EdgeOne Pages 边缘函数（2026-11-04）：博主登录 + GitHub Contents 代理。
+                          # **唯一有服务端逻辑的地方**，不走 Astro 构建、不进 dist/。
+                          # `_lib/auth.js` 公共件 / `api/auth/[action].js`（login·callback·me·logout）/ `api/github/[action].js`（读·写·删）
+                          # 运行时是 V8 边缘不是 Node，坑见第 24 节
 ```
 
 **禁止在 `components/` 根目录平铺组件文件，必须放入对应功能域子目录。**
@@ -1309,33 +1313,66 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 
 ---
 
-## 24. 站长在线编辑（2026-11-03）
+## 24. 站长在线编辑（2026-11-03，2026-11-04 改 GitHub OAuth）
 
 站内改内容，不用回本地开编辑器。**只对说说开放**，文章集合目前为空、面经体量太大，都还没接。
 
 ### 架构
 
 ```
+NavbarProfileCard.astro（「JOJOSTAR」悬停弹出的资料卡）
+└── EditorNavButton.svelte   # 卡内入口：未登录=「登录」胶囊，已登录=「说说 / 退出」
+
 EditorRoot.svelte（挂 Navbar.astro 内，Swup 容器外 → 换页不重建）
-├── EditorNavButton.svelte   # 右侧入口：未登录=登录按钮，已登录=头像+菜单
-├── EditorLoginModal.svelte  # 复用 .privacy-modal 骨架
+├── EditorLoginModal.svelte  # 复用 .privacy-modal 骨架，只有一个 GitHub 登录按钮
 ├── MomentDrawer.svelte      # 新建/编辑/删除说说
 └── editor.toast             # 提交提示
+
+edge-functions/              # EdgeOne Pages 边缘函数（唯一有服务端逻辑的地方）
+├── _lib/auth.js             # Cookie / AES-GCM 信封加密 / JSON 响应 / GitHub 头
+├── api/auth/[action].js     # login · callback · me · logout
+└── api/github/[action].js   # Contents API 代理（读 / 写 / 删）
 ```
 
 | 文件 | 职责 |
 |------|------|
-| `src/utils/editor/github-client.ts` | Contents API 读/写/删；中文路径逐段 `encodeURIComponent` |
-| `src/utils/editor/editor-store.ts` | 登录态（store 契约）、错误翻译、toast |
+| `src/utils/editor/github-client.ts` | 浏览器侧封装：会话探测、读/写/删（全部走 `/api`）；`probeLoginService` 负责在跳转前确认边缘函数在不在 |
+| `src/utils/editor/editor-store.ts` | 登录态（store 契约）、OAuth 回跳原因翻译、错误翻译、toast |
 | `src/utils/editor/editor-ui.ts` | 弹窗/抽屉的开合、抽屉模式与意图 |
 | `src/utils/editor/moment-serializer.ts` | 说说 md ↔ 草稿；**未知 frontmatter 字段收进 `extra` 原样吐回**，不吃作者数据 |
 | `src/styles/components/editor.css` | 全部样式，**只由 EditorRoot import 一次** |
+| `edge-functions/_lib/auth.js` | 服务端公共件：Cookie 读写、AES-GCM 信封加密、`redirect`/`json`、路径编码 |
 
-### 三条硬约束
+### 登录链路
 
-1. **没有服务端。** Astro 纯静态输出，做不了真密码登录（§15 有对应反模式）。凭证直接是 GitHub 细粒度令牌，只授权 `flowersoul999/afterglow` 单仓库 + `Contents: Read and write`。
-2. **令牌存 `sessionStorage`**（key `jojo-editor-token`），关标签页即失效。**不要改成 localStorage** —— 那是明文长期驻留，页面里任何脚本都能读。
-3. **提交 ≠ 上线。** 文件 push 上去后 EdgeOne Pages 要重新构建，1~3 分钟才可见。所以文案一律写「已提交，正在重新构建」，不要写「已发布」。
+```
+点「登录」→ GET /api/auth/login
+  ├─ 生成 state，连「登录完回哪页」一起 AES-GCM 封进 state Cookie（10 分钟）
+  └─ 302 → github.com/login/oauth/authorize?scope=public_repo&state=…
+        ↓ 用户在 GitHub 点 Authorize
+GET /api/auth/callback?code=…&state=…
+  ├─ 比对 state（Cookie 里那份 vs URL 里那份），不一致就拒
+  ├─ POST github.com/login/oauth/access_token —— client_secret 只在这一行出现
+  ├─ GET api.github.com/user → login 必须等于 flowersoul999
+  └─ 封 { token, login, name, avatar } → Set-Cookie: jojo_editor（HttpOnly, 30 天）
+        ↓ 302 回站，带 ?auth=ok
+editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」，拿不到 token
+```
+
+### 四条硬约束
+
+1. **token 绝不进前端。** 换 token、验站长全在边缘函数里做，结果封进 **HttpOnly Cookie**。别为了省事把 token 回传给页面存 `sessionStorage` —— 那等于把仓库钥匙交给任何一段注入脚本。
+2. **secret 只在 `context.env`。** `GITHUB_CLIENT_SECRET` 配在 EdgeOne 控制台，**永远不要写进仓库，也不要用 `PUBLIC_` 前缀**（`PUBLIC_` 会被打进客户端产物）。
+3. **代理只能碰 `src/content/`。** `api/github/[action].js` 的 `assertPath` 强制前缀 + 挡 `..`。少了这道闸，拿到 Cookie 的人就能改 `.github/workflows/`。
+4. **提交 ≠ 上线。** 文件 push 上去后 EdgeOne Pages 要重新构建，1~3 分钟才可见。所以文案一律写「已提交，正在重新构建」，不要写「已发布」。
+
+### 边缘函数的运行时坑（V8，不是 Node）
+
+- 没有 `fs` / `crypto` 模块 / npm 包；`crypto` 是 Web Crypto（`crypto.subtle`），base64 用 `btoa`/`atob`。
+- **`Response.json()` 不存在**，必须 `new Response(JSON.stringify(x), { headers })`。
+- 路由由目录自动生成：`api/auth/[action].js` → `/api/auth/{login,callback,me,logout}`；多级通配是 `[[default]].js`。静态资源优先于函数。
+- 多值 `Set-Cookie` 要用 `response.headers.append()`，不能在 init 里传数组。
+- 限制：CPU 200ms（不含 I/O）、请求体 1MB、代码包 5MB。
 
 ### 编辑按钮的显隐
 
@@ -1345,6 +1382,14 @@ EditorRoot.svelte（挂 Navbar.astro 内，Swup 容器外 → 换页不重建）
 
 卡片上点垃圾桶不会直接删，而是打开抽屉、底部按钮变成「确认删除？」，再点一次才提交（`editor-ui.ts` 的 `momentIntent`）。误触代价不对等，宁可多点一步。
 
-### 换服务端时改哪里
+### 排障
 
-只想替换「凭证怎么走」时，**只改 `github-client.ts` 的三个导出函数签名内部**（改成请求自己的 Edge Function / Worker），`editor-store` 的登录流程与全部 UI 都不用动。
+| 现象 | 原因 |
+|------|------|
+| 点登录提示「登录服务未部署」 | `edge-functions/` 没被构建进去，或该 EdgeOne 项目没开函数能力 |
+| 点登录提示「还没配置 GitHub OAuth」 | 缺 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` |
+| 回跳 404 或 GitHub 报 `redirect_uri_mismatch` | OAuth App 的 Callback URL 与 `SITE_ORIGIN + /api/auth/callback` 不一致 |
+| 回跳后仍是未登录 | Cookie 没写进去：`Secure` 要求 HTTPS；或用预览域名登录但 `SITE_ORIGIN` 填的是正式域名 |
+| 提示「不是站长」 | 登录的 GitHub 账号不是 `flowersoul999`（判定在服务端，前端改不了） |
+
+配置步骤见 `docs/deploy-edgeone-pages.md` 第二节之 5。
