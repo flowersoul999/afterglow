@@ -104,6 +104,15 @@ export default {
 			return json({ ok: false, message: "不支持的请求方法" }, 405);
 		}
 
+		// 列目录：后台的条目列表靠它。只返回一层，子目录由前端按需再拉 ——
+		// 内容目录结构是「集合/分类/文件」，深度固定，逐层拉比整棵 Git Tree 便宜。
+		if (path === "/api/github/tree" && method === "GET") {
+			const session = await readSession(request, env);
+			if (!session)
+				return json({ ok: false, message: "未登录或登录已过期" }, 401);
+			return listDir(request, session.token);
+		}
+
 		return json({ ok: false, message: "未知接口" }, 404);
 	},
 };
@@ -451,6 +460,47 @@ async function readFile(request, token) {
 					? base64ToText(data.content)
 					: "",
 		},
+	});
+}
+
+/**
+ * 列一层目录。
+ *
+ * 返回 `{ entries: [{ name, path, type: "file" | "dir", sha, size }] }`，
+ * 前端按名字过滤 `.md` 再递归拉子目录 —— 内容结构是「集合/分类/文件」，
+ * 层级固定且浅，逐层拉比整棵 Git Tree（含图片、dist）便宜得多。
+ */
+async function listDir(request, token) {
+	const query = new URL(request.url).searchParams;
+	const path = query.get("path") ?? "";
+	const branch = query.get("ref") || DEFAULT_BRANCH;
+
+	const invalid = assertPath(path);
+	if (invalid) return invalid;
+
+	const response = await fetch(
+		`${GITHUB_API}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${encodePath(path)}?ref=${encodeURIComponent(branch)}`,
+		{ headers: githubHeaders(token) },
+	);
+
+	// 目录不存在 = 空集合，不是错误
+	if (response.status === 404) return json({ ok: true, entries: [] });
+	if (!response.ok) return upstreamError(response);
+
+	const data = await response.json();
+	if (!Array.isArray(data)) {
+		return json({ ok: false, message: `${path} 是文件，不是目录` }, 400);
+	}
+
+	return json({
+		ok: true,
+		entries: data.map((entry) => ({
+			name: entry.name,
+			path: entry.path,
+			type: entry.type === "dir" ? "dir" : "file",
+			sha: entry.sha ?? "",
+			size: entry.size ?? 0,
+		})),
 	});
 }
 

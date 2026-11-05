@@ -4,7 +4,6 @@ import * as path from "node:path";
 import type { ImageMetadata } from "astro";
 import { Icon } from "astro-icon/components";
 import DropdownItem from "@/components/common/DropdownItem.astro";
-import EditorRoot from "@/components/editor/EditorRoot.svelte";
 import { announcementConfig, navBarConfig, siteConfig } from "@/config";
 import { DARK_MODE, LIGHT_MODE, SYSTEM_MODE } from "@/constants/constants";
 import { LinkPresets } from "@/constants/link-presets";
@@ -299,8 +298,8 @@ if (isLocalSrcLogo) {
 		</dialog>
 	)}
 
-	<!-- 站长编辑：登录弹窗 / 说说抽屉 / 提示条，常驻在 Swup 容器之外 -->
-	<EditorRoot client:load />
+	<!-- 站长编辑：登录弹窗 / 说说抽屉 / 提示条已移到 MainGridLayout.astro 里、
+	     脱离 #navbar-wrapper 挂载 —— 那个 wrapper 带 transform，会把 fixed 抽屉压成一条。 -->
 </div>
 
 <script>

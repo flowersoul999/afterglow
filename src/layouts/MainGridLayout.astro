@@ -3,6 +3,7 @@ import Live2DWidget from "@components/features/Live2DWidget.astro";
 
 import SpineModel from "@components/features/SpineModel.astro";
 import ArticleTocPanel from "@components/layout/ArticleTocPanel.astro";
+import EditorRoot from "@components/editor/EditorRoot.svelte";
 import Footer from "@components/layout/Footer.astro";
 import MobileDock from "@components/layout/MobileDock.astro";
 import Navbar from "@components/layout/Navbar.astro";
@@ -201,6 +202,13 @@ const navLinks = await resolveNavLinks(navBarConfig.links);
       <Navbar></Navbar>
   </div>
 </div>
+
+<!-- 站长编辑器外壳（登录弹窗 / 说说抽屉 / 提示条）
+     必须挂在 #navbar-wrapper **外面**：那个 wrapper 滚动时会被加上 .navbar-visible
+     （transform: translateY(0)），而带 transform 的元素会成为内部 position: fixed 后代的
+     containing block —— 抽屉的 inset: 0 会退化成「导航条那个盒子」，整条抽屉塌成一条。
+     这里和 Navbar 一样在 Swup 容器之外，换页不重建。 -->
+<EditorRoot client:load />
 
 <NavMenuPanel links={navLinks} />
 

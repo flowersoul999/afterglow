@@ -1,0 +1,28 @@
+---
+/**
+ * 站长后台
+ *
+ * 独立全屏页，不套 MainGridLayout —— 后台不需要导航栏和侧边栏，
+ * 套进去反而要写一堆覆盖样式把它压掉。
+ *
+ * 页面本身是构建期生成的静态 shell，一条内容都不含；数据全靠
+ * Cloudflare Worker 代理 GitHub 拉取，未登录时只有一个登录引导。
+ *
+ * 这里放一个空的 `#swup-container`：Swup 的容器是全局配置的，页面里
+ * 找不到就会在控制台报错。但后台**不能**参与 SPA 导航（Swup 只换容器
+ * 内容，不会重新挂载 Astro 岛），所以任何指向 /admin 的入口都要带
+ * `data-no-swup`，让浏览器整页进来。
+ */
+import AdminApp from "@/components/admin/AdminApp.svelte";
+import Layout from "@/layouts/Layout.astro";
+---
+
+<Layout title="后台" description="站长后台">
+	<Fragment slot="head">
+		<meta name="robots" content="noindex, nofollow" />
+	</Fragment>
+
+	<AdminApp client:load />
+
+	<div id="swup-container" hidden></div>
+</Layout>

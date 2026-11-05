@@ -54,7 +54,7 @@
 	cursor: default;
 }
 
-/* 已登录态：两个只有图标的圆钮（+ 新建说说 / → 退出），比带字的胶囊省一半宽度 */
+/* 已登录态：只有图标的圆钮（后台 / 新建说说 / 退出），比带字的胶囊省一半宽度 */
 .editor-nav__icon {
 	position: relative;
 	display: inline-flex;
@@ -67,6 +67,7 @@
 	border-radius: 50%;
 	background: transparent;
 	color: var(--content-meta);
+	text-decoration: none;
 	cursor: pointer;
 	transition:
 		background 0.18s ease,
@@ -212,9 +213,17 @@
 /* ============================================
  * 三、说说编辑抽屉
  * ============================================ */
+/* 尺寸刻意用 vw/dvh 而不是 inset: 0 —— inset 的百分比/边缘取值依赖
+   containing block，一旦这层被放进带 transform 的祖先里（导航栏 wrapper 就是），
+   0 会变成「祖先盒子」而不是视口，整条抽屉会塌成导航条那么高。
+   vw/dvh 不依赖祖先，永远是视口，算是一道保险。 */
 .editor-drawer-layer {
 	position: fixed;
-	inset: 0;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	height: 100dvh;
 	z-index: 9998;
 	display: flex;
 	justify-content: flex-end;

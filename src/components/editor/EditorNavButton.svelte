@@ -10,7 +10,7 @@
  * 挂载点在 NavbarProfileCard.astro 的 `.nav-profile__identity` 里，属于
  * Swup 容器之外，换页不会重建，所以 bootstrap 只跑一次。
  */
-import { LogIn, LogOut, Plus } from "lucide-svelte";
+import { LayoutGrid, LogIn, LogOut, Plus } from "lucide-svelte";
 import { onMount } from "svelte";
 import { editor } from "@/utils/editor/editor-store";
 import { editorUi } from "@/utils/editor/editor-ui";
@@ -38,17 +38,26 @@ const label = $derived(
 
 <div class="editor-nav editor-nav--card">
 	{#if $editor.isEditor}
-		<!-- 已登录只用两个图标钮：资料卡左栏只有 18.5rem，带文字的胶囊会把
+		<!-- 已登录只用图标钮：资料卡左栏只有 18.5rem，带文字的胶囊会把
 		     名字和简介挤成两行。含义交给 title 和 hover 提示。 -->
+		<a
+			href="/admin"
+			data-no-swup
+			class="editor-nav__icon"
+			title={`打开后台（已登录：${label}）`}
+			aria-label="打开后台"
+		>
+			<LayoutGrid size={13} aria-hidden="true" />
+			<i class="editor-nav__dot" aria-hidden="true"></i>
+		</a>
 		<button
 			type="button"
-			class="editor-nav__icon"
-			title={`新建说说（已登录：${label}）`}
+			class="editor-nav__icon editor-nav__icon--quiet"
+			title="新建说说"
 			aria-label="新建说说"
 			onclick={handleCreate}
 		>
 			<Plus size={13} aria-hidden="true" />
-			<i class="editor-nav__dot" aria-hidden="true"></i>
 		</button>
 		<button
 			type="button"

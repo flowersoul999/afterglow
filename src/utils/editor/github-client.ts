@@ -36,6 +36,15 @@ export interface RepoFile {
 	text: string;
 }
 
+/** 目录枚举结果：一层 */
+export interface RepoEntry {
+	name: string;
+	path: string;
+	type: "file" | "dir";
+	sha: string;
+	size: number;
+}
+
 export interface WriteOptions {
 	path: string;
 	text: string;
@@ -150,6 +159,25 @@ export async function logoutSession(): Promise<void> {
 		credentials: "same-origin",
 		cache: "no-store",
 	});
+}
+
+/** 列一层目录。目录不存在时返回空数组（新集合还没建文件是常态） */
+export async function listDir(
+	path: string,
+	branch: string,
+): Promise<RepoEntry[]> {
+	const query = new URLSearchParams({ path, ref: branch });
+	const response = await fetch(`${GITHUB_PROXY}/tree?${query.toString()}`, {
+		credentials: "same-origin",
+		cache: "no-store",
+	});
+
+	if (!response.ok) {
+		throw new EditorApiError(await readError(response), response.status);
+	}
+
+	const data = (await response.json()) as { entries?: RepoEntry[] };
+	return data.entries ?? [];
 }
 
 /** 读文件；不存在时返回 null（用来区分「新建」和「改」） */
