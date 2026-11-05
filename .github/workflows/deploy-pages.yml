@@ -50,6 +50,7 @@ jobs:
           PUBLIC_AMAP_KEY: ${{ secrets.PUBLIC_AMAP_KEY }}
           PUBLIC_AMAP_KEY_PLACES: ${{ secrets.PUBLIC_AMAP_KEY_PLACES }}
           PUBLIC_UMAMI_BASE: ${{ secrets.PUBLIC_UMAMI_BASE }}
+          PUBLIC_UMAMI_WEBSITE_ID: ${{ vars.PUBLIC_UMAMI_WEBSITE_ID }}
           PUBLIC_UMAMI_USERNAME: ${{ secrets.PUBLIC_UMAMI_USERNAME }}
           PUBLIC_UMAMI_PASSWORD: ${{ secrets.PUBLIC_UMAMI_PASSWORD }}
           PUBLIC_UMAMI_SHARE_ID: ${{ secrets.PUBLIC_UMAMI_SHARE_ID }}

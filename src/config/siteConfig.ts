@@ -222,7 +222,7 @@ export const siteConfig: SiteConfig = {
 			websiteId: import.meta.env.PUBLIC_UMAMI_WEBSITE_ID || "",
 			scriptUrl: import.meta.env.PUBLIC_UMAMI_BASE
 				? `${import.meta.env.PUBLIC_UMAMI_BASE}/script.js`
-				: "",
+				: "https://cloud.umami.is/script.js",
 			shareId: import.meta.env.PUBLIC_UMAMI_SHARE_ID || "",
 		},
 	},
