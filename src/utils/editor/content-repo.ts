@@ -230,14 +230,19 @@ export interface SaveOptions {
 }
 
 /** 保存。返回最终写入的路径（新建撞名时可能和传入的 path 不同） */
-export async function saveEntry(options: SaveOptions): Promise<string> {
+export interface SavedEntry {
+	path: string;
+	sha: string;
+}
+
+export async function saveEntry(options: SaveOptions): Promise<SavedEntry> {
 	const text = serializeContent(options.doc);
 	const message = options.isNew
 		? `feat(${options.collection.id}): 新增《${options.label}》`
 		: `chore(${options.collection.id}): 更新《${options.label}》`;
 
 	if (!options.isNew) {
-		await writeFile({
+		const sha = await writeFile({
 			path: options.path,
 			text,
 			message,
@@ -245,20 +250,20 @@ export async function saveEntry(options: SaveOptions): Promise<string> {
 			sha: options.sha,
 		});
 		invalidateEntries(options.collection.id);
-		return options.path;
+		return { path: options.path, sha };
 	}
 
 	for (let attempt = 1; ; attempt += 1) {
 		const candidate = withSuffix(options.path, attempt);
 		try {
-			await writeFile({
+			const sha = await writeFile({
 				path: candidate,
 				text,
 				message,
 				branch: options.branch,
 			});
 			invalidateEntries(options.collection.id);
-			return candidate;
+			return { path: candidate, sha };
 		} catch (error) {
 			// 422 = 文件已存在但没给 sha，说明撞名了，换个序号再试
 			const exists = error instanceof EditorApiError && error.status === 422;

@@ -6,7 +6,7 @@
  * 不预读每个文件的 frontmatter —— 面经 108 篇逐篇读就是 108 次请求。
  * 真实标题等打开编辑器后再显示。
  */
-import { Loader2, Search } from "lucide-svelte";
+import { Loader2, RefreshCw, Search } from "lucide-svelte";
 import type { AdminCollection } from "@/config/admin-collections";
 import type { AdminEntry } from "@/utils/editor/content-repo";
 
@@ -19,6 +19,7 @@ interface Props {
 	query: string;
 	onSelect: (path: string) => void;
 	onCreate: () => void;
+	onRetry: () => void;
 }
 
 let {
@@ -30,6 +31,7 @@ let {
 	query = $bindable(""),
 	onSelect,
 	onCreate,
+	onRetry,
 }: Props = $props();
 
 /** 文件名里带日期就提出来单独显示 —— 说说和更新日志都是这种命名 */
@@ -72,7 +74,12 @@ function showDate(entry: AdminEntry): string {
 				<Loader2 size={14} class="spin" aria-hidden="true" /> 正在列目录…
 			</p>
 		{:else if error}
-			<p class="admin-list__state is-error">{error}</p>
+			<div class="admin-list__error" role="alert">
+				<p>{error}</p>
+				<button type="button" class="admin-btn admin-btn--sm" onclick={onRetry}>
+					<RefreshCw size={13} aria-hidden="true" /> 重试
+				</button>
+			</div>
 		{:else if entries.length === 0}
 			<p class="admin-list__state">
 				{query ? "没有匹配的条目" : "这个集合还是空的"}

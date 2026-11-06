@@ -8,8 +8,17 @@
  * 正文直接绑 doc.body（ContentDoc 是父组件的 $state，深层属性可双向绑定）。
  */
 
-import { Eye, Loader2, Pencil, Plus, Trash2, X } from "lucide-svelte";
+import {
+	ArrowLeft,
+	Eye,
+	Loader2,
+	Pencil,
+	Plus,
+	Trash2,
+	X,
+} from "lucide-svelte";
 import { marked } from "marked";
+import sanitizeHtml from "sanitize-html";
 import type { AdminCollection } from "@/config/admin-collections";
 import {
 	type ContentDoc,
@@ -30,6 +39,7 @@ interface Props {
 	onSave: () => void;
 	onDelete: () => void;
 	onClose: () => void;
+	onMobileBack: () => void;
 }
 
 let {
@@ -43,6 +53,7 @@ let {
 	onSave,
 	onDelete,
 	onClose,
+	onMobileBack,
 }: Props = $props();
 
 type FormValue = string | string[] | boolean;
@@ -57,11 +68,6 @@ let confirmDelete = $state(false);
 let confirmTimer: ReturnType<typeof setTimeout> | null = null;
 /** 用来判断 doc 是不是换了一篇，避免每次保存都重建表单 */
 let lastDoc: ContentDoc | null = null;
-
-function readScalar(key: string): string {
-	const raw = readField(doc, key);
-	return typeof raw === "string" ? raw : "";
-}
 
 function buildForm(): Form {
 	const next: Form = {};
@@ -93,13 +99,18 @@ $effect(() => {
 	confirmDelete = false;
 });
 
-const title = $derived(valueOf("title"));
+const title = $derived(typeof form.title === "string" ? form.title : "");
 const tags = $derived((form.tags as string[]) ?? []);
-const body = $derived(doc.body);
 const bodyLength = $derived(doc.body.replace(/\s/g, "").length);
 const previewHtml = $derived(
 	mode === "preview"
-		? (marked.parse(doc.body, { async: false }) as string)
+		? sanitizeHtml(marked.parse(doc.body, { async: false }) as string, {
+				allowedAttributes: {
+					a: ["href", "name", "target", "rel"],
+					img: ["src", "alt", "title", "width", "height"],
+					code: ["class"],
+				},
+			})
 		: "",
 );
 
@@ -152,6 +163,14 @@ function askDelete(): void {
 
 <main class="admin-editor">
 	<div class="admin-editor__head">
+		<button
+			type="button"
+			class="admin-editor__mobile-back"
+			onclick={onMobileBack}
+			aria-label="返回内容列表"
+		>
+			<ArrowLeft size={16} aria-hidden="true" />
+		</button>
 		<div class="admin-editor__title-wrap">
 			<input
 				class="admin-editor__title"

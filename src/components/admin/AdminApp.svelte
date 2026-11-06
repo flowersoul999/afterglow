@@ -9,7 +9,7 @@
  * 这个组件只在 /admin 路由里挂载，不在 Swup 容器内，所以进页面时自己
  * bootstrap 一次登录态（正常页面是 EditorRoot 干的活）。
  */
-import { Github, Loader2, RefreshCw } from "lucide-svelte";
+import { ArrowLeft, Github, Loader2, RefreshCw } from "lucide-svelte";
 import { onMount } from "svelte";
 import AdminEditor from "@/components/admin/AdminEditor.svelte";
 import AdminList from "@/components/admin/AdminList.svelte";
@@ -47,8 +47,11 @@ let sha = $state("");
 let docLoading = $state(false);
 let docError = $state("");
 let saving = $state(false);
+let listRequestSeq = 0;
+let entryRequestSeq = 0;
 /** 新建时的分类（目录名），保存时决定文件落在哪 */
 let draftCategory = $state("");
+let mobileListMode = $state(true);
 
 let toast = $state("");
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -78,19 +81,26 @@ function notify(text: string): void {
 
 async function refreshList(force = false): Promise<void> {
 	if (!$editor.isEditor) return;
+	const requestSeq = ++listRequestSeq;
+	const targetCollection = collection;
 	listLoading = true;
 	listError = "";
 	try {
-		entries = await listEntries(collection, editor.branch, { force });
+		const result = await listEntries(targetCollection, editor.branch, {
+			force,
+		});
+		if (requestSeq === listRequestSeq) entries = result;
 	} catch (error) {
-		listError = editor.describeError(error);
+		if (requestSeq === listRequestSeq) listError = editor.describeError(error);
 	} finally {
-		listLoading = false;
+		if (requestSeq === listRequestSeq) listLoading = false;
 	}
 }
 
 async function openEntry(path: string): Promise<void> {
+	mobileListMode = false;
 	if (path === selectedPath && !isNew) return;
+	const requestSeq = ++entryRequestSeq;
 	selectedPath = path;
 	isNew = false;
 	docLoading = true;
@@ -98,6 +108,7 @@ async function openEntry(path: string): Promise<void> {
 	doc = null;
 	try {
 		const loaded = await loadEntry(path, editor.branch);
+		if (requestSeq !== entryRequestSeq) return;
 		if (!loaded) {
 			docError = "文件读不到了，可能刚被删掉或改名";
 			return;
@@ -105,13 +116,15 @@ async function openEntry(path: string): Promise<void> {
 		doc = loaded.doc;
 		sha = loaded.sha;
 	} catch (error) {
-		docError = editor.describeError(error);
+		if (requestSeq === entryRequestSeq) docError = editor.describeError(error);
 	} finally {
-		docLoading = false;
+		if (requestSeq === entryRequestSeq) docLoading = false;
 	}
 }
 
 function startCreate(): void {
+	entryRequestSeq += 1;
+	mobileListMode = false;
 	isNew = true;
 	selectedPath = "";
 	sha = "";
@@ -147,7 +160,10 @@ function startCreate(): void {
 }
 
 function closeEditor(): void {
+	entryRequestSeq += 1;
+	mobileListMode = true;
 	selectedPath = "";
+	docLoading = false;
 	isNew = false;
 	doc = null;
 	sha = "";
@@ -173,7 +189,7 @@ async function handleSave(): Promise<void> {
 		: selectedPath;
 
 	try {
-		const finalPath = await saveEntry({
+		const saved = await saveEntry({
 			collection,
 			path,
 			doc,
@@ -189,7 +205,9 @@ async function handleSave(): Promise<void> {
 		if (isNew) {
 			isNew = false;
 			selectedPath = "";
-			await openEntry(finalPath);
+			await openEntry(saved.path);
+		} else {
+			sha = saved.sha;
 		}
 	} catch (error) {
 		docError = editor.describeError(error);
@@ -222,6 +240,8 @@ async function handleDelete(): Promise<void> {
 
 function switchCollection(id: string): void {
 	if (id === collectionId) return;
+	listRequestSeq += 1;
+	mobileListMode = true;
 	collectionId = id;
 	query = "";
 	closeEditor();
@@ -320,7 +340,10 @@ $effect(() => {
 			</div>
 		</div>
 	{:else}
-		<div class="admin__body">
+		<div
+			class="admin__body"
+			class:admin__body--editing={!mobileListMode}
+		>
 			<aside class="admin__collections">
 				<div class="admin__group-label">内容</div>
 				{#each adminCollections as item (item.id)}
@@ -345,6 +368,7 @@ $effect(() => {
 				bind:query
 				onSelect={openEntry}
 				onCreate={startCreate}
+				onRetry={() => refreshList(true)}
 			/>
 
 			{#if docLoading}
@@ -363,9 +387,20 @@ $effect(() => {
 					onSave={handleSave}
 					onDelete={handleDelete}
 					onClose={closeEditor}
+					onMobileBack={() => (mobileListMode = true)}
 				/>
 			{:else}
 				<main class="admin__editor admin__editor--state">
+					{#if docError}
+						<button
+							type="button"
+							class="admin-editor__mobile-back"
+							onclick={() => (mobileListMode = true)}
+							aria-label="返回内容列表"
+						>
+							<ArrowLeft size={16} aria-hidden="true" />
+						</button>
+					{/if}
 					{#if docError}
 						<span class="admin__state is-error">{docError}</span>
 					{:else}

@@ -7,7 +7,7 @@
  *
  * 登录走 GitHub OAuth：点按钮 → 整页跳到 GitHub 授权页 → 回跳本页。
  * 这里**不收任何凭据**，客户端也拿不到 token —— 换 token 和校验「是不是站长」
- * 都在 EdgeOne 边缘函数里做，token 存进 HttpOnly Cookie。
+ * 都在 Cloudflare Worker 里做，token 存进 HttpOnly Cookie。
  */
 import { Github, ShieldCheck, X } from "lucide-svelte";
 import { editor } from "@/utils/editor/editor-store";

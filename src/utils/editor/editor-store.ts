@@ -53,7 +53,8 @@ const REASON_TEXT: Record<string, string> = {
 	state_invalid: "登录链接已过期，重新点一次登录",
 	exchange_failed: "GitHub 没有换到访问令牌，稍后重试",
 	profile_failed: "读不到 GitHub 账号资料，稍后重试",
-	not_configured: "站点还没配置 GitHub OAuth，站长需要先在 EdgeOne 填环境变量",
+	not_configured:
+		"站点还没配置 GitHub OAuth，请检查 Cloudflare Worker 的环境变量",
 };
 
 function emptySnapshot(): EditorSnapshot {
@@ -225,7 +226,7 @@ export class EditorStore {
 			if (error.status === 401) return "登录已过期，重新登录一次";
 			if (error.status === 403) return error.message || "没有权限执行这个操作";
 			if (error.status === 404)
-				return "登录服务没找到，EdgeOne 的边缘函数可能没部署";
+				return "内容接口不存在，请在 Cloudflare 重新部署最新版 Worker（需包含 /api/github/tree），并检查 /api/github/* 路由";
 			if (error.status === 409) return "文件刚被改过，刷新页面后再试";
 			if (error.status === 422)
 				return "提交被拒绝：文件可能已存在，或内容格式不对";

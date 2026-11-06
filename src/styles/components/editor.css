@@ -213,10 +213,7 @@
 /* ============================================
  * 三、说说编辑抽屉
  * ============================================ */
-/* 尺寸刻意用 vw/dvh 而不是 inset: 0 —— inset 的百分比/边缘取值依赖
-   containing block，一旦这层被放进带 transform 的祖先里（导航栏 wrapper 就是），
-   0 会变成「祖先盒子」而不是视口，整条抽屉会塌成导航条那么高。
-   vw/dvh 不依赖祖先，永远是视口，算是一道保险。 */
+/* 全屏遮罩固定使用视口尺寸，面板本身在桌面居中、窄屏近全屏。 */
 .editor-drawer-layer {
 	position: fixed;
 	top: 0;
@@ -225,8 +222,9 @@
 	height: 100vh;
 	height: 100dvh;
 	z-index: 9998;
-	display: flex;
-	justify-content: flex-end;
+	display: grid;
+	place-items: center;
+	padding: 1.5rem;
 }
 
 .editor-drawer__scrim {
@@ -240,21 +238,22 @@
 	position: relative;
 	display: flex;
 	flex-direction: column;
-	width: min(27rem, 100vw);
-	height: 100%;
+	width: min(40rem, calc(100vw - 3rem));
+	max-height: min(48rem, calc(100dvh - 3rem));
 	background: var(--float-panel-bg);
-	border-left: 1px solid var(--line-color);
-	box-shadow: -24px 0 60px oklch(0 0 0 / 0.16);
+	border: 1px solid var(--line-color);
+	border-radius: 0.75rem;
+	box-shadow: 0 28px 80px oklch(0 0 0 / 0.24);
 	animation: editor-drawer-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes editor-drawer-in {
 	from {
-		transform: translateX(28px);
+		transform: translateY(8px) scale(0.99);
 		opacity: 0;
 	}
 	to {
-		transform: none;
+		transform: translateY(0) scale(1);
 		opacity: 1;
 	}
 }
@@ -534,15 +533,59 @@
 	border-color: oklch(0.52 0.19 25);
 }
 
-/* 手机上抽屉铺满，别留一条缝 */
+/* 手机上保持视口中心，留出安全边距，内容区独立滚动 */
 @media (max-width: 640px) {
+	.editor-drawer-layer {
+		padding: 0.625rem;
+	}
+
 	.editor-drawer {
-		width: 100%;
-		border-left: 0;
+		width: min(100%, 40rem);
+		max-height: calc(100dvh - 1.25rem);
+		border: 1px solid var(--line-color);
+		border-radius: 0.625rem;
 	}
 
 	.editor-drawer__row {
 		grid-template-columns: 1fr;
+	}
+
+	.editor-drawer__head,
+	.editor-drawer__body,
+	.editor-drawer__foot {
+		padding-right: 1rem;
+		padding-left: 1rem;
+	}
+
+	.editor-drawer__textarea {
+		min-height: 9rem;
+		font-size: 1rem;
+	}
+
+	.editor-drawer__input,
+	.editor-drawer__tag-input {
+		font-size: 1rem;
+	}
+
+	.editor-drawer__btn {
+		min-height: 2.75rem;
+		padding-inline: 0.75rem;
+		border-radius: 0.375rem;
+	}
+
+	.editor-drawer__tag button {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
+	.editor-drawer__foot {
+		padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.editor-drawer {
+		animation-duration: 0.01ms;
 	}
 }
 

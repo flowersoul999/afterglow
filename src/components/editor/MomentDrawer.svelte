@@ -6,7 +6,7 @@
  * - create：空白草稿，提交时不带 sha；同一天已有文件会返回 422，自动加 -2、-3 重试
  * - edit：先读源文件拿 sha（更新必须带），提交时带回去，避免覆盖别人的改动
  *
- * 提交成功不等于上线：文件 push 上去之后 EdgeOne 要重新构建，1~3 分钟才可见。
+ * 提交成功不等于上线：文件 push 上去之后 GitHub Actions 还要重新构建，完成后才可见。
  * 所以提示语写「已提交」而不是「已发布」，别让人以为立刻生效。
  */
 import { ImagePlus, Plus, Trash2, X } from "lucide-svelte";

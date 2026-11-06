@@ -2,21 +2,21 @@
  * 站长在线编辑 —— GitHub Contents API 的浏览器侧封装
  *
  * 站点是纯静态的，内容都躺在仓库里。所谓「在线改内容」，本质是改仓库文件 +
- * 让 EdgeOne Pages 重新构建，所以**改动不会立刻上线**，构建跑完（1~3 分钟）
+ * 让 GitHub Actions 重新构建 GitHub Pages，所以**改动不会立刻上线**，构建跑完
  * 才可见。这个限制由站点架构决定，前端只能如实提示，不能假装实时。
  *
  * 本模块只做四件事：取登录态、读文件（连 sha）、写文件、删文件。
  *
  * 注意它**不再直接打 api.github.com**：GitHub 的 token 端点不支持跨域、
- * 换 token 又需要 client_secret，所以登录和写操作都经由 `edge-functions/`
- * 下的边缘函数中转，token 存在 HttpOnly Cookie 里，页面脚本根本读不到。
+ * 换 token 又需要 client_secret，所以登录和写操作都经由 Cloudflare Worker
+ * 中转，token 存在 HttpOnly Cookie 里，页面脚本根本读不到。
  */
 
-/** 边缘函数代理前缀（见 edge-functions/api/github/[action].js） */
+/** Cloudflare Worker 代理前缀（见 cloudflare-worker/index.js） */
 const GITHUB_PROXY = "/api/github";
 const AUTH_BASE = "/api/auth";
 
-/** 仓库坐标：内容就提交到这里，EdgeOne Pages 监听的也是它 */
+/** 仓库坐标：内容就提交到这里，GitHub Actions 会据此构建 Pages */
 export const REPO_OWNER: string = "flowersoul999";
 export const REPO_NAME: string = "afterglow";
 
@@ -58,7 +58,7 @@ export interface WriteOptions {
  * 带 HTTP 状态码的错误，调用方据此区分「登录失效」「文件被改动」「服务没部署」。
  *
  * - 401：Cookie 过期或被清掉，重新登录即可
- * - 404：边缘函数没生效（`edge-functions/` 没构建上去），这是配置问题不是网络问题
+ * - 404：Worker 路由或接口版本不匹配，优先检查是否部署了最新 `cloudflare-worker/index.js`
  * - 501：边缘函数在，但环境变量没配齐
  */
 export class EditorApiError extends Error {
