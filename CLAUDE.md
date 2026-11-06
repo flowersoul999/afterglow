@@ -39,6 +39,7 @@
 | 部署 | **GitHub Pages**（Actions `deploy-pages.yml`：push `main` → `pnpm build` → 上传 Pages，域名 jojocode.cn，见 `docs/deploy-github-pages.md`；`public/CNAME` 必须保留）。`build.yml` 并存作 CI 质量门。⚠️ `docs/deploy-edgeone-pages.md` 是从上游搬来的残留文档，方案从未执行，别照着操作 |
 | 线上 | https://jojocode.cn/ |
 | 仓库 | `flowersoul999/afterglow`（main） |
+| Umami 统计 | GitHub Actions 仓库变量 `PUBLIC_UMAMI_WEBSITE_ID` 提供网站 ID；默认追踪脚本为 `https://cloud.umami.is/script.js`，自托管时可用 Secret `PUBLIC_UMAMI_BASE` 覆盖 |
 | 后台 | PagesCMS 自托管方案（**当前未部署**；配置声明在仓库根 `.pages.yml`，部署步骤见第 19 节） |
 | 附属服务 | 图床 / TTS / 后台 CMS 目前**均未部署**，相关配置留空即自动降级（发图报未配置、朗读用系统语音） |
 | 来源 | Fork 自 CuteLeaf/Firefly ← saicaca/fuwari，已深度定制为「jojostar」独立站点 |
