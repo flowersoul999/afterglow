@@ -2105,3 +2105,60 @@ export function initArticleTocPanel(): void {
 	const controller = new ArticleTocPanelController(root);
 	if (controller.init()) currentPanel = controller;
 }
+
+type ArticleTocRuntimeWindow = Window & {
+	__articleTocPanelRuntimeReady?: boolean;
+};
+
+async function shareCurrentPost(): Promise<void> {
+	const link = window.location.href;
+	const title = document.title;
+
+	if (typeof navigator.share === "function") {
+		try {
+			await navigator.share({ title, url: link });
+			return;
+		} catch (error) {
+			// 用户主动取消系统分享属于正常操作，不再继续复制链接。
+			if (error instanceof Error && error.name === "AbortError") return;
+		}
+	}
+
+	try {
+		await navigator.clipboard.writeText(link);
+	} catch {
+		// 剪贴板不可用时保持静默，避免目录按钮打断阅读。
+	}
+}
+
+/**
+ * 安装跨 Swup 导航持久存在的目录运行时。
+ *
+ * ArticleTocPanel 位于 Swup 容器内，组件脚本会随页面替换再次执行；全局守卫确保
+ * 初始化、解密与分享监听器只注册一次，内容替换后仅重建当前页面的控制器实例。
+ */
+export function installArticleTocPanelRuntime(): void {
+	const runtimeWindow = window as ArticleTocRuntimeWindow;
+	if (runtimeWindow.__articleTocPanelRuntimeReady) {
+		initArticleTocPanel();
+		return;
+	}
+	runtimeWindow.__articleTocPanelRuntimeReady = true;
+
+	const boot = (): void => initArticleTocPanel();
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", boot, { once: true });
+	} else {
+		boot();
+	}
+
+	document.addEventListener("swup:content:replaced", boot);
+	document.addEventListener("password:decrypted", boot);
+	document.addEventListener("click", (event) => {
+		const trigger = (event.target as HTMLElement | null)?.closest(
+			"[data-post-share-native]",
+		);
+		if (!trigger) return;
+		void shareCurrentPost();
+	});
+}

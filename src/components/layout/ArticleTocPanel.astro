@@ -334,43 +334,7 @@ const statsSentences = [
 </aside>
 
 <script>
-	import { initArticleTocPanel } from "@/utils/article-toc-panel-controller";
+	import { installArticleTocPanelRuntime } from "@/utils/article-toc-panel-controller";
 
-	// Swup 导航会整体替换面板 DOM，每次导航后都要重建控制器（内部先销毁旧实例）
-	const boot = () => initArticleTocPanel();
-	if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", boot);
-	} else {
-		boot();
-	}
-	document.addEventListener("astro:page-load", boot);
-	document.addEventListener("swup:content:replaced", boot);
-	// 加密文章解密后正文标题才出现，需要补建一次（init 自带幂等）
-	document.addEventListener("password:decrypted", boot);
-
-	// 分享：优先系统分享面板，桌面端退化为复制链接
-	document.addEventListener("click", (event) => {
-		const trigger = (event.target as HTMLElement | null)?.closest<HTMLElement>(
-			"[data-post-share-native]",
-		);
-		if (!trigger) return;
-		const share = async () => {
-			const link = window.location.href;
-			const title = document.title;
-			if (navigator.share) {
-				try {
-					await navigator.share({ title, url: link });
-					return;
-				} catch {
-					// 用户取消或不可用，退化为复制链接
-				}
-			}
-			try {
-				await navigator.clipboard.writeText(link);
-			} catch {
-				// 剪贴板不可用时静默失败
-			}
-		};
-		void share();
-	});
+	installArticleTocPanelRuntime();
 </script>

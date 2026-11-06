@@ -705,6 +705,15 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **整页宽度**：站长要求「占 4/5」→ `no-sidebar-pages.css` 里逐页一条：≥768px `max-width: 100%`、≥1280px `max-width: 80vw`（用 vw 不用 %，% 会按上一级容器算、实际只有 70%）。
 - ⚠️ **dev 改动不生效先怀疑 Vite 样式缓存**：改完 `projects.astro` 后如果页面样式还是旧的（markup 新、CSS 旧），直接请求 `/src/pages/projects.astro?astro&type=style&index=0&lang.css` 看内容，必要时重写一遍文件（更新 mtime）让它重新编译。
 
+### 5.23 文章右侧目录面板（2026-11-06，同步参考站最新版）
+
+- **三件套**：`src/components/layout/ArticleTocPanel.astro`（结构与站点统计）+ `src/utils/article-toc-panel-controller.ts`（目录树、阅读轨迹、折叠、思维导图与模式切换）+ `src/styles/components/article-toc-panel.css`（宽屏布局和动效）。标题树数据由 `src/utils/article-toc-tree.ts` 采集，禁止在组件里再写一套。
+- **只在文章详情页渲染**：`MainGridLayout.astro` 检测 `postSlug` 后挂载，相关文章数据由 `src/pages/posts/[...slug].astro` 计算一次并同时给右侧面板和正文底部复用。
+- **本站适配不可被源项目覆盖**：正文卡宽 63rem，目录显示门槛为 `101rem`，定位基准为 `left: calc(50% + 31.5rem + var(--space-4))`；强调色使用本站青色浅／深色变量，统计背景取 `homeConfig.hero.backgroundImage`，分享开关仍是 `siteConfig.sharePoster`。
+- **Swup 生命周期是单例**：组件脚本只调用 `installArticleTocPanelRuntime()`；运行时通过 `window.__articleTocPanelRuntimeReady` 保证全局初始化、解密和分享监听器只安装一次，`swup:content:replaced` 后只重建当前控制器。禁止把 `document.addEventListener(...)` 直接重新塞回组件脚本，否则每次换文章都会累积监听器。
+- **不移植参考站专属能力**：当前项目没有 `llm-wiki`、`postShare` 和参考站的 `swup-lifecycle` 工具，目录同步时不要为了文件逐行一致引入这些系统；分享继续使用系统分享，失败时退化为复制链接，用户主动取消分享不触发复制。
+- **fixed 元素的过渡约束**：目录面板祖先不能获得 `transform` / `filter`，否则 fixed 定位和纸飞机轨迹会漂移；`src/styles/transitions/swup.css` 已通过 `:has(.article-toc-panel)` 让文章页退化为纯透明度过渡，禁止删除。
+
 ---
 
 ## 6. 配置系统
