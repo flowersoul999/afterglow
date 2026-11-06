@@ -99,6 +99,14 @@
 	margin-left: auto;
 }
 
+.admin__umami-link {
+	gap: 0.35rem;
+}
+
+.admin__umami-external {
+	opacity: 0.65;
+}
+
 .admin__user {
 	display: flex;
 	align-items: center;
@@ -1462,6 +1470,16 @@
 		height: 2rem;
 		padding-inline: 0.55rem;
 		font-size: 0.6875rem;
+	}
+
+	.admin__umami-link span,
+	.admin__umami-external {
+		display: none;
+	}
+
+	.admin__top-right .admin__umami-link {
+		width: 2rem;
+		padding: 0;
 	}
 
 	.admin__body {

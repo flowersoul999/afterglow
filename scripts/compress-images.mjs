@@ -24,6 +24,7 @@ const DIR_FILTER = process.argv.find(a => a.startsWith("--dir="))?.split("=")[1]
 
 // 要压缩的目录列表
 const IMAGE_DIRS = [
+	{ name: "albums", path: join(BASE_DIR, "albums"), recursive: true },
 	{ name: "sjtapi", path: join(BASE_DIR, "sjtapi"), recursive: false },
 	{ name: "mobile-bg", path: join(BASE_DIR, "mobile-bg"), recursive: false },
 	{ name: "home", path: join(BASE_DIR, "home"), recursive: true },

@@ -510,18 +510,42 @@ content:
             type: boolean
             default: false
 
+          - name: localFolder
+            label: 本地相册目录
+            type: string
+            description: 相对 public/assets/images/albums 的目录，例如 travel；存在本地照片时优先使用
+
           - name: imgbedFolder
             label: 图床文件夹
             type: string
-            description: 填"blog/album/xxx"后从 CloudFlare ImgBed 动态加载图片
+            description: 可选回退；本地目录没有照片时从 CloudFlare ImgBed 动态加载
 
           - name: photos
             label: 照片列表
-            type: imgbed
+            type: object
             list: true
-            options:
-              media: false
-            description: 照片 URL 列表（优先使用图床）
+            description: 单张照片可配置地址、描述、标签和拍摄时间；与本地目录照片合并去重
+            fields:
+              - name: src
+                label: 图片
+                type: imgbed
+                required: true
+                options:
+                  media: false
+              - name: alt
+                label: 替代文字
+                type: string
+              - name: caption
+                label: 照片描述
+                type: text
+              - name: tags
+                label: 照片标签
+                type: string
+                list: true
+              - name: takenAt
+                label: 拍摄时间
+                type: string
+                description: ISO 时间，例如 2026-08-28T09:03:19.161Z
 
           - name: body
             label: 描述

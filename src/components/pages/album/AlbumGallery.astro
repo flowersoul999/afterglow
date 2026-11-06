@@ -1,0 +1,254 @@
+---
+import { Icon } from "astro-icon/components";
+
+interface AlbumPhotoViewModel {
+	src: string;
+	name: string;
+	alt: string;
+	caption: string;
+	tags: string[];
+	takenAt: string;
+	takenAtText: string;
+}
+
+interface AlbumViewModel {
+	id: string;
+	title: string;
+	subtitle: string;
+	date: string;
+	dateText: string;
+	location: string;
+	tags: string[];
+	folder: string;
+	photos: AlbumPhotoViewModel[];
+}
+
+interface Props {
+	albums: AlbumViewModel[];
+	imgbedUrl?: string;
+	imgbedToken?: string;
+}
+
+const { albums, imgbedUrl = "", imgbedToken = "" } = Astro.props;
+const payload = JSON.stringify(albums).replaceAll("<", "\\u003c");
+const initialPhotos = albums.flatMap((album) =>
+	album.photos.map((photo) => ({ album, photo })),
+);
+---
+
+<section
+	class="album-gallery"
+	data-album-gallery
+	data-album-view-mode="scatter"
+	data-album-bed-url={imgbedUrl}
+	data-album-bed-token={imgbedToken}
+>
+	<div class="album-toolbar">
+		<div class="album-toolbar__primary">
+			<label class="album-search">
+				<Icon name="material-symbols:search-rounded" is:inline />
+				<input
+					type="search"
+					placeholder="搜索照片、描述或标签…"
+					aria-label="搜索相册照片"
+					data-album-search
+				/>
+				<button
+					type="button"
+					class="album-search__clear"
+					aria-label="清空搜索"
+					data-album-search-clear
+					hidden
+				>
+					<Icon name="material-symbols:close-rounded" is:inline />
+				</button>
+			</label>
+
+			<span class="album-toolbar__count" data-album-count>
+				{initialPhotos.length} 张照片
+			</span>
+
+			<button
+				type="button"
+				class="album-toolbar__text-button"
+				data-album-clear-filters
+				hidden
+			>
+				清空筛选
+			</button>
+		</div>
+
+		<div class="album-toolbar__secondary">
+			<div class="album-tabs" role="group" aria-label="按相册筛选">
+				<button
+					type="button"
+					class="album-tab is-active"
+					data-album-filter-id=""
+					aria-pressed="true"
+				>
+					全部
+				</button>
+				{
+					albums.map((album) => (
+						<button
+							type="button"
+							class="album-tab"
+							data-album-filter-id={album.id}
+							aria-pressed="false"
+						>
+							{album.title}
+						</button>
+					))
+				}
+			</div>
+
+			<div class="album-view-switch" role="group" aria-label="相册视图">
+				<button
+					type="button"
+					class="album-view-switch__button is-active"
+					data-album-view="scatter"
+					aria-pressed="true"
+					title="散落模式"
+				>
+					<Icon name="material-symbols:dashboard-customize-rounded" is:inline />
+					<span>散落</span>
+				</button>
+				<button
+					type="button"
+					class="album-view-switch__button"
+					data-album-view="wall"
+					aria-pressed="false"
+					title="照片墙"
+				>
+					<Icon name="material-symbols:grid-view-rounded" is:inline />
+					<span>照片墙</span>
+				</button>
+			</div>
+
+			<button
+				type="button"
+				class="album-reset-button"
+				data-album-reset
+				title="清除已保存的拖动位置"
+			>
+				<Icon name="material-symbols:restart-alt-rounded" is:inline />
+				<span>复位照片</span>
+			</button>
+		</div>
+	</div>
+
+	<p class="album-scatter-hint">
+		拖动照片重新布置桌面，点击查看描述；方向键也可以移动照片。
+	</p>
+
+	<div class="album-stage" data-album-stage aria-live="polite">
+		{
+			initialPhotos.map(({ album, photo }) => (
+				<button
+					type="button"
+					class="alb-photo"
+					data-photo-card
+					data-photo-key={`${album.id}:${photo.src}`}
+					data-album-id={album.id}
+					data-album-title={album.title}
+					data-photo-src={photo.src}
+					data-photo-alt={photo.alt || photo.caption || album.title}
+					data-photo-caption={photo.caption}
+					data-photo-tags={JSON.stringify(photo.tags)}
+					data-photo-date={photo.takenAtText || album.dateText}
+					data-photo-location={album.location}
+					data-search={[
+						album.title,
+						album.location,
+						photo.name,
+						photo.caption,
+						...photo.tags,
+					]
+						.join(" ")
+						.toLocaleLowerCase("zh-CN")}
+					aria-label={
+						photo.caption
+							? `查看照片：${photo.caption}`
+							: `查看${album.title}中的照片`
+					}
+				>
+					<span class="alb-photo__frame">
+						<img
+							src={photo.src}
+							alt={photo.alt || photo.caption || album.title}
+							loading="lazy"
+							decoding="async"
+							draggable="false"
+						/>
+						{
+							photo.caption && (
+								<span class="alb-photo__caption">{photo.caption}</span>
+							)
+						}
+					</span>
+				</button>
+			))
+		}
+	</div>
+
+	<p class="album-empty" data-album-empty hidden>
+		没有找到符合条件的照片
+	</p>
+
+	<dialog class="album-lightbox" data-album-lightbox aria-label="照片查看器">
+		<div class="album-lightbox__counter" data-album-lightbox-counter></div>
+		<button
+			type="button"
+			class="album-lightbox__close"
+			data-album-lightbox-close
+			aria-label="关闭照片查看器"
+		>
+			<Icon name="material-symbols:close-rounded" is:inline />
+		</button>
+		<button
+			type="button"
+			class="album-lightbox__nav album-lightbox__nav--prev"
+			data-album-lightbox-prev
+			aria-label="上一张照片"
+		>
+			<Icon name="material-symbols:chevron-left-rounded" is:inline />
+		</button>
+		<figure class="album-lightbox__figure">
+			<img src="" alt="" data-album-lightbox-image />
+		</figure>
+		<button
+			type="button"
+			class="album-lightbox__nav album-lightbox__nav--next"
+			data-album-lightbox-next
+			aria-label="下一张照片"
+		>
+			<Icon name="material-symbols:chevron-right-rounded" is:inline />
+		</button>
+
+		<aside
+			class="album-lightbox__note"
+			data-album-lightbox-note
+			data-note-tone="0"
+			aria-label="照片描述，可拖动"
+		>
+			<div class="album-lightbox__note-grip" aria-hidden="true">
+				<Icon name="material-symbols:drag-indicator-rounded" is:inline />
+			</div>
+			<p class="album-lightbox__date" data-album-lightbox-date></p>
+			<p class="album-lightbox__caption" data-album-lightbox-caption></p>
+			<div class="album-lightbox__tags" data-album-lightbox-tags></div>
+		</aside>
+	</dialog>
+
+	<script
+		type="application/json"
+		data-album-payload
+		set:html={payload}
+	></script>
+</section>
+
+<script>
+	import { registerAlbumGallery } from "@/utils/album-gallery-controller";
+
+	registerAlbumGallery();
+</script>

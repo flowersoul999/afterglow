@@ -17,6 +17,8 @@
 | `pnpm new-post` | 交互式新建文章（scripts/新建文章） |
 | `pnpm icons` | 重新生成图标（scripts/生成图标，build 自动前置执行） |
 | `pnpm compress-images` | 压缩图片（`--dry-run` 预检）；另有 rename-images / import-wallpapers 图片脚本 |
+| `pnpm compress-albums` / `pnpm compress-albums:dry` | 递归转换本地相册图片为 WebP（质量 80；执行前先 dry-run） |
+| `pnpm test:album` | Node 内置测试：本地相册扫描、URL 编码与路径越界防护 |
 | `pnpm cli` | 仓库工具 CLI（scripts/cli.js） |
 | `pnpm cli cover [--dry-run] [--limit=N] [--force] [--only=分类] [--provider=dashscope\|gemini\|mock]` | AI 批量生成文章封面（scripts/生成封面，黑板粉笔手绘风，详见第 2 节「文章封面生成」） |
 | `pnpm cli desc` | AI 批量补全文章摘要（scripts/生成摘要，需 `DASHSCOPE_API_KEY`） |
@@ -24,7 +26,7 @@
 | `node scripts/友链状态检测/index.mjs` | 友链延迟检测（产物 public/friends-status.json；Action 每天自动跑） |
 | `bash "scripts/TTS服务/自测.sh"` | 服务器上自测朗读服务（见 `docs/deploy-edge-tts.md`） |
 
-> 包管理器仅限 pnpm（preinstall 强制 `only-allow`）。本项目无测试框架，验证手段 = `pnpm dev` 浏览器实测 +（推送线上 / 大改动时）`pnpm build` + `pnpm check`。**日常小改不必每次构建**，分级规则见第 18 节。
+> 包管理器仅限 pnpm（preinstall 强制 `only-allow`）。主项目无通用测试框架；本地相册扫描使用 Node 内置测试。常规验证 = `pnpm dev` 浏览器实测 +（推送线上 / 大改动时）`pnpm build` + `pnpm check`。**日常小改不必每次构建**，分级规则见第 18 节。
 
 ---
 
@@ -39,9 +41,9 @@
 | 部署 | **GitHub Pages**（Actions `deploy-pages.yml`：push `main` → `pnpm build` → 上传 Pages，域名 jojocode.cn，见 `docs/deploy-github-pages.md`；`public/CNAME` 必须保留）。`build.yml` 并存作 CI 质量门。⚠️ `docs/deploy-edgeone-pages.md` 是从上游搬来的残留文档，方案从未执行，别照着操作 |
 | 线上 | https://jojocode.cn/ |
 | 仓库 | `flowersoul999/afterglow`（main） |
-| Umami 统计 | GitHub Actions 仓库变量 `PUBLIC_UMAMI_WEBSITE_ID` 提供网站 ID；默认追踪脚本为 `https://cloud.umami.is/script.js`，自托管时可用 Secret `PUBLIC_UMAMI_BASE` 覆盖 |
+| Umami 统计 | GitHub Actions 仓库变量 `PUBLIC_UMAMI_WEBSITE_ID` 提供网站 ID；默认追踪脚本为 `https://cloud.umami.is/script.js`，自托管时可用 Secret `PUBLIC_UMAMI_BASE` 覆盖；登录 `/admin` 后可用顶栏快捷入口打开 Cloud 控制台 |
 | 后台 | PagesCMS 自托管方案（**当前未部署**；配置声明在仓库根 `.pages.yml`，部署步骤见第 19 节） |
-| 附属服务 | 图床 / TTS / 后台 CMS 目前**均未部署**，相关配置留空即自动降级（发图报未配置、朗读用系统语音） |
+| 附属服务 | 相册默认使用仓库本地静态图片，不依赖图床；CloudFlare ImgBed 仅保留可选回退。TTS / 后台 CMS 目前未部署，配置留空自动降级 |
 | 来源 | Fork 自 CuteLeaf/Firefly ← saicaca/fuwari，已深度定制为「jojostar」独立站点 |
 
 > ⚠️ **Astro 版本已升级至 7.x**（`feat/astro-7-upgrade` 已合并），勿再按 6.4.x 文档操作。
@@ -54,6 +56,7 @@
 src/
 ├── assets/images/       # 头像、封面等构建时图片
 ├── components/          # 按功能域组织的组件（161 个文件）
+│   ├── admin/           # 站内后台 /admin（2026-11-04）：AdminApp 三栏骨架 / AdminList 条目列表 / AdminEditor 表单+Markdown 编辑+预览 (3)
 │   ├── analytics/       # GA, Clarity, Umami (3)
 │   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
@@ -75,15 +78,15 @@ src/
 │   ├── 面经/            # interview 集合：**独立内容板块**，路由 /interview/，不参与文章列表/归档/RSS
 │   │                    # 目录即分类：面经/<大类>/<子分类>/xxx.md（当前只有 八股文/{智能体,检索增强,大模型,工具调用,项目实战}，108 篇）
 │   │                    # 加新大类只需建文件夹，页面自动生成；树逻辑见 src/utils/interview-tree.ts
-│   ├── 页面/            # spec 集合：about.mdx 为组件化 Q&A，friends.md / guestbook.md 分别渲染进 /friends/ 与 /life/guestbook/ 下方正文
+│   ├── 页面/            # spec 集合：about.mdx 为组件化 Q&A，friends.md 渲染进 /friends/；guestbook.md 为旧留言板说明内容，当前聊天页不渲染
 │   ├── 友链/            # friends 集合；子目录 友链/墓碑/ 为 tombstones 集合（friends 的 glob 已加 `!墓碑/**` 排除，否则墓碑文件会被 friends 集合收进去导致 zod 校验失败）
 │   └── 笔记本归档/      # ⚠️ 不在任何集合内（2026-10-20 笔记功能下线）：私人笔记 78 篇 + 7 个 _index.json，已写入 .gitignore，只留在本地 Obsidian 库，**不进 git、不参与构建**
 │   # ⚠️ src/content 本身还是一个独立 git 仓库（私人内容备份，内含 .git）→ 详见第 23 节
-├── i18n/                # 界面文案（2026-10-20 起单语言：只有 zh_CN，369 个翻译键）
+├── i18n/                # 界面文案（2026-10-20 起单语言：只有 zh_CN；留言板交互文案也必须走这里）
 │   └── languages/       # zh_CN.ts
 ├── layouts/             # Layout.astro (591行), MainGridLayout.astro (305行)
 ├── content/notes/       # Obsidian 笔记（不发布；2026-10-08 从 src/notes 并入，Obsidian 库根 = src/content）
-├── pages/               # 路由（44 个文件；admin 后台已删除，勿重建）
+├── pages/               # 路由（44 个文件；admin.astro = 站长后台，2026-11-04 重建，整页进入不参与 Swup）
 │   ├── api/             # JSON API (2)：calendar.json.ts, home-stats.json.ts
 │   ├── album/ bangumi/ books/ categories/ interview/ life/ moments/ posts/ // moments/[slug] 已删除
 │   ├── **技能图七页**（2026-10-29 迁入，均为扁平单层路由）：
@@ -105,9 +108,9 @@ src/
 │   ├── transitions/     # Swup 过渡动画
 │   └── vendor/          # 第三方覆盖
 ├── types/               # TypeScript 类型：config.ts, bangumi.ts, guestbook-chat.ts
-└── utils/               # 工具函数（62 个文件，含 changelog.ts / tag-graph 控制器 / tts-text 正文提取 / music-player-controller 播放器形态机等）
+└── utils/               # 工具函数（75 个文件，含 local-album 本地相册扫描 / changelog / tag-graph / tts-text / music-player-controller 等）
     ├── 8 个控制器模块   # 见第 10 节
-    ├── editor/          # 站长编辑（2026-11-03）：github-client.ts（会话 + Contents 读写删，全走 /api 代理）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化）
+    ├── editor/          # 站长编辑（2026-11-03，11-04 后台化）：github-client.ts（会话 + Contents 读写删 + 列目录，全走 /api 代理）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化，抽屉专用）、content-serializer.ts（**通用 frontmatter，保序保留**，后台用）、content-repo.ts（列集合/生成路径/撞名重试）
     └── 33 个业务工具    # content-utils, category-tree（文件夹即分类，多级 `a/b` 推导 + CategoryNode 树）, date-utils, image-utils, url-utils, tts-text（朗读正文提取）...
 
 # 根目录其他重要文件
@@ -115,10 +118,11 @@ src/
 .claude/settings.json     # 命令白名单（分类器不可用时不卡 Bash）
 pagefind.yml              # Pagefind 索引排除配置（katex、搜索面板等）
 scripts/                  # 开发脚本：12 个中文命名脚本目录（生成图标/新建文章/生成摘要/生成封面/转WebP/添加导航/下载影视/下载音乐/回填友链字段/友链截图/友链状态检测/TTS服务）+ cli.js、vision.mjs（图片识别）、compress-images.mjs、rename-images.mjs、import-wallpapers.mjs、check-svelte-warnings.mjs（脚本清单见第 0 节；生成封面 见第 2 节「文章封面生成」；TTS服务 为 edge-tts 朗读服务，部署产物，教程见 docs/deploy-edge-tts.md）
-docs/                     # 部署文档（deploy-pagescms-vercel.md 等）+ ssh-hardening.md（服务器 SSH 加固操作手册，2026-10-20）+ superpowers/{specs,plans}（改版设计稿与实现计划，2026-09-30 起）
+docs/                     # 使用/部署文档（含 manage-local-albums.md / deploy-cloudflare-imgbed.md / deploy-pagescms-vercel.md 等）+ ssh-hardening.md + superpowers/{specs,plans}
 cloudflare-worker/        # ⚠️ 站长登录用的 Cloudflare Worker（2026-11-04）：只接管 /api/*。
                           # **唯一有服务端逻辑的地方**，不参与 Astro 构建、不是 npm 依赖，
                           # 靠 Cloudflare 控制台粘贴 index.js 部署（Route: jojocode.cn/api/*）。
+                          # 接口：/api/auth/{login,callback,me,logout} + /api/github/{file,tree}。
                           # 站点本身仍是 GitHub Pages 托管，两者互不干扰。说明见第 24 节
 ```
 
@@ -132,6 +136,7 @@ cloudflare-worker/        # ⚠️ 站长登录用的 Cloudflare Worker（2026-1
 |------|------|
 | `covers/` | 文章随机封面池（62 张，`coverImageConfig.randomCoverImage` 从中随机取，文件名 1.webp 起编号） |
 | `post-covers/` | **每篇文章的专属封面**（`pnpm cli cover` 生成，见下方「文章封面生成」）；与上面的随机池分开，避免被随机逻辑抽中 |
+| `albums/` | 本地相册图片根目录；按英文 kebab-case 子目录分相册，`localFolder` 指向子目录，`pnpm compress-albums` 转 WebP |
 | `home/main/`、`home/portrait/` | 首页套图（hero 数据图 / 竖版背景） |
 | `emoji/` | 表情与小图标（openai-dark/light.png 等） |
 | `icons/` | 组件图标（profile.png 等） |
@@ -346,7 +351,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - ⚠️ **同一份样式别在嵌套组件里重复 import**：挂在最外层入口组件上即可。嵌套组件各 import 一次会被
   Vite 打成两个 chunk、页面重复加载两遍（2026-10-05 在 `guestbook-chat.css` 上踩到：文章页白背 37.6KB，
   已把内层 `GuestbookChatComposer/Message.svelte` 的 import 删掉，只留 `GuestbookChat` / `MomentCommentChat` /
-  `NotebookCommentModal` 三个入口）。
+  `NotebookCommentModal` 三个入口）。独立留言页由 `src/pages/life/guestbook.astro` 导入；`GuestbookChat.svelte` 内部不再重复导入。
 - 判断某文件该不该搬：取它最常用的类名，全仓搜消费方；消费方只有一页/一类组件就搬。
 - 验证两招：① **静态覆盖校验**——页面 HTML 里出现某类名（先剥掉 `<script>`，否则 JS 字符串会误报），
   它加载的外链 CSS **加内联 `<style>`**（Astro 会把部分组件样式内联进 HTML）里必须能找到该选择器；
@@ -431,14 +436,14 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 
 ### 5.5 页面大标题（PageTitle，"签写"入场动效）
 
-`src/components/common/PageTitle.astro` + `src/styles/components/page-title.css`（动效复刻自参考博客 MMZMING）。用在需要页面大标题的页面 —— 2026-09-29 起**绝大多数列表页 / 独立页都换成了它**（about / projects / music / archive / categories / changelog / apps / sponsor / places / album / friends / notebooks / books / movies-games / bangumi / moments / bills / schedules / circle / guestbook）；**详情页**（文章 / 书籍 / 相册 / 笔记 / 追番详情）与 404 / rss / search / debug-urls 不挂。
+`src/components/common/PageTitle.astro` + `src/styles/components/page-title.css`（动效复刻自参考博客 MMZMING）。用在需要页面大标题的页面 —— 2026-09-29 起**绝大多数列表页 / 独立页都换成了它**（about / projects / music / archive / categories / changelog / apps / sponsor / places / album / friends / notebooks / books / movies-games / bangumi / moments / bills / schedules / circle）；**沉浸式留言板**与详情页（文章 / 书籍 / 相册 / 笔记 / 追番详情）、404 / rss / search / debug-urls 不挂。
 
 ```astro
 <PageTitle title="网站导航" eyebrow="Collections" description="一句话介绍" variant="stacked" />
 ```
 
 - ⚠️ **是「原地替换」不是「新增」**：页面里原本若有「图标 + 大标题 + 描述」那一块（归档、分类标签、书架那种），要把**那一块换成** PageTitle；直接往内容区上方再叠一个会出现**一页两个标题**（站长抓过一次）。只有原本就没有可见标题的页面，才在内容顶部新增。
-- ⚠️ **Svelte 组件里用不了它**：`GuestbookChat.svelte` 这类 Svelte 组件无法嵌 Astro 组件，要同款排版只能用组件内元素复刻（留言板就是这么做的，没有签写动画）。
+- ⚠️ **Svelte 组件里用不了它**：Svelte 组件无法嵌 Astro 组件；沉浸式留言板选择不显示可见大标题，只在页面保留 `sr-only` 标题。
 
 - 标题用 **SVG `<text>` 双层绘制**：描边层跑 `stroke-dashoffset` 做「写字」动效（1.9s），实心层 0.95s 后淡入；`eyebrow`（英文小字）与 `description`（带弯引号，伪元素生成）都是 0.7~0.9s 的淡入上移。**纯 CSS @keyframes、挂载即播**，不用 GSAP / IntersectionObserver（Swup 换页重建 DOM 会重播）。
 - **DOM 里标题文字会出现 3 次**（隐藏 measure + 描边层 + 实心层，另有 sr-only），抓正文/写测试选择器时注意去重（参考项目线上就被抓重过）。
@@ -660,18 +665,19 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - 当前隐藏 304 篇：编程学习/{JavaWeb学习笔记,Python学习笔记,LangChain学习笔记,MySQL学习笔记,JavaWebAI} + Java笔记本 + 学习路线 + **已弃用**（17 篇，2026-10-22 追加：内容过时，站长只想在归档页留档）。
 - ⚠️ 往这个数组加东西前先想清楚：**归档页永远看得到**（`archive.astro` 没包 excludeHiddenNotes，是刻意保留的回溯入口）。要连归档一起拿掉，得同时改 `archive.astro` 的调用点。
 
-### 5.12 相册页（/album/）整面照片墙（2026-09-30）
+### 5.12 相册页（/album/）双模式照片桌（2026-09-30，2026-11-06 更新）
 
-- **一个页面装所有照片**：11 个相册（约 238 张）全部走图床 `imgbedFolder`，客户端并行拉每个文件夹的
-  `/api/manage/list`（Bearer Token，见 `.env` 的 PUBLIC_IMAGEBED_URL / PUBLIC_IMAGEBED_API_TOKEN），
-  铺进 CSS columns 瀑布流（5/4/3/2 列）。单相册页 `/album/<id>/` 与 `BounceCards` **已删除**。
+- **本地静态优先（2026-11-06）**：相册 frontmatter 的 `localFolder` 指向 `public/assets/images/albums/<目录>`，Astro 构建时递归扫描 AVIF/GIF/JPEG/PNG/WebP 并把 URL 嵌入页面；不需要图床、付款方式或 Token。完整使用步骤见 `docs/manage-local-albums.md`。
+- **兼容回退**：`photos` 可补充显式 URL；仅当本地与 `photos` 都为空时，才使用 `imgbedFolder` 请求 `/api/manage/list`。`PUBLIC_IMAGEBED_API_TOKEN` 会注入浏览器，只能授予 `list` 权限，禁止上传、删除或管理权限。
+- **双模式**：默认进入可拖动的散落模式，照片位置写入 `localStorage` 并在刷新后保持；可切换到照片墙模式继续使用 CSS columns 瀑布流（5/4/3/2 列）。单相册页 `/album/<id>/` 与 `BounceCards` **已删除**。
+- 本地目录扫描器在 `src/utils/local-album.ts`：忽略隐藏文件、符号链接和非图片文件，稳定排序并编码 URL；拒绝绝对路径和 `..` 越界。测试命令 `pnpm test:album`。
 - **顶部筛选条**：搜索 + 计数 + 清空（第 1 行）、相册名（第 2 行，选中 = 主题色 + 2px 下划线）。
   **按要求不吸顶**（position: static）。标签行已按要求删除，只留相册名。
-- **图片上不放任何文字**；相册名/日期/地点只在灯箱说明里用（地点取自相册 md 的 `location`）。
-- 灯箱是页内自研的（跨整面墙切换、键盘左右/Esc、触摸滑动）。
-- ⚠️ **本页 `<style>` 必须是 `is:global`**：照片由 JS 动态创建，Astro 默认作用域样式（选择器带
-  `data-astro-cid`）套不到它们身上，`.alb-photo.is-hide` 会直接失效（站长报的「点相册图不变」就是这个）。
-  规则都带 `alb-` 前缀，全局也不会外溢。**以后凡是「SSR 只出容器、内容由 JS 建」的页面都要注意这条。**
+- 照片卡片可显示简短描述；单张照片支持独立 `caption`、`tags`、`takenAt`，灯箱显示日期、描述和标签，描述便签可拖动。
+- 灯箱是页内自研的（跨照片切换、键盘左右/Esc、触摸滑动）；照片卡片支持鼠标/触摸拖动，方向键也可移动。
+- 相册交互控制器位于 `src/utils/album-gallery-controller.ts`，通过 `AbortController` 清理事件，并在 `swup:content:replaced` 后重新挂载；新增筛选按钮必须使用 `data-album-filter-id`，不能与照片卡片的 `data-album-id` 混用。
+- 旧博客相册已迁移 5 张照片，数据见 `src/content/相册/old-jojo-gallery.json`，资源位于 `public/assets/images/albums/old-jojo-gallery/`。
+- 设计记录见 `docs/superpowers/specs/2026-11-06-draggable-album-design.md`。
 - ⚠️ 改完 `.astro` 样式在 dev 看不到效果 = Vite 样式模块缓存（见 §5.10 末尾那条），重写文件即可；
   真假以 `pnpm build` 产物为准。
 - 布局：`album-list` 已在 `NO_SIDEBAR_PAGE_TYPES` 里，宽度 4/5 与 sticky 无关的规则写在
@@ -733,6 +739,8 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 | `backgroundWallpaper.ts` | `backgroundWallpaper` | 背景图配置（当前 mode: "none"，不渲染 banner） |
 | `homePortfolioShutterConfig.ts` | `homePortfolioShutterConfig` | 首页作品集百叶窗配置 |
 | `homeConfig.ts` | `homeConfig` | 首页配置（2026 新增，文档曾遗漏） |
+
+评论、留言板和文章浏览量当前统一使用 Waline：`commentConfig.type = "waline"`，服务地址只从 `PUBLIC_WALINE_SERVER` 读取。聊天式留言板唯一公开入口与数据频道均为 `/life/guestbook/`，旧 `/guestbook/` 只做 301 跳转；频道常量在 `src/utils/guestbook-route.ts`，禁止重新写死成另一条路径。生产环境在 GitHub Actions Secret 中配置服务地址；Waline 独立部署到 Vercel + Neon，服务端启用 `COMMENT_AUDIT=true`，部署步骤见 `docs/deploy-github-pages.md` 第四节。禁止在仓库中硬编码 Waline 地址、数据库连接或管理员凭据。
 
 ### 其他配置
 
@@ -1139,6 +1147,8 @@ return controller;
 
 ## 18. Git 提交规范
 
+**本仓库默认直接在 `main` 分支开发并提交，不创建任务分支、不经 Pull Request。** 提交前仍须按本节完成验证与敏感信息检查；只有站长明确要求时才切换到其他分支。
+
 ```
 <type>(<scope>): <description>
 
@@ -1224,7 +1234,7 @@ EdgeOne Pages（GitHub 集成自动构建：pnpm build → dist/）
    - 升级/降级依赖 → 更新第 16 节技术栈版本
    - 发现新的坑/规范/反模式 → 写入对应章节（或第 15 节反模式清单）
    - 完成模块/功能 → 按第 21 节更新 `changelog`，按第 22 节做收尾
-   - **AstrBot 插件 `plug-in/AstrBot/astrbot_plugin_blog_writer/` 有改动 → 必须跑 `python -m unittest discover -s tests`（129 个用例）+ 重打 `plug-in/AstrBot/打包/astrbot_plugin_blog_writer-v1.0.0.zip`（用 Python `zipfile` 打，`Compress-Archive` 会把中文文件名打成乱码）；该目录被主仓整体 gitignore，**改动不进 git，必须自己另存备份**；部署方式见 `plug-in/AstrBot/部署/部署手册.md`
+   - **AstrBot 插件 `plug-in/AstrBot/astrbot_plugin_blog_writer/` 有改动 → 必须跑 `python -m unittest discover -s tests`（137 个用例）+ 重打 `plug-in/AstrBot/打包/astrbot_plugin_blog_writer-v1.0.0.zip`（用 Python `zipfile` 打，`Compress-Archive` 会把中文文件名打成乱码）；该目录被主仓整体 gitignore，**改动不进 git，必须自己另存备份**；部署方式见 `plug-in/AstrBot/部署/部署手册.md`
 3. **新增规范**（本次添加）：文档不准确时（数字过时、功能删除等），及时修正，禁止"文档写的和实际不一致还照着做"
 4. **验证**：按第 18 节分级——日常小改不必 build，**推送线上前**跑 `pnpm build`；文档修改与代码修改在同一提交或相邻提交
 
@@ -1323,9 +1333,11 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 
 ---
 
-## 24. 站长在线编辑（2026-11-03，2026-11-04 改 GitHub OAuth）
+## 24. 站长在线编辑 + 站内后台（2026-11-03 起，11-04 补 OAuth 与 /admin）
 
-站内改内容，不用回本地开编辑器。**只对说说开放**，文章集合目前为空、面经体量太大，都还没接。
+站内改内容，不用回本地开编辑器。两个入口并存：
+- **说说抽屉**：资料卡里的「+ 说说」，随手记一句用的
+- **`/admin` 后台**：三栏界面管文章 / 说说 / 更新日志，正经写东西用的
 
 ### 架构
 
@@ -1333,23 +1345,34 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 NavbarProfileCard.astro（「JOJOSTAR」悬停弹出的资料卡）
 └── EditorNavButton.svelte   # 卡内入口：未登录=「登录」胶囊，已登录=「说说 / 退出」
 
-EditorRoot.svelte（挂 Navbar.astro 内，Swup 容器外 → 换页不重建）
-├── EditorLoginModal.svelte  # 复用 .privacy-modal 骨架，只有一个 GitHub 登录按钮
+EditorRoot.svelte（⚠️ 挂 MainGridLayout.astro、#navbar-wrapper **外面** → 换页不重建）
+├── EditorLoginModal.svelte  # 复用 .privacy-modal 骨架（dialog = top layer，不受 transform 影响）
 ├── MomentDrawer.svelte      # 新建/编辑/删除说说
 └── editor.toast             # 提交提示
+
+/admin（独立全屏路由，不套 MainGridLayout，也不参与 Swup）
+└── AdminApp.svelte → AdminList.svelte + AdminEditor.svelte
 
 cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地方）
                              # 靠控制台粘贴部署，不是 npm 依赖、不参与构建
 ```
 
+⚠️ **EditorRoot 不能挂回 `Navbar.astro` 里。** `#navbar-wrapper` 滚动时会被加上 `.navbar-visible`（`transform: translateY(0)`），带 transform 的元素会成为内部 `position: fixed` 后代的 containing block —— 抽屉的 `inset: 0` 会退化成「导航条那个盒子」（54px 高），整条抽屉塌成一条。2026-11-04 修过一次，别再挪回去。
+
 | 文件 | 职责 |
 |------|------|
-| `src/utils/editor/github-client.ts` | 浏览器侧封装：会话探测、读/写/删（全部走 `/api`）；`probeLoginService` 负责在跳转前确认 Worker 在不在 |
+| `src/utils/editor/github-client.ts` | 浏览器侧封装：会话探测、读/写/删/列目录（全部走 `/api`）；`probeLoginService` 负责在跳转前确认 Worker 在不在 |
 | `src/utils/editor/editor-store.ts` | 登录态（store 契约）、OAuth 回跳原因翻译、错误翻译、toast |
 | `src/utils/editor/editor-ui.ts` | 弹窗/抽屉的开合、抽屉模式与意图 |
-| `src/utils/editor/moment-serializer.ts` | 说说 md ↔ 草稿；**未知 frontmatter 字段收进 `extra` 原样吐回**，不吃作者数据 |
-| `src/styles/components/editor.css` | 全部样式，**只由 EditorRoot import 一次** |
-| `cloudflare-worker/index.js` | 服务端全部逻辑：7 个路由 + Cookie + AES-GCM 信封加密 + 路径护栏 |
+| `src/utils/editor/moment-serializer.ts` | 说说 md ↔ 草稿（抽屉专用）；**未知 frontmatter 字段收进 `extra` 原样吐回** |
+| `src/utils/editor/content-serializer.ts` | **通用 frontmatter**：拆成有序 entry，没改过的原样写回（改一个字段只产生一行 diff）。支持内联数组 `[a, b]` 与块数组两种写法，`gap` 记录 `---` 与正文之间的空行 |
+| `src/utils/editor/content-repo.ts` | 集合列目录（递归 + 20s 缓存）、路径模板展开、撞名 `-2` 重试 |
+| `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
+| `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览） |
+| `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
+| `src/styles/components/editor.css` | 抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
+| `src/styles/pages/admin.css` | 后台样式，只由 AdminApp import |
+| `cloudflare-worker/index.js` | 服务端全部逻辑：8 个路由 + Cookie + AES-GCM 信封加密 + 路径护栏 |
 
 ### 为什么需要 Worker（关键认知）
 
@@ -1406,6 +1429,12 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 
 `node .workbuddy/preview/test-worker.mjs` —— 24 项断言，覆盖路由防呆、501/401/403/400、state 加解密互通、路径逃逸、登出清 Cookie。**不依赖外网**，改完 Worker 先跑它。
 
+### 后台 /admin 的三条约定
+
+1. **列表只读文件名，不预读 frontmatter。** 面经 108 篇逐篇读就是 108 次请求，慢且烧额度。文件名本身可读（面经带序号、说说带日期），真实标题打开时再显示。别为了「列表上多显示几个字段」去全量读一遍。
+2. **frontmatter 保序保留，不要改成「解析成对象再序列化」。** 那样字段会重排、注释会消失、不认识的字段会被吃掉，每次保存都制造一整片 diff。`content-serializer.ts` 的做法是拆成有序 entry、没改过的写 `original`。实测 26 个文件（文章 + 面经 + 说说）解析再序列化逐字节一致 —— 改这块之后要重跑这个校验。
+3. **/admin 只能整页进入。** Swup 只替换容器内容，不会重新挂载 Astro 岛，SPA 导航进来会白屏。任何指向 `/admin` 的链接都要带 `data-no-swup`；后台内的链接同理。
+
 ### 编辑按钮的显隐
 
 `MomentCard.astro` 里那组按钮默认 `display:none`，靠 `<html class="is-editor">` 打开（登录成功时由 `editor-store` 的 `syncDocumentFlag` 加上）。**祖先选择器必须包 `:global()`**，否则 Astro 会把前缀优化掉，见 §15。
@@ -1424,6 +1453,22 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 | 点登录提示「还没配 GitHub OAuth」 | Worker 缺 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` |
 | GitHub 报 `redirect_uri_mismatch` | OAuth App 的 Callback URL 必须是 `https://jojocode.cn/api/auth/callback`，一字不差 |
 | 回跳后仍是未登录 | Cookie 没写进去：必须 HTTPS 访问；用 workers.dev 测试域名登录但 callback 配的是正式域名也会这样 |
+| 登录成功但后台列表提示接口不存在 | Cloudflare Worker 还没部署含 `GET /api/github/tree` 的最新版；重新发布仓库 `cloudflare-worker/index.js`，并确认 `jojocode.cn/api/github/*` Route |
 | 提示「不是站长」 | 登录的 GitHub 账号不是 `flowersoul999`（判定在服务端，前端改不了） |
 
 完整操作步骤见 `docs/deploy-github-pages.md` 第七节。
+
+---
+
+## 25. 微信/QQ 对话式说说（2026-11-06）
+
+`plug-in/AstrBot/astrbot_plugin_blog_writer/` 的 BlogWriter 支持微信 ClawBot 和 NapCat QQ 好友私聊自然对话发布说说：
+
+- 第一条普通文字开启草稿，后续文字/图片追加；“预览”“重写：内容”“撤销上一条”用于编辑；“发布”才调用 GitHub API。
+- 自动开稿只接受 `weixin_oc` 或 `aiocqhttp`，且 `unified_msg_origin` 明确包含 `FriendMessage` 或 `PrivateMessage` 的事件。群聊、QQ 官方机器人、其他平台和来源不明事件不得自动开稿。
+- `/动态`、`/发布`、`/取消`、`/状态` 等旧命令保持兼容。
+- 空参数 `/动态` 进入逐步向导：标题（可跳过）→ 正文（必填）→ 心情（编号或自由输入）→ 普通标签（可跳过）→ 图片（可多张，完成/跳过）→ 发布时间（跳过=当下）→ 预览确认。`tags[0]` 必须是心情，普通标签从第二项开始；向导未完成时禁止提前发布。
+- 未配置图床时，本次会话的全部图片必须批量写入同一个 Git tree 和 commit，只更新一次分支引用；禁止每张图片并发创建提交，否则第二张起会因非快进更新返回 GitHub HTTP 422。
+- 提交 GitHub 只会触发 GitHub Actions 构建；机器人不得声称网站已部署完成。
+- 插件目录被主仓 gitignore：改完要运行插件完整 unittest、使用 Python `zipfile` 重打 `plug-in/AstrBot/打包/astrbot_plugin_blog_writer-v1.0.0.zip`，并自行另存备份。
+- 适配说明以 `plug-in/AstrBot/astrbot_plugin_blog_writer/README.md` 和 `安装说明.md` 为准；部署目标是 GitHub Pages，不是残留文档中的 EdgeOne Pages。

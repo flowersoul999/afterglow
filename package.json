@@ -19,7 +19,10 @@
     "rename-images": "node scripts/rename-images.mjs",
     "import-wallpapers": "node scripts/import-wallpapers.mjs",
     "compress-images": "node scripts/compress-images.mjs",
-    "compress-images:dry": "node scripts/compress-images.mjs --dry-run"
+    "compress-images:dry": "node scripts/compress-images.mjs --dry-run",
+    "compress-albums": "node scripts/compress-images.mjs --dir=albums --min=0 --quality=80",
+    "compress-albums:dry": "node scripts/compress-images.mjs --dir=albums --min=0 --quality=80 --dry-run",
+    "test:album": "node --experimental-strip-types src/utils/local-album.test.ts && node --experimental-strip-types src/utils/album-gallery.test.ts"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.10",

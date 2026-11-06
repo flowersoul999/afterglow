@@ -11,12 +11,12 @@
 - Firefly v6.6.13 —— "jojostar"（jojo 的个人博客），Fork 自 CuteLeaf/Firefly 并深度定制
 - 部署：**GitHub Pages**（GitHub Actions `.github/workflows/deploy-pages.yml`：push main → `pnpm build` → 上传 Pages，自定义域名 https://jojocode.cn，详细链路见 `docs/deploy-github-pages.md`）。`build.yml` 是并存的 CI 质量门（`astro check` + `pnpm build`）；`public/CNAME` 内容为 `jojocode.cn`，是 Pages 识别自定义域名的依据，**不要删**。域名外层套了 CDN 回源（缓存/响应头规则见部署文档第六节）。⚠️ `docs/deploy-edgeone-pages.md` 是**从上游仓库搬来的残留文档，描述的方案从未在本仓库执行**，别照它操作。后台 PagesCMS **当前未部署**（配置在根目录 `.pages.yml`，字段必须与 `src/content.config.ts` 的 zod 对齐，未声明字段保存时被丢弃）
 - 12 个 Astro Content Collections（`src/content.config.ts` + `src/content/`：文章/页面/动态/影视/足迹/面经/相册/导航/资源/友链/更新日志，以及 `src/content/友链/墓碑`（tombstones）；**集合键名是英文、不随目录改名**，`getCollection()` 用键名）
-- **本地 AstrBot 插件**（`plug-in/AstrBot/astrbot_plugin_blog_writer/`，`plug-in/` 被本仓库整体 gitignore → 改动不进 git）：微信/QQ 发消息直接提交博客内容。**改它之后必须** `python -m unittest discover -s tests`（129 用例）+ 用 Python `zipfile` 重打 `plug-in/AstrBot/打包/` 里的 zip（`Compress-Archive` 会把中文文件名打成乱码）；部署见 `plug-in/AstrBot/部署/部署手册.md`
-- 主要目录：`src/components/`（按功能域 12 子目录：about/analytics/comment/common/controls/features/layout/misc/moments/pages/seo/widget，禁止根目录平铺） / `src/pages/`（35 路由，admin 已删） / `src/styles/main.css`（唯一入口） / `src/config/`（27 配置 + index.ts barrel） / `src/utils/`（41 个工具与控制器，含 category-tree.ts、tts-text.ts） / `scripts/`（11 个中文命名脚本目录 + cli.js 与 5 个英文 .mjs 脚本，含 TTS服务/ 朗读服务）
+- **本地 AstrBot 插件**（`plug-in/AstrBot/astrbot_plugin_blog_writer/`，`plug-in/` 被本仓库整体 gitignore → 改动不进 git）：微信/QQ 发消息直接提交博客内容；微信 ClawBot 与 NapCat QQ 好友私聊支持对话式说说草稿。**改它之后必须** `python -m unittest discover -s tests`（133 用例）+ 用 Python `zipfile` 重打 `plug-in/AstrBot/打包/` 里的 zip（`Compress-Archive` 会把中文文件名打成乱码）；部署见 `plug-in/AstrBot/部署/部署手册.md`
+- 主要目录：`src/components/`（按功能域 13 子目录：admin/about/analytics/comment/common/controls/editor/features/layout/misc/moments/pages/seo/widget，禁止根目录平铺） / `src/pages/`（35 路由，含 `/admin` 站长后台） / `src/styles/main.css`（唯一入口） / `src/config/`（28 配置 + index.ts barrel） / `src/utils/`（41 个工具与控制器，含 category-tree.ts、tts-text.ts） / `scripts/`（11 个中文命名脚本目录 + cli.js 与 5 个英文 .mjs 脚本，含 TTS服务/ 朗读服务）
 
 ## 快速上手
 
-- 包管理器仅限 pnpm 9.14（preinstall 强制）；Node >= 22；主仓库无测试框架（验证 = dev 实测 + build/check，分级见 CLAUDE.md §18.1；AstrBot 插件子目录例外，它有 129 个 unittest）
+- 包管理器仅限 pnpm 9.14（preinstall 强制）；Node >= 22；主仓库无测试框架（验证 = dev 实测 + build/check，分级见 CLAUDE.md §18.1；AstrBot 插件子目录例外，它有 133 个 unittest）
 - 本地 dev/build 前先备 `.env`（照抄 `.env.example`）：缺失 `PUBLIC_*` 变量不会报错，但对应功能静默降级（评论无后端、统计空白）
 - `pnpm dev` 开发；**日常小改不必构建**，只有**推送线上前**或**大改动完成**时才跑 `pnpm build`（生成图标 → astro build → pagefind 索引），分级规则见 CLAUDE.md §18.1
 - 提交信息格式 `<type>(<scope>): <描述>`（feat|fix|refactor|style|docs|chore|perf，见 CLAUDE.md §18）

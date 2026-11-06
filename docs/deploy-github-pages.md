@@ -41,7 +41,7 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 
 ### 3. 环境变量
 
-构建读取 10 个 `PUBLIC_*`，**全部可选**——缺任何一个都不会让构建失败，只会让对应功能静默降级。在 `Settings → Secrets and variables → Actions → New repository secret` 逐个添加：
+构建读取 11 个 `PUBLIC_*`，**全部可选**——缺任何一个都不会让构建失败，只会让对应功能静默降级。在 `Settings → Secrets and variables → Actions → New repository secret` 逐个添加：
 
 | 名称 | 用途 | 不配的后果 |
 |---|---|---|
@@ -52,14 +52,15 @@ curl -X POST -H "Authorization: Bearer $TOKEN" \
 | `PUBLIC_UMAMI_SHARE_ID` | Umami 公开分享 ID（免账号密码拉数据） | 首页访客数走 API 代理，可能空白 |
 | `PUBLIC_UMAMI_USERNAME` | Umami 账号（服务端代理拉数用） | 同上 |
 | `PUBLIC_UMAMI_PASSWORD` | Umami 密码（同上） | 同上 |
-| `PUBLIC_WALINE_SERVER` | Waline 后端地址 | **已切 giscus，可不配** |
-| `PUBLIC_IMAGEBED_URL` | 自建 CloudFlare ImgBed 地址 | 相册/说说不能从后台上传图 |
-| `PUBLIC_IMAGEBED_API_TOKEN` | ImgBed API Token | 同上（且无法上传前查重） |
+| `PUBLIC_WALINE_SERVER` | Waline 后端地址 | 文章评论、留言板和浏览量不可用 |
+| `PUBLIC_IMAGEBED_URL` | 可选的 CloudFlare ImgBed 回退地址 | 不影响本地相册，只停用远端回退 |
+| `PUBLIC_IMAGEBED_API_TOKEN` | 仅含 `list` 权限的 ImgBed Token（浏览器可见） | 同上 |
 | `PUBLIC_TTS_SERVER` | 朗读服务后端地址 | 文章「朗读」按钮不可用 |
 
 > 已从工作流移除 `PUBLIC_BIXYH_QJHXRZP_HR`、`PUBLIC_IMAGEBED_AUTH_CODE`、`PUBLIC_IMAGEBED_FOLDER`：这三者在 `src/` 中从未被 `import.meta.env` 读取，属于上游遗留。
+> 相册默认读取 `public/assets/images/albums/`，管理步骤见 `docs/manage-local-albums.md`。图床只作可选回退，部署步骤见 `docs/deploy-cloudflare-imgbed.md`；`PUBLIC_IMAGEBED_API_TOKEN` 会进入浏览器产物，绝不能授予上传、删除或管理权限。
 
-清单来源见根目录 `.env.example`。评论系统走 giscus（GitHub Discussions），**不需要**任何密钥，但需要在仓库上安装 giscus GitHub App（见「四、评论」）。
+清单来源见根目录 `.env.example`。评论与留言统一走 Waline，服务端部署和数据库初始化见「四、评论与留言」。
 
 ## 二、EdgeOne 侧
 
@@ -106,27 +107,66 @@ curl -skI https://jojocode.cn/ | grep -iE "EO-Cache-Status|Server|Content-Length
 curl -s https://jojocode.cn/ | grep -o "<title>[^<]*</title>"
 ```
 
-## 四、评论系统（giscus）
+## 四、评论与留言（Waline）
 
-评论走 **giscus**，本质是把每个页面的评论存成仓库的一条 GitHub Discussion，零后端、零密钥。
+文章评论、`/life/guestbook/` 对话式留言和文章浏览量统一使用 **Waline**。博客仍部署在 GitHub Pages；Waline 服务端独立部署到 Vercel，数据存储在 Neon PostgreSQL。
 
-`src/config/commentConfig.ts` 里的值已经填好，**不需要**再去 giscus.app 点一遍（那只是给人看的配置生成器）：
+### 1. 部署 Waline 服务端
 
-| 字段 | 值 | 来源 |
+1. 打开 Waline 官方 Vercel 部署页，点击部署按钮，并用 GitHub 登录 Vercel。
+2. 输入项目名，例如 `jojostar-waline`，创建 Vercel 项目。首次部署可能因数据库尚未连接而返回 500，这是正常现象。
+3. 在 Vercel 项目的 `Storage` 中选择 `Create Database`，数据库提供商选择 `Neon`。
+4. 创建数据库并连接到当前 Vercel 项目。
+5. 点击 `Open in Neon`，进入 `SQL Editor`，执行 Waline 官方 `waline.pgsql` 建表脚本。
+6. 回到 Vercel 的 `Deployments`，对最新部署执行 `Redeploy`。
+7. 部署状态变为 `Ready` 后，点击 `Visit`。得到的地址（例如 `https://jojostar-waline.vercel.app`）就是 Waline 服务地址。
+
+官方步骤：`https://waline.js.org/guide/deploy/vercel.html`
+
+### 2. 配置服务端环境变量
+
+在 Vercel 项目的 `Settings → Environment Variables` 添加：
+
+| 名称 | 值 | 说明 |
 |---|---|---|
-| `type` | `giscus` | — |
-| `giscus.repo` | `flowersoul999/afterglow` | — |
-| `giscus.repoId` | `R_kgDOVaquiQ` | `GET /repos/{o}/{r}` 的 `node_id` |
-| `giscus.category` | `Announcements` | 只有维护者能新建讨论，防止游客在 Discussions 页乱建 |
-| `giscus.categoryId` | `DIC_kwDOVaquic4DJ5QM` | GraphQL `discussionCategories` 查询 |
+| `SITE_NAME` | `jojostar` | Waline 后台显示的站点名 |
+| `SITE_URL` | `https://jojocode.cn` | 博客正式地址 |
+| `SECURE_DOMAINS` | `jojocode.cn` | 只允许正式站点调用；不带协议 |
+| `COMMENT_AUDIT` | `true` | 新留言先进入审核，和留言板公告保持一致 |
+| `DISABLE_REGION` | `true` | 不在前台展示访客归属地 |
 
-前置条件（前两步已完成，第三步必须人工）：
+修改环境变量后必须再次 `Redeploy` 才会生效。数据库连接变量由 Vercel 连接 Neon 时自动注入，不要把数据库 URL、密码或 Token 写进博客仓库。
 
-1. 仓库是 **public**（private 仓库 giscus 读不到）。
-2. **Discussions 已开启**：`Settings → General → Features → Discussions` 勾上。也可用 API：`PATCH /repos/{o}/{r}` 传 `{"has_discussions": true}`。
-3. **安装 giscus App**：打开 https://github.com/apps/giscus → `Install` → 选中 `afterglow`（或 `All repositories`）→ 授权。**只有仓库 owner 能在浏览器里完成这一步**，API 无法代做。未安装时评论框会显示 `giscus: 仓库未安装 giscus app` 之类的报错。
+### 3. 注册管理员
 
-验证：任意文章页滑到底，能看到评论区并成功发一条测试评论；仓库 `Discussions` 里会出现一条以页面标题命名的讨论（`mapping: "title"`）。
+访问 `<Waline 服务地址>/ui/register`，注册第一个账号。Waline 会把首位注册用户设为管理员。完成后从 `<Waline 服务地址>/ui` 登录后台，可审核、编辑和删除留言。
+
+首位管理员注册完成后，不要把后台账号密码写入 `.env`、GitHub Actions 或仓库文件。
+
+### 4. 接入 GitHub Pages
+
+进入博客仓库：
+
+`Settings → Secrets and variables → Actions → Secrets → New repository secret`
+
+新增：
+
+```text
+Name: PUBLIC_WALINE_SERVER
+Secret: https://你的-waline-项目.vercel.app
+```
+
+地址不要填写 `/ui`，建议不带末尾斜杠。`.github/workflows/deploy-pages.yml` 已在构建时注入该 Secret，保存后手动运行一次 `Deploy to GitHub Pages`，或推送一次 `main` 触发部署。
+
+本地调试时复制 `.env.example` 为 `.env`，填写同一个 `PUBLIC_WALINE_SERVER`。
+
+### 5. 验证
+
+1. 打开 `/life/guestbook/`，确认不再显示“Waline 服务地址未配置”。
+2. 用游客昵称和邮箱发送一条留言，页面应显示“审核中”。
+3. 登录 Waline `/ui` 审核留言，刷新留言板后应公开显示。
+4. 打开任意文章页，确认文章评论区使用同一套 Waline 服务。
+5. 检查浏览量是否能正常读取；文章列表只读计数，不会把列表页访问误记为文章访问。
 
 ## 五、已知坑
 
@@ -276,4 +316,3 @@ curl -sI https://jojocode.cn/ | head -1
 | 提示「这个 GitHub 账号不是站长」 | 登录的账号不是 `flowersoul999`，判定在服务端 |
 
 改完 Worker 代码想在本地验证，跑 `node .workbuddy/preview/test-worker.mjs`（24 项断言，不依赖外网）。
-

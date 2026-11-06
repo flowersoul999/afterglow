@@ -3,6 +3,8 @@ import type {
 	GuestbookChatMessage,
 	GuestbookEmojiPack,
 	GuestbookImageAttachment,
+	GuestbookSpeechHandlers,
+	GuestbookSpeechSession,
 } from "@/types/guestbook-chat";
 
 const REPLY_MARKER = /^<!--guestbook-reply:(\d+):([^>]*)-->\s*/u;
@@ -161,7 +163,7 @@ export function getGuestbookTextLength(content: string): number {
 	return Array.from(content.replace(MARKDOWN_IMAGE, "").trim()).length;
 }
 
-export function normalizeGuestbookTimestamp(value: number): number {
+function normalizeGuestbookTimestamp(value: number): number {
 	const numeric = Number(value);
 	if (!Number.isFinite(numeric)) return Date.now();
 	return numeric < 1_000_000_000_000 ? numeric * 1000 : numeric;
@@ -175,18 +177,27 @@ function decodeReplyNick(value: string): string {
 	}
 }
 
-export function parseGuestbookMessageBody(raw: string): {
+function parseGuestbookMessageBody(raw: string): {
 	body: string;
 	replyToId?: string;
 	replyToNick?: string;
+	marker?: string;
 } {
 	const match = raw.match(REPLY_MARKER);
 	if (!match) return { body: raw.trim() };
 
+	const replyToNick = decodeReplyNick(match[2]);
+	const withoutMarker = raw.replace(REPLY_MARKER, "").trim();
+	// 旧版把「@昵称 」写进了正文，新数据改由服务端 pid 承载，这里补掉前缀才能新旧一致
+	const mention = `@${replyToNick} `;
+
 	return {
-		body: raw.replace(REPLY_MARKER, "").trim(),
+		body: withoutMarker.startsWith(mention)
+			? withoutMarker.slice(mention.length).trim()
+			: withoutMarker,
 		replyToId: match[1],
-		replyToNick: decodeReplyNick(match[2]),
+		replyToNick,
+		marker: match[0],
 	};
 }
 
@@ -213,33 +224,21 @@ function normalizeGuestbookLink(
 	}
 }
 
-function isAdminNick(nick: string, adminNicknames?: Set<string>): boolean {
-	if (!adminNicknames || adminNicknames.size === 0) return false;
-	if (adminNicknames.has(nick)) return true;
-	const normalized = nick.trim().toLocaleLowerCase();
-	for (const admin of adminNicknames) {
-		if (admin.trim().toLocaleLowerCase() === normalized) return true;
-	}
-	return false;
-}
-
 export function normalizeGuestbookComment(
 	comment: WalineComment,
-	adminNicknames?: Set<string>,
 ): GuestbookChatMessage {
 	const parsed = parseGuestbookMessageBody(
 		comment.orig || htmlToPlainText(comment.comment),
 	);
-
-	const nick = comment.nick || "匿名访客";
-	const isAdmin =
-		comment.type === "administrator" || isAdminNick(nick, adminNicknames);
+	// 引用关系优先取服务端的 pid（真回复，会触发邮件通知），历史数据才回退到正文里的注释标记
+	const nativeReply = "pid" in comment && comment.pid ? comment.pid : null;
 
 	return {
 		id: String(comment.objectId),
 		objectId: comment.objectId,
+		rootId: "rid" in comment ? comment.rid : comment.objectId,
 		userId: comment.user_id,
-		nick,
+		nick: comment.nick || "匿名访客",
 		avatar: comment.avatar || "",
 		link: normalizeGuestbookLink(comment.link),
 		body: parsed.body,
@@ -248,21 +247,24 @@ export function normalizeGuestbookComment(
 		os: comment.os,
 		addr: comment.addr,
 		label: comment.label,
-		isAdmin,
-		replyToId: parsed.replyToId,
-		replyToNick: parsed.replyToNick,
+		isAdmin: comment.type === "administrator",
+		replyToId: nativeReply ? String(nativeReply) : parsed.replyToId,
+		replyToNick:
+			nativeReply && "reply_user" in comment
+				? comment.reply_user?.nick
+				: parsed.replyToNick,
+		legacyReplyMarker: nativeReply ? undefined : parsed.marker,
 		status: comment.status,
 	};
 }
 
 export function flattenGuestbookComments(
 	roots: WalineRootComment[],
-	adminNicknames?: Set<string>,
 ): GuestbookChatMessage[] {
 	return roots
 		.flatMap((root) => [
-			normalizeGuestbookComment(root, adminNicknames),
-			...root.children.map((c) => normalizeGuestbookComment(c, adminNicknames)),
+			normalizeGuestbookComment(root),
+			...root.children.map(normalizeGuestbookComment),
 		])
 		.sort((left, right) => left.createdAt - right.createdAt);
 }
@@ -278,36 +280,27 @@ export function mergeGuestbookMessages(
 			.map((message) => [message.id, message]),
 	);
 
-	for (const message of incoming) {
-		const existing = serverMessages.get(message.id);
-		if (existing?.isAdmin && !message.isAdmin) {
-			serverMessages.set(message.id, { ...message, isAdmin: true });
-		} else {
-			serverMessages.set(message.id, message);
-		}
-	}
+	for (const message of incoming) serverMessages.set(message.id, message);
 
 	return [...serverMessages.values(), ...localMessages].sort(
 		(left, right) => left.createdAt - right.createdAt,
 	);
 }
 
-export function buildGuestbookMessageBody(
-	content: string,
+export function buildGuestbookReplyFields(
 	target: GuestbookChatMessage | null,
-): string {
-	if (!target?.objectId) return content;
-	const marker = `<!--guestbook-reply:${target.objectId}:${encodeURIComponent(target.nick)}-->`;
-	return `${marker}\n@${target.nick} ${content}`;
+): { pid?: number; rid?: number } {
+	if (!target?.objectId) return {};
+	const pid = target.objectId;
+	return { pid, rid: target.rootId ?? pid };
 }
 
 export function buildGuestbookEditedMessageBody(
 	content: string,
 	message: GuestbookChatMessage,
 ): string {
-	if (!message.replyToId) return content;
-	const marker = `<!--guestbook-reply:${message.replyToId}:${encodeURIComponent(message.replyToNick || "访客")}-->`;
-	return `${marker}\n${content}`;
+	if (!message.legacyReplyMarker) return content;
+	return `${message.legacyReplyMarker}\n${content}`;
 }
 
 export function getGuestbookErrorMessage(error: unknown): string {
@@ -342,4 +335,108 @@ export function getGuestbookInitials(name: string): string {
 		.slice(0, 2)
 		.join("")
 		.toUpperCase();
+}
+
+/* ==================== 语音输入（Web Speech API） ==================== */
+
+interface SpeechRecognitionAlternativeLike {
+	transcript: string;
+}
+
+interface SpeechRecognitionResultLike
+	extends ArrayLike<SpeechRecognitionAlternativeLike> {
+	isFinal: boolean;
+}
+
+interface SpeechRecognitionEventLike {
+	results: ArrayLike<SpeechRecognitionResultLike>;
+}
+
+interface SpeechRecognitionErrorEventLike {
+	error: string;
+}
+
+interface SpeechRecognitionLike {
+	lang: string;
+	continuous: boolean;
+	interimResults: boolean;
+	maxAlternatives: number;
+	onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+	onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+	onend: (() => void) | null;
+	start: () => void;
+	stop: () => void;
+	abort: () => void;
+}
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+// TS 的 lib.dom 没有 SpeechRecognition，只有未加前缀/带前缀两种私有全局，
+// 只能就地声明最小接口再收窄，不引额外 @types 包。
+function getSpeechRecognitionConstructor(): SpeechRecognitionConstructor | null {
+	const globals = window as unknown as {
+		SpeechRecognition?: SpeechRecognitionConstructor;
+		webkitSpeechRecognition?: SpeechRecognitionConstructor;
+	};
+	return globals.SpeechRecognition ?? globals.webkitSpeechRecognition ?? null;
+}
+
+export function isGuestbookSpeechSupported(): boolean {
+	return getSpeechRecognitionConstructor() !== null;
+}
+
+export function startGuestbookSpeech(
+	lang: string,
+	handlers: GuestbookSpeechHandlers,
+): GuestbookSpeechSession | null {
+	const SpeechRecognition = getSpeechRecognitionConstructor();
+	if (!SpeechRecognition) return null;
+
+	const recognition = new SpeechRecognition();
+	recognition.lang = lang;
+	recognition.continuous = true;
+	recognition.interimResults = true;
+	recognition.maxAlternatives = 1;
+
+	let finalText = "";
+	let ended = false;
+	const finish = () => {
+		if (ended) return;
+		ended = true;
+		handlers.onEnd();
+	};
+
+	recognition.onresult = (event) => {
+		let interimText = "";
+		for (let index = 0; index < event.results.length; index += 1) {
+			const result = event.results[index];
+			const transcript = result?.[0]?.transcript ?? "";
+			if (result?.isFinal) finalText += transcript;
+			else interimText += transcript;
+		}
+		handlers.onText(finalText, interimText);
+	};
+	recognition.onerror = (event) => {
+		// no-speech / aborted 属于正常收尾，交给 onend 复位，不作为错误提示
+		if (event.error === "no-speech" || event.error === "aborted") return;
+		handlers.onFailure(
+			event.error === "not-allowed" ||
+				event.error === "service-not-allowed" ||
+				event.error === "audio-capture"
+				? "denied"
+				: "failed",
+		);
+	};
+	recognition.onend = finish;
+
+	try {
+		recognition.start();
+	} catch {
+		return null;
+	}
+
+	return {
+		stop: () => recognition.stop(),
+		abort: () => recognition.abort(),
+	};
 }

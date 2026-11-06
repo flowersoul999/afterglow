@@ -9,7 +9,14 @@
  * 这个组件只在 /admin 路由里挂载，不在 Swup 容器内，所以进页面时自己
  * bootstrap 一次登录态（正常页面是 EditorRoot 干的活）。
  */
-import { ArrowLeft, Github, Loader2, RefreshCw } from "lucide-svelte";
+import {
+	ArrowLeft,
+	BarChart3,
+	ExternalLink,
+	Github,
+	Loader2,
+	RefreshCw,
+} from "lucide-svelte";
 import { onMount } from "svelte";
 import AdminEditor from "@/components/admin/AdminEditor.svelte";
 import AdminList from "@/components/admin/AdminList.svelte";
@@ -296,6 +303,18 @@ $effect(() => {
 				>
 					<RefreshCw size={13} class={listLoading ? "spin" : ""} />
 				</button>
+				<a
+					class="admin-btn admin__umami-link"
+					href="https://cloud.umami.is/"
+					target="_blank"
+					rel="noopener noreferrer"
+					title="打开 Umami 统计控制台"
+					aria-label="打开 Umami 统计控制台"
+				>
+					<BarChart3 size={14} />
+					<span>Umami 统计</span>
+					<ExternalLink size={12} class="admin__umami-external" />
+				</a>
 				<span class="admin__user">
 					<span class="admin__avatar"
 						>{($editor.identity?.name || "jo").slice(0, 2)}</span
