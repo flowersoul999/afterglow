@@ -1,6 +1,5 @@
 <script lang="ts">
 import {
-	ArrowUpToLine,
 	Check,
 	Copy,
 	Laptop,
@@ -13,15 +12,18 @@ import {
 	Trash2,
 	X,
 } from "lucide-svelte";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import type { GuestbookChatMessage } from "@/types/guestbook-chat";
-import type { MomentQuote } from "@/types/moment-chat";
 import { getGuestbookInitials } from "@/utils/guestbook-chat";
-import { renderGuestbookMessage } from "@/utils/guestbook-chat-markup";
+import {
+	renderGuestbookMessage,
+	renderGuestbookQuotePreview,
+} from "@/utils/guestbook-chat-markup";
 
 interface Props {
 	message: GuestbookChatMessage;
 	referencedMessage?: GuestbookChatMessage;
-	momentQuote?: MomentQuote | null;
 	timeLabel: string;
 	canManage: boolean;
 	isEditing: boolean;
@@ -43,7 +45,6 @@ interface Props {
 let {
 	message,
 	referencedMessage,
-	momentQuote,
 	timeLabel,
 	canManage,
 	isEditing,
@@ -64,16 +65,10 @@ let {
 
 let copied = $state(false);
 
-function formatMomentQuoteDate(value: string): string {
-	const d = new Date(value);
-	if (Number.isNaN(d.getTime())) return value.slice(0, 10);
-	return d.toISOString().slice(0, 10);
-}
-
 const quotePreview = $derived(
 	referencedMessage
-		? referencedMessage.body.replace(/\s+/gu, " ").slice(0, 72)
-		: "原消息暂未加载",
+		? renderGuestbookQuotePreview(referencedMessage.body)
+		: i18n(I18nKey.gbQuoteNotLoaded),
 );
 const renderedBody = $derived(renderGuestbookMessage(message.body));
 
@@ -83,7 +78,7 @@ async function copyMessage() {
 		copied = true;
 		window.setTimeout(() => (copied = false), 1600);
 	} catch {
-		onCopyError("复制失败，请检查浏览器剪贴板权限");
+		onCopyError(i18n(I18nKey.gbCopyFailed));
 	}
 }
 </script>
@@ -95,6 +90,38 @@ async function copyMessage() {
 	class:is-sending={message.localState === "sending"}
 	class="guestbook-message"
 >
+	{#if message.replyToId}
+		<button
+			class="guestbook-message__quote"
+			type="button"
+			onclick={() => onJump(message)}
+			aria-label={i18n(I18nKey.gbJumpToQuoteAria).replace(
+				"{nick}",
+				message.replyToNick || i18n(I18nKey.gbVisitor),
+			)}
+			title={i18n(I18nKey.gbJumpToQuoteTitle)}
+		>
+			<span class="guestbook-message__quote-avatar" aria-hidden="true">
+				<span>{getGuestbookInitials(referencedMessage?.nick || message.replyToNick || i18n(I18nKey.gbVisitor))}</span>
+				{#if referencedMessage?.avatar}
+					<img
+						src={referencedMessage.avatar}
+						alt=""
+						loading="lazy"
+						referrerpolicy="no-referrer"
+						onerror={(event) =>
+							((event.currentTarget as HTMLImageElement).style.display = "none")}
+					/>
+				{/if}
+			</span>
+			<span class="guestbook-message__quote-copy">
+				<strong>@{message.replyToNick || i18n(I18nKey.gbVisitor)}</strong>
+				<small>{@html quotePreview}</small>
+			</span>
+		</button>
+	{/if}
+
+	<div class="guestbook-message__main">
 	<div class="guestbook-message__avatar" aria-hidden="true">
 		<span>{getGuestbookInitials(message.nick)}</span>
 		{#if message.avatar}
@@ -118,7 +145,10 @@ async function copyMessage() {
 						href={message.link}
 						target="_blank"
 						rel="nofollow noopener noreferrer"
-						title={`访问 ${message.nick} 的网站`}
+						title={i18n(I18nKey.gbVisitSiteTitle).replace(
+							"{nick}",
+							message.nick,
+						)}
 					>
 						{message.nick}
 					</a>
@@ -127,7 +157,7 @@ async function copyMessage() {
 				{/if}
 			</span>
 			{#if message.isAdmin}
-				<span class="guestbook-message__badge guestbook-message__badge--admin">站长</span>
+				<span class="guestbook-message__badge guestbook-message__badge--admin">{i18n(I18nKey.gbAdmin)}</span>
 			{/if}
 			{#if message.label}
 				<span class="guestbook-message__badge">{message.label}</span>
@@ -137,33 +167,12 @@ async function copyMessage() {
 				datetime={new Date(message.createdAt).toISOString()}>{timeLabel}</time
 			>
 			{#if message.status === "waiting"}
-				<span class="guestbook-message__badge guestbook-message__badge--waiting">审核中</span>
+				<span class="guestbook-message__badge guestbook-message__badge--waiting">{i18n(I18nKey.gbPendingReview)}</span>
 			{/if}
 		</div>
 
 		<div class="guestbook-message__bubble-row">
 			<div class="guestbook-message__bubble">
-				{#if message.replyToId}
-					<button
-						class="guestbook-message__quote"
-						type="button"
-						onclick={() => onJump(message)}
-						title="跳转到原消息"
-					>
-						<ArrowUpToLine
-							class="guestbook-message__quote-jump"
-							size={15}
-							aria-hidden="true"
-						/>
-						<span>@{message.replyToNick || "访客"}</span>
-						<small>{quotePreview}</small>
-					</button>
-				{:else if momentQuote}
-					<div class="guestbook-message__quote" role="note" aria-label="引用的动态">
-						<span>引用动态 · {formatMomentQuoteDate(momentQuote.published)}</span>
-						<small class="moment-quote__text">{momentQuote.excerpt}</small>
-					</div>
-				{/if}
 				{#if isEditing}
 					<textarea
 						class="guestbook-message__edit-input"
@@ -172,12 +181,17 @@ async function copyMessage() {
 						maxlength="300"
 						rows="4"
 						disabled={isMutating}
-						aria-label={`编辑 ${message.nick} 的消息`}
+						aria-label={i18n(I18nKey.gbEditMessageWithName).replace(
+							"{nick}",
+							message.nick,
+						)}
 					></textarea>
 					<div class="guestbook-message__edit-actions">
-						<span>{editDraft.length}/300</span>
+						<span>{i18n(I18nKey.gbCharCount)
+							.replace("{count}", String(editDraft.length))
+							.replace("{max}", "300")}</span>
 						<button type="button" onclick={onEditCancel} disabled={isMutating}>
-							<X size={14} aria-hidden="true" />取消
+							<X size={14} aria-hidden="true" />{i18n(I18nKey.cancel)}
 						</button>
 						<button
 							type="button"
@@ -189,7 +203,7 @@ async function copyMessage() {
 							{:else}
 								<Check size={14} aria-hidden="true" />
 							{/if}
-							{isMutating ? "保存中" : "保存"}
+							{isMutating ? i18n(I18nKey.saving) : i18n(I18nKey.save)}
 						</button>
 					</div>
 				{:else}
@@ -198,20 +212,27 @@ async function copyMessage() {
 			</div>
 
 			{#if !message.localState && !isEditing}
-				<div class="guestbook-message__tools" role="group" aria-label="消息操作">
+				<div class="guestbook-message__tools" role="group" aria-label={i18n(I18nKey.gbMessageActionsAria)}>
 					<button
 						type="button"
 						onclick={() => onReply(message)}
-						aria-label={`回复 ${message.nick}`}
-						title="引用回复"
+						aria-label={i18n(I18nKey.gbReplyAria).replace(
+							"{nick}",
+							message.nick,
+						)}
+						title={i18n(I18nKey.gbQuoteReply)}
 					>
 						<Reply size={15} aria-hidden="true" />
 					</button>
 					<button
 						type="button"
 						onclick={copyMessage}
-						aria-label={copied ? "已复制" : "复制消息"}
-						title={copied ? "已复制" : "复制消息"}
+						aria-label={copied
+							? i18n(I18nKey.gbCopied)
+							: i18n(I18nKey.gbCopyMessage)}
+						title={copied
+							? i18n(I18nKey.gbCopied)
+							: i18n(I18nKey.gbCopyMessage)}
 					>
 						{#if copied}
 							<Check size={15} aria-hidden="true" />
@@ -223,8 +244,8 @@ async function copyMessage() {
 						<button
 							type="button"
 							onclick={() => onEdit(message)}
-							aria-label="编辑消息"
-							title="编辑消息"
+							aria-label={i18n(I18nKey.gbEditMessage)}
+							title={i18n(I18nKey.gbEditMessage)}
 							disabled={isMutating}
 						>
 							<Pencil size={15} aria-hidden="true" />
@@ -232,8 +253,8 @@ async function copyMessage() {
 						<button
 							type="button"
 							onclick={() => onDelete(message)}
-							aria-label="删除消息"
-							title="删除消息"
+							aria-label={i18n(I18nKey.gbDeleteMessage)}
+							title={i18n(I18nKey.gbDeleteMessage)}
 							disabled={isMutating}
 						>
 							<Trash2 size={15} aria-hidden="true" />
@@ -254,7 +275,7 @@ async function copyMessage() {
 				<span><MapPin size={14} aria-hidden="true" />{message.addr}</span>
 			{/if}
 			{#if message.localState === "sending"}
-				<span><LoaderCircle class="is-spinning" size={14} aria-hidden="true" />发送中</span>
+				<span><LoaderCircle class="is-spinning" size={14} aria-hidden="true" />{i18n(I18nKey.sending)}</span>
 			{/if}
 		</div>
 
@@ -262,10 +283,10 @@ async function copyMessage() {
 			<div class="guestbook-message__failure" role="alert">
 				<span>{message.failureReason}</span>
 				<button type="button" onclick={() => onRetry(message)}>
-					<RotateCcw size={14} aria-hidden="true" />重试
+					<RotateCcw size={14} aria-hidden="true" />{i18n(I18nKey.retry)}
 				</button>
 				<button type="button" onclick={() => onDiscard(message)}>
-					<Trash2 size={14} aria-hidden="true" />删除
+					<Trash2 size={14} aria-hidden="true" />{i18n(I18nKey.deleteLabel)}
 				</button>
 			</div>
 		{/if}
@@ -273,5 +294,6 @@ async function copyMessage() {
 		{#if actionError}
 			<div class="guestbook-message__failure" role="alert">{actionError}</div>
 		{/if}
+	</div>
 	</div>
 </article>

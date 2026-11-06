@@ -66,6 +66,7 @@
 @import './pages/friends.css';
 @import './pages/apps.css';
 @import './pages/categories.css';
+@import './pages/album.css';
 @import './widgets/knowledge-graph.css';
 @import './widgets/graph-dock.css';
 @import './widgets/graph-detail-panel.css';

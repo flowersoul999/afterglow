@@ -168,6 +168,8 @@ const albumCollection = defineCollection({
 							src: z.string(),
 							alt: z.string().optional(),
 							caption: z.string().optional(),
+							tags: z.array(z.string()).optional().default([]),
+							takenAt: z.string().optional().default(""),
 						}),
 					),
 				)
@@ -175,6 +177,8 @@ const albumCollection = defineCollection({
 				.default([]),
 			tags: z.array(z.string()).optional().default([]),
 			draft: z.boolean().optional().default(false),
+			// 本地相册目录，相对 public/assets/images/albums；优先于图床加载
+			localFolder: z.string().optional().default(""),
 			// 图床文件夹路径，设置后从 CloudFlare ImgBed 动态加载图片
 			imgbedFolder: z.string().optional().default(""),
 		});

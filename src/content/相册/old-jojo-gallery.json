@@ -1,0 +1,45 @@
+{
+	"title": "旧日相片",
+	"subtitle": "从旧博客带回来的五段生活碎片",
+	"date": "2026-09-13",
+	"location": "广州",
+	"tags": ["旧博客", "生活碎片"],
+	"localFolder": "old-jojo-gallery",
+	"photos": [
+		{
+			"src": "/assets/images/albums/old-jojo-gallery/wechat-avatar.webp",
+			"alt": "旧博客使用的微信头像",
+			"caption": "我的微信头像",
+			"tags": ["头像"],
+			"takenAt": "2026-08-28T07:34:58.715Z"
+		},
+		{
+			"src": "/assets/images/albums/old-jojo-gallery/cat-cloud-guangzhou.webp",
+			"alt": "广州天空中像猫一样的云",
+			"caption": "七夕那天广州的猫猫云",
+			"tags": ["广州", "云"],
+			"takenAt": "2026-08-28T09:03:19.161Z"
+		},
+		{
+			"src": "/assets/images/albums/old-jojo-gallery/meimei.webp",
+			"alt": "旧博客相册中的 meimei",
+			"caption": "meimei",
+			"tags": ["日常"],
+			"takenAt": "2026-08-28T09:04:02.912Z"
+		},
+		{
+			"src": "/assets/images/albums/old-jojo-gallery/raincoat-scooter.webp",
+			"alt": "穿着雨衣坐在电动车上的生活照片",
+			"caption": "上一次穿雨衣坐在电动车上面还是小学",
+			"tags": ["雨天", "童年"],
+			"takenAt": "2026-08-28T09:04:47.400Z"
+		},
+		{
+			"src": "/assets/images/albums/old-jojo-gallery/untitled-memory.webp",
+			"alt": "旧博客相册中的未命名照片",
+			"caption": "1",
+			"tags": ["未分类"],
+			"takenAt": "2026-09-13T00:50:03.236Z"
+		}
+	]
+}

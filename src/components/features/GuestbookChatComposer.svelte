@@ -1,14 +1,21 @@
 <script lang="ts">
 import {
+	ArrowUp,
 	ImagePlus,
+	Keyboard,
 	LoaderCircle,
+	Mic,
+	Plus,
 	Reply,
 	Smile,
 	TriangleAlert,
 	X,
 } from "lucide-svelte";
+import type { Snippet } from "svelte";
 import { tick } from "svelte";
 import { commentConfig } from "@/config/commentConfig";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
 import type {
 	GuestbookAuthUser,
 	GuestbookChatMessage,
@@ -16,9 +23,12 @@ import type {
 	GuestbookEmojiPack,
 	GuestbookImageAttachment,
 	GuestbookProfile,
+	GuestbookSpeechSession,
 } from "@/types/guestbook-chat";
 import {
+	isGuestbookSpeechSupported,
 	loadGuestbookEmojiPacks,
+	startGuestbookSpeech,
 	uploadGuestbookImage,
 	WALINE_INLINE_IMAGE_SIZE_LIMIT,
 } from "@/utils/guestbook-chat";
@@ -43,6 +53,7 @@ interface Props {
 		attachment?: GuestbookImageAttachment,
 	) => Promise<boolean>;
 	onToolError: (message: string) => void;
+	children?: Snippet;
 }
 
 let {
@@ -62,12 +73,18 @@ let {
 	onLogout,
 	onSend,
 	onToolError,
+	children,
 }: Props = $props();
 
 const MAX_DRAFT_LENGTH = 300;
 const MAX_REMOTE_IMAGE_SIZE = 5 * 1024 * 1024;
 const MIN_MESSAGE_PANE_HEIGHT = 128;
 const RESIZE_KEYBOARD_STEP = 16;
+const TEXTAREA_MAX_HEIGHT = 144;
+// 与 CSS 里 @media (max-width: 768px) 断点保持一致，改一处要同时改另一处
+const MOBILE_MEDIA = "(max-width: 768px)";
+const MORPH_DURATION = 320;
+const MORPH_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
 const emojiSources = commentConfig.waline?.emoji ?? [];
 const imageUploadURL = commentConfig.waline?.imageUploadURL ?? "";
 const maxImageSize = imageUploadURL
@@ -101,19 +118,60 @@ let profileDialogError = $state("");
 let resizeStartY = 0;
 let resizeStartHeight = 0;
 
+type ComposerShape = "pill" | "card";
+
+let isMobile = $state(window.matchMedia(MOBILE_MEDIA).matches);
+let shape = $state<ComposerShape>("pill");
+let editorMode = $state<"text" | "voice">("text");
+let keyboardOpen = $state(false);
+let isListening = $state(false);
+let voiceInterim = $state("");
+let shellEl = $state<HTMLDivElement | null>(null);
+let voiceButton = $state<HTMLButtonElement | null>(null);
+let voiceSession: GuestbookSpeechSession | null = null;
+let voiceFinalText = "";
+let voiceDiscarded = false;
+let morphAnimations: Animation[] = [];
+let morphToken = 0;
+
+function stopMorphAnimations() {
+	for (const animation of morphAnimations) animation.cancel();
+	morphAnimations = [];
+}
+
 const inputDisabled = $derived(
 	isOffline || (loginMode === "force" && !authUser),
 );
-const authName = $derived(authUser?.display_name || "访客");
+const authName = $derived(authUser?.display_name || i18n(I18nKey.gbVisitor));
 const activeEmojiPack = $derived(emojiPacks[activeEmojiPackIndex] ?? null);
 const hasGuestProfile = $derived(profile.nick.trim().length >= 2);
-
-function formatMobileIdentityName(value: string): string {
-	const characters = Array.from(value.trim());
-	return characters.length > 4
-		? `${characters.slice(0, 4).join("")}...`
-		: characters.join("");
-}
+const identityLabel = $derived(
+	authUser
+		? authName
+		: hasGuestProfile
+			? profile.nick
+			: i18n(I18nKey.gbNotLoggedIn),
+);
+const textareaPlaceholder = $derived(
+	loginMode === "force" && !authUser
+		? i18n(I18nKey.gbPlaceholderRequireLogin)
+		: i18n(I18nKey.gbPlaceholder),
+);
+const charCountLabel = $derived(
+	i18n(I18nKey.gbCharCount)
+		.replace("{count}", String(draft.length))
+		.replace("{max}", String(MAX_DRAFT_LENGTH)),
+);
+const modeToggleLabel = $derived(
+	i18n(
+		editorMode === "voice"
+			? I18nKey.gbSwitchToKeyboard
+			: I18nKey.gbSwitchToVoice,
+	),
+);
+const expandLabel = $derived(
+	i18n(shape === "pill" ? I18nKey.gbMoreTools : I18nKey.gbCollapseInput),
+);
 
 async function openGuestProfile() {
 	profileDraft = { ...profile };
@@ -130,23 +188,33 @@ function closeGuestProfile() {
 	document.body.style.overflow = "";
 }
 
+function handleDialogLogin() {
+	closeGuestProfile();
+	onLogin();
+}
+
+function handleDialogLogout() {
+	closeGuestProfile();
+	onLogout();
+}
+
 function validateGuestProfile(nextProfile: GuestbookProfile): string {
-	if (nextProfile.nick.length < 2) return "游客昵称至少需要 2 个字符";
-	if (!nextProfile.mail) return "请填写邮箱，游客留言需要留下邮箱";
+	if (nextProfile.nick.length < 2)
+		return i18n(I18nKey.gbNicknameMinLength).replace("{min}", "2");
 	if (
 		nextProfile.mail &&
 		!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(nextProfile.mail)
 	) {
-		return "邮箱格式不正确";
+		return i18n(I18nKey.gbEmailInvalid);
 	}
 	if (nextProfile.link) {
 		try {
 			const website = new URL(nextProfile.link);
 			if (website.protocol !== "http:" && website.protocol !== "https:") {
-				return "网站地址仅支持 http 或 https";
+				return i18n(I18nKey.gbLinkProtocolInvalid);
 			}
 		} catch {
-			return "网站地址格式不正确";
+			return i18n(I18nKey.gbLinkInvalid);
 		}
 	}
 	return "";
@@ -167,9 +235,26 @@ function saveGuestProfile() {
 
 function resizeTextarea() {
 	if (!textarea) return;
+	if (isMobile) {
+		if (shape === "pill") {
+			// 椭圆态由 CSS 锁死单行，内容撑出一行才展开成卡片
+			textarea.style.height = "";
+			if (textarea.scrollHeight > textarea.clientHeight + 1) {
+				void setShape("card");
+			}
+			return;
+		}
+		const cssMax = Number.parseFloat(getComputedStyle(textarea).maxHeight);
+		textarea.style.height = "auto";
+		textarea.style.height = `${Math.min(
+			textarea.scrollHeight,
+			Number.isFinite(cssMax) ? cssMax : TEXTAREA_MAX_HEIGHT,
+		)}px`;
+		return;
+	}
 	if (manualTextareaHeight !== null) return;
 	textarea.style.height = "auto";
-	textarea.style.height = `${Math.min(textarea.scrollHeight, 144)}px`;
+	textarea.style.height = `${Math.min(textarea.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`;
 }
 
 function getTextareaHeightBounds() {
@@ -266,6 +351,96 @@ function handleWindowResize() {
 	}
 }
 
+function prefersReducedMotion(): boolean {
+	return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/**
+ * 椭圆态的 9999px 圆角直接补间会长时间"看着没变"、最后一下才收成方角，
+ * 换成实际半高后收角过程才和高度同步。
+ */
+function morphRadius(target: ComposerShape, height: number, computed: string) {
+	return target === "pill" ? `${height / 2}px` : computed;
+}
+
+/**
+ * 椭圆条 ↔ 卡片切换。两态高度都由 CSS 决定，切换时把旧高度先钉在行内样式上再换形态，
+ * 否则新形态的自然高度会先被浏览器画一帧——收缩时看到的那一下抖就是它。
+ * 高度、圆角与输入框用同一段时长和缓动一起补间，动画期间加 is-morphing 裁掉溢出。
+ */
+async function setShape(next: ComposerShape) {
+	if (next === shape) return;
+	const shell = shellEl;
+	if (!shell) {
+		shape = next;
+		return;
+	}
+	stopMorphAnimations();
+	const token = ++morphToken;
+	const fromHeight = shell.offsetHeight;
+	const fromTextareaHeight = textarea?.offsetHeight ?? 0;
+	const fromRadius = morphRadius(
+		shape,
+		fromHeight,
+		getComputedStyle(shell).borderRadius,
+	);
+	shell.style.height = `${fromHeight}px`;
+	shell.classList.add("is-morphing");
+	shape = next;
+	await tick();
+	if (textarea) {
+		if (next === "pill") textarea.style.height = "";
+		else resizeTextarea();
+	}
+	const toTextareaHeight = textarea?.offsetHeight ?? 0;
+	shell.style.height = "auto";
+	const toHeight = shell.offsetHeight;
+	shell.style.height = `${fromHeight}px`;
+	const toRadius = morphRadius(
+		next,
+		toHeight,
+		getComputedStyle(shell).borderRadius,
+	);
+
+	const finish = () => {
+		if (token !== morphToken) return;
+		shell.style.height = "";
+		shell.classList.remove("is-morphing");
+	};
+	if (prefersReducedMotion() || fromHeight === toHeight) {
+		finish();
+		return;
+	}
+
+	const timing: KeyframeAnimationOptions = {
+		duration: MORPH_DURATION,
+		easing: MORPH_EASING,
+	};
+	morphAnimations = [
+		shell.animate(
+			[
+				{ height: `${fromHeight}px`, borderRadius: fromRadius },
+				{ height: `${toHeight}px`, borderRadius: toRadius },
+			],
+			timing,
+		),
+	];
+	if (textarea && fromTextareaHeight !== toTextareaHeight) {
+		morphAnimations.push(
+			textarea.animate(
+				[
+					{ height: `${fromTextareaHeight}px` },
+					{ height: `${toTextareaHeight}px` },
+				],
+				timing,
+			),
+		);
+	}
+	void Promise.allSettled(morphAnimations.map((item) => item.finished)).then(
+		finish,
+	);
+}
+
 function handleInput(event: Event) {
 	onDraftChange((event.currentTarget as HTMLTextAreaElement).value);
 	resizeTextarea();
@@ -274,6 +449,8 @@ function handleInput(event: Event) {
 function handleKeydown(event: KeyboardEvent) {
 	if (
 		event.key !== "Enter" ||
+		// 移动端软键盘的回车留给换行（撑出一行以上即自动展开成卡片），发送交给发送按钮
+		isMobile ||
 		event.shiftKey ||
 		event.isComposing ||
 		isComposing ||
@@ -300,7 +477,9 @@ function insertContent(content: string): boolean {
 	if (!textarea) {
 		const nextDraft = `${draft}${content}`;
 		if (nextDraft.length > MAX_DRAFT_LENGTH) {
-			onToolError(`消息不能超过 ${MAX_DRAFT_LENGTH} 个字符`);
+			onToolError(
+				i18n(I18nKey.gbMsgMaxLength).replace("{max}", String(MAX_DRAFT_LENGTH)),
+			);
 			return false;
 		}
 		onDraftChange(nextDraft);
@@ -311,7 +490,9 @@ function insertContent(content: string): boolean {
 	const end = textarea.selectionEnd;
 	const nextDraft = `${draft.slice(0, start)}${content}${draft.slice(end)}`;
 	if (nextDraft.length > MAX_DRAFT_LENGTH) {
-		onToolError(`消息不能超过 ${MAX_DRAFT_LENGTH} 个字符`);
+		onToolError(
+			i18n(I18nKey.gbMsgMaxLength).replace("{max}", String(MAX_DRAFT_LENGTH)),
+		);
 		return false;
 	}
 	onDraftChange(nextDraft);
@@ -333,9 +514,7 @@ async function loadEmojis() {
 		activeEmojiPackIndex = 0;
 	} catch (error) {
 		emojiError =
-			error instanceof Error
-				? error.message
-				: "Waline 表情加载失败，请稍后重试";
+			error instanceof Error ? error.message : i18n(I18nKey.gbEmojiLoadFailed);
 	} finally {
 		isLoadingEmojis = false;
 	}
@@ -358,32 +537,10 @@ function serializeEmojiShortcodes(content: string): string {
 	);
 	return content.replace(/:([A-Za-z0-9_-]+):/gu, (shortcode, key: string) => {
 		const url = emojiByKey.get(key);
-		return url ? `![${key}](${url} "emoji")` : shortcode;
+		return url
+			? `![${key}](${url} "${i18n(I18nKey.gbEmojiImageTitle)}")`
+			: shortcode;
 	});
-}
-
-function renderDraftWithEmojis(content: string): string {
-	if (!content || emojiPacks.length === 0) return "";
-	const emojiByKey = new Map(
-		emojiPacks.flatMap((pack) =>
-			pack.items.map((emoji) => [emoji.key, emoji.url] as const),
-		),
-	);
-	let hasEmoji = false;
-	const html = content
-		.replace(/&/gu, "&amp;")
-		.replace(/</gu, "&lt;")
-		.replace(/>/gu, "&gt;")
-		.replace(/:([A-Za-z0-9_-]+):/gu, (_match, key: string) => {
-			const url = emojiByKey.get(key);
-			if (url) {
-				hasEmoji = true;
-				return `<img src="${url}" alt=":${key}:" class="guestbook-composer__preview-emoji" loading="lazy" />`;
-			}
-			return `:${key}:`;
-		})
-		.replace(/\n/gu, "<br>");
-	return hasEmoji ? html : "";
 }
 
 function openImagePicker() {
@@ -395,8 +552,8 @@ async function submitMessage() {
 	if (!authUser && loginMode !== "force" && !hasGuestProfile) {
 		onToolError(
 			loginMode === "disable"
-				? "请先通过游客访问填写资料后再发送"
-				: "请选择游客访问并填写资料，或登录后发送",
+				? i18n(I18nKey.gbGuestProfileRequiredDisabled)
+				: i18n(I18nKey.gbGuestProfileRequired),
 		);
 		return;
 	}
@@ -404,7 +561,12 @@ async function submitMessage() {
 		serializeEmojiShortcodes(draft.trim()),
 		pendingImage ?? undefined,
 	);
-	if (accepted) pendingImage = null;
+	if (!accepted) return;
+	pendingImage = null;
+	if (isMobile) {
+		showEmojiPicker = false;
+		void setShape("pill");
+	}
 }
 
 async function handleImageSelection(event: Event) {
@@ -413,12 +575,14 @@ async function handleImageSelection(event: Event) {
 	input.value = "";
 	if (!file) return;
 	if (!supportedImageTypes.has(file.type)) {
-		onToolError("仅支持 PNG、JPEG、GIF 或 WebP 图片");
+		onToolError(i18n(I18nKey.gbImageTypeUnsupported));
 		return;
 	}
 	if (file.size > maxImageSize) {
 		onToolError(
-			imageUploadURL ? "图片不能超过 5 MB" : "Waline 原生图片不能超过 128 KB",
+			imageUploadURL
+				? i18n(I18nKey.gbImageTooLarge)
+				: i18n(I18nKey.gbImageTooLargeInline),
 		);
 		return;
 	}
@@ -431,15 +595,102 @@ async function handleImageSelection(event: Event) {
 			.replace(/\.[^.]+$/u, "")
 			.replace(/[[\]]/gu, "")
 			.trim();
-		pendingImage = { name: name || "图片", url };
+		pendingImage = { name: name || i18n(I18nKey.image), url };
+		// 待发图片只在卡片态露出，附件成功后展开，避免用户看不到已选中的图
+		if (isMobile) void setShape("card");
 	} catch (error) {
 		onToolError(
-			error instanceof Error ? error.message : "图片上传失败，请稍后重试",
+			error instanceof Error
+				? error.message
+				: i18n(I18nKey.gbImageUploadFailed),
 		);
 	} finally {
 		isUploadingImage = false;
 	}
 }
+
+function toggleEditorMode() {
+	if (editorMode === "voice") {
+		editorMode = "text";
+		return;
+	}
+	if (!isGuestbookSpeechSupported()) {
+		onToolError(i18n(I18nKey.gbVoiceUnsupported));
+		return;
+	}
+	editorMode = "voice";
+	keyboardOpen = false;
+	showEmojiPicker = false;
+}
+
+function handleVoicePointerdown(event: PointerEvent) {
+	if (inputDisabled || voiceSession) return;
+	event.preventDefault();
+	voiceButton?.setPointerCapture(event.pointerId);
+	voiceFinalText = "";
+	voiceInterim = "";
+	voiceDiscarded = false;
+	onToolError("");
+	// 识别语种跟随浏览器界面语言，而不是站点留言组件的展示语种
+	voiceSession = startGuestbookSpeech(navigator.language, {
+		onText: (finalText, interimText) => {
+			voiceFinalText = finalText;
+			voiceInterim = interimText;
+		},
+		onFailure: (failure) => {
+			voiceDiscarded = true;
+			onToolError(
+				i18n(
+					failure === "denied"
+						? I18nKey.gbVoiceMicDenied
+						: I18nKey.gbVoiceFailed,
+				),
+			);
+		},
+		onEnd: () => {
+			voiceSession = null;
+			isListening = false;
+			voiceInterim = "";
+			if (!voiceDiscarded && voiceFinalText) insertContent(voiceFinalText);
+			voiceFinalText = "";
+		},
+	});
+	if (!voiceSession) {
+		onToolError(i18n(I18nKey.gbVoiceUnsupported));
+		return;
+	}
+	isListening = true;
+}
+
+function handleVoicePointerup() {
+	voiceSession?.stop();
+}
+
+function handleVoicePointercancel() {
+	voiceDiscarded = true;
+	voiceSession?.abort();
+}
+
+$effect(() => {
+	const query = window.matchMedia(MOBILE_MEDIA);
+	isMobile = query.matches;
+	const handleChange = (event: MediaQueryListEvent) => {
+		isMobile = event.matches;
+		if (!event.matches) {
+			shape = "pill";
+			editorMode = "text";
+			keyboardOpen = false;
+		}
+	};
+	query.addEventListener("change", handleChange);
+	return () => query.removeEventListener("change", handleChange);
+});
+
+$effect(() => () => {
+	voiceSession?.abort();
+	voiceSession = null;
+	stopMorphAnimations();
+});
 </script>
 
 <svelte:window
@@ -448,258 +699,319 @@ async function handleImageSelection(event: Event) {
 	onresize={handleWindowResize}
 />
 
-<footer class="guestbook-composer">
+{#snippet emojiTriggerButton()}
+	<button
+		bind:this={emojiTrigger}
+		type="button"
+		class:is-active={showEmojiPicker}
+		onclick={toggleEmojiPicker}
+		aria-label={i18n(I18nKey.gbEmojiAria)}
+		aria-expanded={showEmojiPicker}
+		aria-controls="guestbook-emoji-picker"
+		title={i18n(I18nKey.emoji)}
+		disabled={inputDisabled}
+	>
+		<Smile size={20} aria-hidden="true" />
+	</button>
+{/snippet}
+
+{#snippet imageUploadButton()}
+	<button
+		type="button"
+		onclick={openImagePicker}
+		aria-label={i18n(I18nKey.gbUploadImageAria)}
+		title={i18n(I18nKey.image)}
+		disabled={inputDisabled || isUploadingImage}
+	>
+		{#if isUploadingImage}
+			<LoaderCircle class="is-spinning" size={20} aria-hidden="true" />
+		{:else}
+			<ImagePlus size={20} aria-hidden="true" />
+		{/if}
+	</button>
+	<input
+		bind:this={imageInput}
+		class="guestbook-composer__file-input"
+		type="file"
+		accept="image/png,image/jpeg,image/gif,image/webp"
+		onchange={handleImageSelection}
+		tabindex="-1"
+		aria-hidden="true"
+	/>
+{/snippet}
+
+{#snippet pendingImagePreview()}
+	{#if pendingImage}
+		<div class="guestbook-composer__image-preview">
+			<img src={pendingImage.url} alt={pendingImage.name} />
+			<span>{pendingImage.name}</span>
+			<button
+				type="button"
+				onclick={() => (pendingImage = null)}
+				aria-label={i18n(I18nKey.gbRemoveImageAria)}
+				title={i18n(I18nKey.gbRemoveImageTitle)}
+			>
+				<X size={16} aria-hidden="true" />
+			</button>
+		</div>
+	{/if}
+{/snippet}
+
+{#snippet sendButton()}
+	<button
+		class="guestbook-composer__send"
+		type="button"
+		onclick={() => void submitMessage()}
+		disabled={inputDisabled || isSending || isUploadingImage}
+		aria-busy={isSending}
+		aria-label={i18n(I18nKey.send)}
+		title={i18n(I18nKey.send)}
+	>
+		{#if isSending}
+			<LoaderCircle class="is-spinning" size={18} aria-hidden="true" />
+		{:else}
+			<ArrowUp size={18} aria-hidden="true" />
+		{/if}
+	</button>
+{/snippet}
+
+{#snippet identityChip()}
+	<button
+		class="guestbook-composer__identity"
+		type="button"
+		onclick={() => void openGuestProfile()}
+		title={i18n(I18nKey.gbGuestProfile)}
+	>
+		{#if authUser?.type === "administrator"}
+			<span class="guestbook-composer__identity-role">
+				{i18n(I18nKey.gbAdminRole)}
+			</span>
+		{/if}
+		<span class="guestbook-composer__identity-name">{identityLabel}</span>
+	</button>
+{/snippet}
+
+{#snippet emojiPickerPanel()}
+	{#if showEmojiPicker}
+		<div
+			bind:this={emojiPanel}
+			id="guestbook-emoji-picker"
+			class="guestbook-composer__emojis"
+			role="dialog"
+			aria-label={i18n(I18nKey.gbWalineEmojiAria)}
+		>
+			{#if isLoadingEmojis}
+				<div class="guestbook-composer__emoji-state" role="status">
+					<LoaderCircle class="is-spinning" size={18} aria-hidden="true" />{i18n(I18nKey.gbLoadingEmoji)}
+				</div>
+			{:else if emojiError}
+				<div class="guestbook-composer__emoji-state" role="alert">
+					<span>{emojiError}</span>
+					<button type="button" onclick={() => void loadEmojis()}>{i18n(I18nKey.retry)}</button>
+				</div>
+			{:else if activeEmojiPack}
+				<div class="guestbook-composer__emoji-tabs" role="tablist" aria-label={i18n(I18nKey.gbEmojiPacksAria)}>
+					{#each emojiPacks as pack, index}
+						<button
+							type="button"
+							role="tab"
+							aria-selected={activeEmojiPackIndex === index}
+							class:is-active={activeEmojiPackIndex === index}
+							onclick={() => (activeEmojiPackIndex = index)}
+							title={pack.name}
+						>
+							<img src={pack.icon} alt={pack.name} loading="lazy" />
+						</button>
+					{/each}
+				</div>
+				<div class="guestbook-composer__emoji-grid">
+					{#each activeEmojiPack.items as emoji}
+						<button
+							type="button"
+							onclick={() => insertEmoji(emoji)}
+							aria-label={i18n(I18nKey.gbInsertEmojiAria).replace(
+								"{key}",
+								emoji.key,
+							)}
+							title={emoji.key}
+						>
+							<img src={emoji.url} alt="" loading="lazy" />
+						</button>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	{/if}
+{/snippet}
+
+<footer
+	class="guestbook-composer"
+	class:guestbook-composer--mobile={isMobile}
+	class:is-keyboard-open={keyboardOpen}
+>
 	{#if replyTarget}
 		<div class="guestbook-composer__reply">
 			<Reply size={16} aria-hidden="true" />
 			<div>
-				<span>回复 @{replyTarget.nick}</span>
+				<span>{i18n(I18nKey.gbComposerReplyTo).replace("{nick}", replyTarget.nick)}</span>
 				<small>{replyTarget.body.slice(0, 80)}</small>
 			</div>
-			<button type="button" onclick={onReplyCancel} aria-label="取消引用" title="取消引用">
+			<button
+				type="button"
+				onclick={onReplyCancel}
+				aria-label={i18n(I18nKey.gbCancelQuote)}
+				title={i18n(I18nKey.gbCancelQuote)}
+			>
 				<X size={18} aria-hidden="true" />
 			</button>
 		</div>
 	{/if}
 
-	<div
-		class:is-resizing={resizePointerId !== null}
-		class="guestbook-composer__editor"
-	>
-		<button
-			class="guestbook-composer__resize-handle"
-			type="button"
-			onpointerdown={startTextareaResize}
-			onpointermove={moveTextareaResize}
-			onpointerup={finishTextareaResize}
-			onpointercancel={finishTextareaResize}
-			onkeydown={handleResizeKeydown}
-			aria-label="调整输入框高度"
-			title="向上拖动扩大输入框"
-		></button>
-		<textarea
-			bind:this={textarea}
-			value={draft}
-			oninput={handleInput}
-			onkeydown={handleKeydown}
-			oncompositionstart={() => (isComposing = true)}
-			oncompositionend={() => (isComposing = false)}
-			rows="3"
-			maxlength="300"
-			placeholder={loginMode === "force" && !authUser
-				? "登录后参与聊天"
-				: "说点什么..."}
-			aria-label="聊天消息"
-			disabled={inputDisabled}
-		></textarea>
+	{#if isMobile}
+		<div class="guestbook-composer__stage">
+			{@render identityChip()}
+			<div
+				bind:this={shellEl}
+				class="guestbook-composer__shell"
+				class:is-listening={isListening}
+				data-shape={shape}
+			>
+				{@render pendingImagePreview()}
 
-		{#if draft && emojiPacks.length > 0}
-			{@const previewHtml = renderDraftWithEmojis(draft)}
-			{#if previewHtml}
-				<div class="guestbook-composer__preview">{@html previewHtml}</div>
-			{/if}
-		{/if}
-
-		{#if pendingImage}
-			<div class="guestbook-composer__image-preview">
-				<img src={pendingImage.url} alt={pendingImage.name} />
-				<span>{pendingImage.name}</span>
-				<button
-					type="button"
-					onclick={() => (pendingImage = null)}
-					aria-label="移除待发送图片"
-					title="移除图片"
-				>
-					<X size={16} aria-hidden="true" />
-				</button>
-			</div>
-		{/if}
-
-		<div class="guestbook-composer__footer">
-			<div class="guestbook-composer__tools">
-				<button
-					bind:this={emojiTrigger}
-					type="button"
-					class:is-active={showEmojiPicker}
-					onclick={toggleEmojiPicker}
-					aria-label="选择表情"
-					aria-expanded={showEmojiPicker}
-					aria-controls="guestbook-emoji-picker"
-					title="表情"
-					disabled={inputDisabled}
-				>
-					<Smile size={20} aria-hidden="true" />
-				</button>
-				<button
-					type="button"
-					onclick={openImagePicker}
-					aria-label="上传图片"
-					title="图片"
-					disabled={inputDisabled || isUploadingImage}
-				>
-					{#if isUploadingImage}
-						<LoaderCircle class="is-spinning" size={20} aria-hidden="true" />
-					{:else}
-						<ImagePlus size={20} aria-hidden="true" />
-					{/if}
-				</button>
-				<input
-					bind:this={imageInput}
-					class="guestbook-composer__file-input"
-					type="file"
-					accept="image/png,image/jpeg,image/gif,image/webp"
-					onchange={handleImageSelection}
-					tabindex="-1"
-					aria-hidden="true"
-				/>
-			</div>
-
-			<div class="guestbook-composer__actions">
-				<span class="guestbook-composer__count">{draft.length}/300</span>
-				{#if authUser}
-					<span
-						class:is-admin={authUser.type === "administrator"}
-						class="guestbook-composer__identity-summary"
-						role="button"
-						tabindex="0"
-						aria-label={`当前登录用户：${authName}`}
-					>
-						<span
-							class="guestbook-composer__identity-label guestbook-composer__identity-label--desktop"
-						>
-							{authUser.type === "administrator" ? "管理员" : "已登录"} · {authName}
-						</span>
-						<span
-							class="guestbook-composer__identity-label guestbook-composer__identity-label--mobile"
-						>
-							{authUser.type === "administrator"
-								? "管理员"
-								: formatMobileIdentityName(authName)}
-						</span>
-						<span class="guestbook-composer__identity-tooltip" role="tooltip">
-							<span>当前用户：{authName}</span>
-						</span>
-					</span>
-				{:else if loginMode !== "force"}
-					<span
-						class="guestbook-composer__identity-summary"
-						role="button"
-						tabindex="0"
-						aria-label={hasGuestProfile
-							? `游客资料，昵称 ${profile.nick}，邮箱 ${profile.mail || "未填写"}，网址 ${profile.link || "未填写"}`
-							: "游客资料未填写"}
-					>
-						<span
-							class="guestbook-composer__identity-label guestbook-composer__identity-label--desktop"
-						>
-							{hasGuestProfile ? profile.nick : "无"}
-						</span>
-						<span
-							class="guestbook-composer__identity-label guestbook-composer__identity-label--mobile"
-						>
-							{hasGuestProfile ? formatMobileIdentityName(profile.nick) : "无"}
-						</span>
-						<span class="guestbook-composer__identity-tooltip" role="tooltip">
-							{#if hasGuestProfile}
-								<span>昵称：{profile.nick}</span>
-								<span>邮箱：{profile.mail || "未填写"}</span>
-								<span>网址：{profile.link || "未填写"}</span>
-							{:else}
-								<span>尚未填写游客资料</span>
-							{/if}
-						</span>
-					</span>
+				<div class="guestbook-composer__bar guestbook-composer__input">
 					<button
-						class="guestbook-composer__guest-profile"
+						class="guestbook-composer__mode"
 						type="button"
-						onclick={() => void openGuestProfile()}
-						title={hasGuestProfile ? "修改游客资料" : "填写游客资料"}
+						onclick={toggleEditorMode}
+						aria-label={modeToggleLabel}
+						title={modeToggleLabel}
+						disabled={inputDisabled}
 					>
-						游客访问
+						{#if editorMode === "voice"}
+							<Keyboard size={20} aria-hidden="true" />
+						{:else}
+							<Mic size={20} aria-hidden="true" />
+						{/if}
 					</button>
-				{/if}
-				{#if loginMode !== "disable"}
-					{#if authUser}
+
+					{#if editorMode === "voice"}
 						<button
-							class="guestbook-composer__login guestbook-composer__login--logout"
+							bind:this={voiceButton}
+							class="guestbook-composer__voice"
 							type="button"
-							onclick={onLogout}
-							title="退出 Waline 登录"
+							onpointerdown={handleVoicePointerdown}
+							onpointerup={handleVoicePointerup}
+							onpointercancel={handleVoicePointercancel}
+							oncontextmenu={(event) => event.preventDefault()}
+							disabled={inputDisabled}
 						>
-							退出
+							{isListening
+								? voiceInterim || i18n(I18nKey.gbVoiceReleaseToSend)
+								: i18n(I18nKey.gbVoiceHoldToTalk)}
 						</button>
 					{:else}
+						<textarea
+							bind:this={textarea}
+							value={draft}
+							oninput={handleInput}
+							onkeydown={handleKeydown}
+							onfocus={() => (keyboardOpen = true)}
+							onblur={() => (keyboardOpen = false)}
+							oncompositionstart={() => (isComposing = true)}
+							oncompositionend={() => (isComposing = false)}
+							rows="1"
+							maxlength={MAX_DRAFT_LENGTH}
+							placeholder={textareaPlaceholder}
+							aria-label={i18n(I18nKey.gbComposerAria)}
+							disabled={inputDisabled}
+						></textarea>
+					{/if}
+
+					{@render emojiTriggerButton()}
+
+					{#if shape === "pill" && draft.trim()}
+						{@render sendButton()}
+					{:else}
 						<button
-							class="guestbook-composer__login"
+							class="guestbook-composer__expand"
+							class:is-expanded={shape === "card"}
 							type="button"
-							onclick={onLogin}
-							disabled={loggingIn}
+							onclick={() =>
+								void setShape(shape === "pill" ? "card" : "pill")}
+							aria-label={expandLabel}
+							title={expandLabel}
+							disabled={inputDisabled}
 						>
-							{loggingIn ? "登录中" : "登录"}
+							<Plus size={20} aria-hidden="true" />
 						</button>
 					{/if}
+				</div>
+
+				{#if shape === "card"}
+					<div class="guestbook-composer__bar guestbook-composer__tray">
+						<div class="guestbook-composer__tools">
+							{@render imageUploadButton()}
+							{@render children?.()}
+						</div>
+						<div class="guestbook-composer__actions">
+							{@render sendButton()}
+						</div>
+					</div>
 				{/if}
 
-				<button
-					class="guestbook-composer__send"
-					type="button"
-					onclick={() => void submitMessage()}
-					disabled={inputDisabled || isSending || isUploadingImage}
-					aria-busy={isSending}
-				>
-					{isSending ? "发送中" : "发送"}
-				</button>
+				{@render emojiPickerPanel()}
 			</div>
 		</div>
+	{:else}
+		<div
+			class:is-resizing={resizePointerId !== null}
+			class="guestbook-composer__editor"
+		>
+			<button
+				class="guestbook-composer__resize-handle"
+				type="button"
+				onpointerdown={startTextareaResize}
+				onpointermove={moveTextareaResize}
+				onpointerup={finishTextareaResize}
+				onpointercancel={finishTextareaResize}
+				onkeydown={handleResizeKeydown}
+				aria-label={i18n(I18nKey.gbResizeAria)}
+				title={i18n(I18nKey.gbResizeTitle)}
+			></button>
+			<textarea
+				bind:this={textarea}
+				value={draft}
+				oninput={handleInput}
+				onkeydown={handleKeydown}
+				oncompositionstart={() => (isComposing = true)}
+				oncompositionend={() => (isComposing = false)}
+				rows="3"
+				maxlength={MAX_DRAFT_LENGTH}
+				placeholder={textareaPlaceholder}
+				aria-label={i18n(I18nKey.gbComposerAria)}
+				disabled={inputDisabled}
+			></textarea>
 
-		{#if showEmojiPicker}
-			<div
-				bind:this={emojiPanel}
-				id="guestbook-emoji-picker"
-				class="guestbook-composer__emojis"
-				role="dialog"
-				aria-label="Waline 表情"
-			>
-				{#if isLoadingEmojis}
-					<div class="guestbook-composer__emoji-state" role="status">
-						<LoaderCircle class="is-spinning" size={18} aria-hidden="true" />加载表情
-					</div>
-				{:else if emojiError}
-					<div class="guestbook-composer__emoji-state" role="alert">
-						<span>{emojiError}</span>
-						<button type="button" onclick={() => void loadEmojis()}>重试</button>
-					</div>
-				{:else if activeEmojiPack}
-					<div class="guestbook-composer__emoji-tabs" role="tablist" aria-label="表情包">
-						{#each emojiPacks as pack, index}
-							<button
-								type="button"
-								role="tab"
-								aria-selected={activeEmojiPackIndex === index}
-								class:is-active={activeEmojiPackIndex === index}
-								onclick={() => (activeEmojiPackIndex = index)}
-								title={pack.name}
-							>
-								<img src={pack.icon} alt={pack.name} loading="lazy" />
-							</button>
-						{/each}
-					</div>
-					<div class="guestbook-composer__emoji-grid">
-						{#each activeEmojiPack.items as emoji}
-							<button
-								type="button"
-								onclick={() => insertEmoji(emoji)}
-								aria-label={`插入 ${emoji.key}`}
-								title={emoji.key}
-							>
-								<img src={emoji.url} alt="" loading="lazy" />
-							</button>
-						{/each}
-					</div>
-				{/if}
+			{@render pendingImagePreview()}
+
+			<span class="guestbook-composer__count">{charCountLabel}</span>
+
+			<div class="guestbook-composer__footer">
+				<div class="guestbook-composer__tools">
+					{@render emojiTriggerButton()}
+					{@render imageUploadButton()}
+					{@render children?.()}
+				</div>
+
+				<div class="guestbook-composer__actions">
+					{@render identityChip()}
+					{@render sendButton()}
+				</div>
 			</div>
-		{/if}
-	</div>
+
+			{@render emojiPickerPanel()}
+		</div>
+	{/if}
 
 	{#if composerError}
 		<div class="guestbook-composer__error" role="alert">
@@ -708,8 +1020,8 @@ async function handleImageSelection(event: Event) {
 			<button
 				type="button"
 				onclick={() => onToolError("")}
-				aria-label="关闭提示"
-				title="关闭提示"
+					aria-label={i18n(I18nKey.gbCloseTip)}
+					title={i18n(I18nKey.gbCloseTip)}
 			>
 				<X size={15} aria-hidden="true" />
 			</button>
@@ -730,7 +1042,7 @@ async function handleImageSelection(event: Event) {
 		closeGuestProfile();
 	}}
 >
-	<div class="privacy-overlay" role="button" tabindex="-1" onclick={closeGuestProfile} onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") closeGuestProfile(); }}></div>
+	<div class="privacy-overlay" onclick={closeGuestProfile}></div>
 	<form
 		class="privacy-panel guestbook-profile-modal__panel"
 		onsubmit={(event) => {
@@ -739,57 +1051,109 @@ async function handleImageSelection(event: Event) {
 		}}
 	>
 		<div class="privacy-header">
-			<h2 id="guestbook-profile-title" class="privacy-title">游客资料</h2>
+				<h2 id="guestbook-profile-title" class="privacy-title">{i18n(I18nKey.gbGuestProfile)}</h2>
 			<button
 				class="privacy-close"
 				type="button"
 				onclick={closeGuestProfile}
-				aria-label="关闭游客资料"
+				aria-label={i18n(I18nKey.gbCloseGuestProfile)}
 			>
 				<X size={20} aria-hidden="true" />
 			</button>
 		</div>
 		<div class="privacy-body guestbook-profile-modal__body">
-			<label>
-				<span>昵称</span>
-				<input
-					bind:this={profileNickInput}
-					bind:value={profileDraft.nick}
-					maxlength="30"
-					autocomplete="nickname"
-					placeholder="至少 2 个字符"
-					required
-				/>
-			</label>
-			<label>
-				<span>邮箱</span>
-				<input
-					bind:value={profileDraft.mail}
-					maxlength="100"
-					type="email"
-					autocomplete="email"
-					placeholder="用于头像，不公开"
-				/>
-			</label>
-			<label>
-				<span>网址</span>
-				<input
-					bind:value={profileDraft.link}
-					maxlength="200"
-					type="url"
-					autocomplete="url"
-					placeholder="可选"
-				/>
-			</label>
-			{#if profileDialogError}
-				<p class="guestbook-profile-modal__error" role="alert">
-					{profileDialogError}
+			{#if authUser}
+				<p class="guestbook-profile-modal__signed">
+					{authUser.type === "administrator"
+						? i18n(I18nKey.gbAdminRole)
+						: i18n(I18nKey.gbLoggedIn)}
+					· {authName}
 				</p>
+			{:else if loginMode !== "force"}
+				<label>
+					<span>{i18n(I18nKey.gbNickname)}</span>
+					<input
+						bind:this={profileNickInput}
+						bind:value={profileDraft.nick}
+						maxlength="30"
+						autocomplete="nickname"
+						placeholder={i18n(I18nKey.gbNicknamePlaceholder)}
+						required
+					/>
+				</label>
+				<label>
+					<span>{i18n(I18nKey.gbEmail)}</span>
+					<input
+						bind:value={profileDraft.mail}
+						maxlength="100"
+						type="email"
+						autocomplete="email"
+						placeholder={i18n(I18nKey.gbEmailPlaceholder)}
+					/>
+				</label>
+				<label>
+					<span>{i18n(I18nKey.gbLink)}</span>
+					<input
+						bind:value={profileDraft.link}
+						maxlength="200"
+						type="url"
+						autocomplete="url"
+						placeholder={i18n(I18nKey.gbOptional)}
+					/>
+				</label>
+				{#if profileDialogError}
+					<p class="guestbook-profile-modal__error" role="alert">
+						{profileDialogError}
+					</p>
+				{/if}
+				{#if loginMode === "enable"}
+					<div class="guestbook-profile-modal__login-entry">
+						<span class="guestbook-profile-modal__divider" aria-hidden="true">
+							{i18n(I18nKey.gbOr)}
+						</span>
+						<button
+							type="button"
+							onclick={handleDialogLogin}
+							disabled={loggingIn}
+						>
+							{loggingIn ? i18n(I18nKey.gbLoggingIn) : i18n(I18nKey.login)}
+						</button>
+					</div>
+				{/if}
 			{/if}
 		</div>
 		<div class="privacy-footer guestbook-profile-modal__actions">
-			<button type="button" onclick={closeGuestProfile}>取消</button>
-			<button class="privacy-confirm-btn" type="submit">保存资料</button>
+			{#if authUser}
+				<button
+					class="guestbook-profile-modal__logout"
+					type="button"
+					onclick={handleDialogLogout}
+				>
+					{i18n(I18nKey.logout)}
+				</button>
+				<button class="privacy-confirm-btn" type="button" onclick={closeGuestProfile}>
+					{i18n(I18nKey.close)}
+				</button>
+			{:else if loginMode === "force"}
+				<button type="button" onclick={closeGuestProfile}>
+					{i18n(I18nKey.cancel)}
+				</button>
+				<button
+					class="privacy-confirm-btn"
+					type="button"
+					onclick={handleDialogLogin}
+					disabled={loggingIn}
+				>
+					{loggingIn ? i18n(I18nKey.gbLoggingIn) : i18n(I18nKey.login)}
+				</button>
+			{:else}
+				<button type="button" onclick={closeGuestProfile}>
+					{i18n(I18nKey.cancel)}
+				</button>
+				<button class="privacy-confirm-btn" type="submit">
+					{i18n(I18nKey.gbSaveProfile)}
+				</button>
+			{/if}
 		</div>
 	</form>
 </dialog>

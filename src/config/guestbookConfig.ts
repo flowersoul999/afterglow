@@ -20,5 +20,12 @@ export const guestbookConfig: GuestbookConfig = {
 				"冒充他人、伪造身份，或收集、公开他人的个人信息。",
 			],
 		},
+		{
+			id: "comment-and-message-audit",
+			title: "管理员已开启评论及留言审核",
+			summary: "发表的内容需要经过管理员审核后才会公开显示，请耐心等待。",
+			lead: "",
+			rules: [],
+		},
 	],
 };
