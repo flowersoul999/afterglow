@@ -35,6 +35,7 @@ import {
 	buildGuestbookEditedMessageBody,
 	buildGuestbookReplyFields,
 	flattenGuestbookComments,
+	GuestbookLocalizedError,
 	getGuestbookErrorMessage,
 	getGuestbookInitials,
 	getGuestbookTextLength,
@@ -52,6 +53,12 @@ const CHANNEL_PATH = GUESTBOOK_WALINE_PATH;
 // getComment 按根评论分页，回复只附在父评论所在的那一页上，所以必须整个 path 全量拉取才不会漏掉新回复。
 // 必须是 2 的幂：脏数据页靠对半拆分回退（见 collect）；64 是服务端 pageSize 上限 100 以内最大的 2 的幂。
 const SYNC_PAGE_SIZE = 64;
+// 单次请求的超时。fetch 本身没有超时，连线被丢包时会一直 pending，
+// 页面就会永久停在骨架屏上（用户只会看到「一直卡住」）。
+const REQUEST_TIMEOUT_MS = 15_000;
+// 对半拆页只对「个别页 500」有意义。连不上时拆一次就是白等一轮，
+// 所以首屏失败直接放弃，并且整轮请求有次数上限。
+const MAX_SPLIT_REQUESTS = 8;
 // 一次渲染多少条。数据是全量的，这里只限制 DOM 里的消息数，展开时不再发请求。
 const VISIBLE_WINDOW = 20;
 const MIN_MESSAGE_LENGTH = 2;
@@ -367,23 +374,54 @@ function handleAuthenticationError(error: unknown): boolean {
 	return true;
 }
 
+interface RequestGuard {
+	signal: AbortSignal;
+	timedOut: () => boolean;
+	dispose: () => void;
+}
+
+/** 把「超时」和「外部取消」两个信号合并成一个，并区分是哪一种。 */
+function createRequestGuard(
+	parent: AbortSignal | undefined,
+	timeoutMs: number,
+): RequestGuard {
+	const controller = new AbortController();
+	let timedOut = false;
+	const timer = setTimeout(() => {
+		timedOut = true;
+		controller.abort();
+	}, timeoutMs);
+	const forwardAbort = () => controller.abort();
+	parent?.addEventListener("abort", forwardAbort, { once: true });
+
+	return {
+		signal: controller.signal,
+		timedOut: () => timedOut,
+		dispose: () => {
+			clearTimeout(timer);
+			parent?.removeEventListener("abort", forwardAbort);
+		},
+	};
+}
+
 async function fetchAllMessages(signal?: AbortSignal): Promise<{
 	items: GuestbookMessage[];
 	incomplete: boolean;
 }> {
-	if (!serverURL) throw new Error(i18n(I18nKey.gbServerNotConfigured));
+	if (!serverURL)
+		throw new GuestbookLocalizedError(i18n(I18nKey.gbServerNotConfigured));
 
 	const collected = new Map<string, GuestbookMessage>();
 	let totalCount = 0;
 	let incomplete = false;
 	let responded = false;
 	let firstError: unknown = null;
+	let requestCount = 0;
 
-	// 服务端遇到 mail 为 null 的历史留言会在算头像时抛错、整页 500，
-	// 所以失败时把页区间对半重取，只丢掉单条也取不回来的那几条。
-	const collect = async (page: number, pageSize: number): Promise<void> => {
+	const request = async (page: number, pageSize: number) => {
+		const guard = createRequestGuard(signal, REQUEST_TIMEOUT_MS);
 		try {
-			const response = await getComment({
+			return await getComment({
 				serverURL,
 				lang,
 				path: CHANNEL_PATH,
@@ -391,8 +429,28 @@ async function fetchAllMessages(signal?: AbortSignal): Promise<{
 				pageSize,
 				sortBy: "insertedAt_desc",
 				token: authUser?.token,
-				signal,
+				signal: guard.signal,
 			});
+		} catch (error) {
+			if (guard.timedOut()) {
+				throw new GuestbookLocalizedError(i18n(I18nKey.gbRequestTimeout));
+			}
+			throw error;
+		} finally {
+			guard.dispose();
+		}
+	};
+
+	// 服务端遇到 mail 为 null 的历史留言会在算头像时抛错、整页 500，
+	// 所以「连线正常时」把失败页对半重取，只丢掉单条也取不回来的那几条。
+	const collect = async (page: number, pageSize: number): Promise<void> => {
+		if (requestCount >= MAX_SPLIT_REQUESTS) {
+			incomplete = true;
+			return;
+		}
+		requestCount += 1;
+		try {
+			const response = await request(page, pageSize);
 			responded = true;
 			totalCount ||= response.count;
 			for (const message of flattenGuestbookComments(response.data)) {
@@ -401,7 +459,8 @@ async function fetchAllMessages(signal?: AbortSignal): Promise<{
 		} catch (error) {
 			if (signal?.aborted) throw error;
 			firstError ||= error;
-			if (pageSize <= 1) {
+			// 一次都没成功过 = 整站连不上（或超时），继续对半拆只会把等待放大几十倍
+			if (!responded || pageSize <= 1) {
 				incomplete = true;
 				return;
 			}

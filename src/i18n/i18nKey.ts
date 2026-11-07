@@ -481,6 +481,7 @@ enum I18nKey {
 	gbLoginExpired = "gbLoginExpired",
 	gbAuthExpired = "gbAuthExpired",
 	gbServerNotConfigured = "gbServerNotConfigured",
+	gbRequestTimeout = "gbRequestTimeout",
 	gbOfflineInitial = "gbOfflineInitial",
 	gbNetworkDisconnected = "gbNetworkDisconnected",
 	gbToday = "gbToday",

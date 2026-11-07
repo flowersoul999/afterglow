@@ -493,6 +493,7 @@ export const zh_CN: Translation = {
 	[Key.gbLoginExpired]: "登录信息已失效，请重新登录",
 	[Key.gbAuthExpired]: "登录状态已失效，请重新登录",
 	[Key.gbServerNotConfigured]: "Waline 服务地址未配置",
+	[Key.gbRequestTimeout]: "连接留言服务超时，请检查网络后重试",
 	[Key.gbOfflineInitial]: "当前处于离线状态，恢复网络后将自动加载",
 	[Key.gbNetworkDisconnected]: "网络已断开，恢复后可点击刷新按钮同步",
 	[Key.gbToday]: "今天",
