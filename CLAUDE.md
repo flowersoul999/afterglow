@@ -41,7 +41,7 @@
 | 部署 | **GitHub Pages**（Actions `deploy-pages.yml`：push `main` → `pnpm build` → 上传 Pages，域名 jojocode.cn，见 `docs/deploy-github-pages.md`；`public/CNAME` 必须保留）。`build.yml` 并存作 CI 质量门。⚠️ `docs/deploy-edgeone-pages.md` 是从上游搬来的残留文档，方案从未执行，别照着操作 |
 | 线上 | https://jojocode.cn/ |
 | 仓库 | `flowersoul999/afterglow`（main） |
-| Umami 统计 | GitHub Actions 仓库变量 `PUBLIC_UMAMI_WEBSITE_ID` 提供网站 ID；默认追踪脚本为 `https://cloud.umami.is/script.js`，自托管时可用 Secret `PUBLIC_UMAMI_BASE` 覆盖；登录 `/admin` 后可用顶栏快捷入口打开 Cloud 控制台 |
+| Umami 统计 | 追踪脚本默认 `https://cloud.umami.is/script.js`，网站 ID 来自 Actions 变量 `PUBLIC_UMAMI_WEBSITE_ID`；首页「访问轨迹」靠**公开分享码**实时取数（`PUBLIC_UMAMI_SHARE_ID`，默认值已写在 `siteConfig.ts`，非密钥）。⚠️ Cloud 的**读数接口在 `/analytics/us/api/…`**，与脚本根路径不同，由 `umamiAnalytics.apiBase` 自动推导，别拿脚本地址直接拼 `/api/share`（会 404）。纯静态托管下 `/api/home-stats.json` 只是构建时快照，不能作为数据源 |
 | 后台 | PagesCMS 自托管方案（**当前未部署**；配置声明在仓库根 `.pages.yml`，部署步骤见第 19 节） |
 | 附属服务 | 相册默认使用仓库本地静态图片，不依赖图床；CloudFlare ImgBed 仅保留可选回退。TTS / 后台 CMS 目前未部署，配置留空自动降级 |
 | 来源 | Fork 自 CuteLeaf/Firefly ← saicaca/fuwari，已深度定制为「jojostar」独立站点 |

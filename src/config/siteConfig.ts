@@ -6,6 +6,26 @@ import { fontConfig } from "./fontConfig";
 // 类型也已经收窄成 "zh_CN"，填别的值会在 astro check 阶段报错。
 const SITE_LANG = "zh_CN";
 
+// ── Umami 统计配置 ──────────────────────────────────────────────
+// scriptUrl（上报）和 apiBase（读数据）在 Umami Cloud 上**不是同一个根路径**：
+//   · 上报脚本：https://cloud.umami.is/script.js → POST /api/send
+//   · 读数据接口：https://cloud.umami.is/analytics/us/api/websites/{id}/stats
+// 根路径只有 /api/send，没有 /api/share 与 /api/websites（直接请求会 404 / 401），
+// 所以 Cloud 场景必须把 region 前缀带上，否则首页「访问轨迹」永远读不到数字。
+// 自托管 Umami 没有这个前缀，脚本与接口同一个根，保持原样即可。
+const UMAMI_SCRIPT_BASE =
+	(import.meta.env.PUBLIC_UMAMI_BASE as string) || "https://cloud.umami.is";
+const UMAMI_API_BASE =
+	(import.meta.env.PUBLIC_UMAMI_API_BASE as string) ||
+	(UMAMI_SCRIPT_BASE.includes("cloud.umami.is")
+		? `${UMAMI_SCRIPT_BASE}/analytics/us`
+		: UMAMI_SCRIPT_BASE);
+// 分享码是**公开信息**（等价于页面上的 data-umami-share-id，任何人查看源码都能看到，
+// 分享页 https://cloud.umami.is/share/{code} 本身也是公开的），不是密钥，所以留默认值。
+// 需要换分享链接时，用 PUBLIC_UMAMI_SHARE_ID 覆盖即可，不必改代码。
+const UMAMI_SHARE_ID =
+	import.meta.env.PUBLIC_UMAMI_SHARE_ID || "Kx4Tz6sGzuWnWwdU";
+
 export const siteConfig: SiteConfig = {
 	// 站点标题
 	title: "jojostar",
@@ -219,10 +239,9 @@ export const siteConfig: SiteConfig = {
 		// Umami Analytics
 		umamiAnalytics: {
 			websiteId: import.meta.env.PUBLIC_UMAMI_WEBSITE_ID || "",
-			scriptUrl: import.meta.env.PUBLIC_UMAMI_BASE
-				? `${import.meta.env.PUBLIC_UMAMI_BASE}/script.js`
-				: "https://cloud.umami.is/script.js",
-			shareId: import.meta.env.PUBLIC_UMAMI_SHARE_ID || "",
+			scriptUrl: `${UMAMI_SCRIPT_BASE}/script.js`,
+			apiBase: UMAMI_API_BASE,
+			shareId: UMAMI_SHARE_ID,
 		},
 	},
 

@@ -14,11 +14,15 @@ function json(body: UmamiStatsResponse, status = 200) {
 	});
 }
 
+// 保留路径，只去掉末尾斜杠：自托管实例可能挂在子路径下（Umami Cloud 就是 /analytics/us），
+// 早先取 `.origin` 会把这段前缀吃掉，请求直接 404。
 function normalizeBaseUrl(rawBaseUrl: string) {
+	const trimmed = rawBaseUrl.trim().replace(/\/+$/, "");
 	try {
-		return new URL(rawBaseUrl).origin;
+		const parsed = new URL(trimmed);
+		return `${parsed.origin}${parsed.pathname.replace(/\/+$/, "")}`;
 	} catch {
-		return rawBaseUrl.replace(/\/+$/, "");
+		return trimmed;
 	}
 }
 
@@ -86,7 +90,10 @@ async function getUmamiStats(
 }
 
 export async function GET() {
-	const rawBaseUrl = import.meta.env.PUBLIC_UMAMI_BASE || "";
+	const rawBaseUrl =
+		(import.meta.env.PUBLIC_UMAMI_API_BASE as string) ||
+		(import.meta.env.PUBLIC_UMAMI_BASE as string) ||
+		"";
 	const username = import.meta.env.PUBLIC_UMAMI_USERNAME || "";
 	const password = import.meta.env.PUBLIC_UMAMI_PASSWORD || "";
 	const websiteId = import.meta.env.PUBLIC_UMAMI_WEBSITE_ID || "";
