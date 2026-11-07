@@ -136,7 +136,7 @@ export class EditorStore {
 				this.applyIdentity(identity);
 				if (this.justAuthed) {
 					this.justAuthed = false;
-					this.notify("GitHub 登录成功，资料卡里有「后台」入口");
+					this.notify("GitHub 登录成功，菜单里有「内容管理」入口");
 				}
 			} catch (error) {
 				// 401 = 没登录，是常态，不该在界面上报错

@@ -61,7 +61,7 @@ src/
 │   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
 │   ├── controls/        # 交互控件：搜索、归档三视图树（ArchivePanel/ArchiveTree）、主题、Dock (8)
-│   ├── editor/          # 站长在线编辑（2026-11-03，11-04 改 GitHub OAuth）：EditorNavButton 资料卡内入口 / EditorLoginModal OAuth 登录 / MomentDrawer 说说抽屉 / EditorRoot 常驻外壳（唯一 import editor.css 的地方） (4)
+│   ├── editor/          # 站长在线编辑（2026-11-03，11-04 改 GitHub OAuth，11-07 补手机菜单入口）：EditorNavButton 桌面资料卡入口 / EditorMobileMenuEntry 手机导航菜单末项 / EditorLoginModal OAuth 登录 / MomentDrawer 说说抽屉 / EditorRoot 常驻外壳（唯一 import editor.css 的地方） (5)
 │   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器)
 │   ├── layout/          # 布局组件：Navbar, Footer, SideBar, HomeHero... (19)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
@@ -118,7 +118,7 @@ src/
 .claude/settings.json     # 命令白名单（分类器不可用时不卡 Bash）
 pagefind.yml              # Pagefind 索引排除配置（katex、搜索面板等）
 scripts/                  # 开发脚本：12 个中文命名脚本目录（生成图标/新建文章/生成摘要/生成封面/转WebP/添加导航/下载影视/下载音乐/回填友链字段/友链截图/友链状态检测/TTS服务）+ cli.js、vision.mjs（图片识别）、compress-images.mjs、rename-images.mjs、import-wallpapers.mjs、check-svelte-warnings.mjs（脚本清单见第 0 节；生成封面 见第 2 节「文章封面生成」；TTS服务 为 edge-tts 朗读服务，部署产物，教程见 docs/deploy-edge-tts.md）
-docs/                     # 使用/部署文档（含 manage-local-albums.md / deploy-cloudflare-imgbed.md / deploy-pagescms-vercel.md 等）+ ssh-hardening.md + superpowers/{specs,plans}
+docs/                     # 使用/部署文档（含 manage-local-albums.md / deploy-cloudflare-imgbed.md / deploy-pagescms-vercel.md 等）+ ssh-hardening.md + superpowers/{specs,plans} + prototypes/（独立 HTML 交互方案图，不参与站点构建）
 cloudflare-worker/        # ⚠️ 站长登录用的 Cloudflare Worker（2026-11-04）：只接管 /api/*。
                           # **唯一有服务端逻辑的地方**，不参与 Astro 构建、不是 npm 依赖，
                           # 靠 Cloudflare 控制台粘贴 index.js 部署（Route: jojocode.cn/api/*）。
@@ -1335,15 +1335,21 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 
 ## 24. 站长在线编辑 + 站内后台（2026-11-03 起，11-04 补 OAuth 与 /admin）
 
-站内改内容，不用回本地开编辑器。两个入口并存：
-- **说说抽屉**：资料卡里的「+ 说说」，随手记一句用的
+站内改内容，不用回本地开编辑器。桌面和手机共用同一登录态与编辑弹层：
+- **桌面端**：资料卡里的「后台 / + 说说 / 退出」
+- **手机端**：底部 Dock 打开的菜单弹窗最底部显示低对比度「站长登录」；登录后切换为「内容管理 / 新建说说 / 退出登录」
 - **`/admin` 后台**：三栏界面管文章 / 说说 / 更新日志，正经写东西用的
 
 ### 架构
 
 ```
 NavbarProfileCard.astro（「JOJOSTAR」悬停弹出的资料卡）
-└── EditorNavButton.svelte   # 卡内入口：未登录=「登录」胶囊，已登录=「说说 / 退出」
+└── EditorNavButton.svelte   # 桌面卡内入口；≤1023px 由 CSS 隐藏
+
+MobileMenuSheet.astro（手机底部 Dock 打开的菜单弹窗）
+└── EditorMobileMenuEntry.svelte
+    # 菜单末项：未登录=低对比度「站长登录」
+    # 已登录=「内容管理 / 新建说说 / 退出登录」
 
 EditorRoot.svelte（⚠️ 挂 MainGridLayout.astro、#navbar-wrapper **外面** → 换页不重建）
 ├── EditorLoginModal.svelte  # 复用 .privacy-modal 骨架（dialog = top layer，不受 transform 影响）
@@ -1368,9 +1374,10 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/content-serializer.ts` | **通用 frontmatter**：拆成有序 entry，没改过的原样写回（改一个字段只产生一行 diff）。支持内联数组 `[a, b]` 与块数组两种写法，`gap` 记录 `---` 与正文之间的空行 |
 | `src/utils/editor/content-repo.ts` | 集合列目录（递归 + 20s 缓存）、路径模板展开、撞名 `-2` 重试 |
 | `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
+| `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部站长入口；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
 | `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览） |
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
-| `src/styles/components/editor.css` | 抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
+| `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
 | `src/styles/pages/admin.css` | 后台样式，只由 AdminApp import |
 | `cloudflare-worker/index.js` | 服务端全部逻辑：8 个路由 + Cookie + AES-GCM 信封加密 + 路径护栏 |
 

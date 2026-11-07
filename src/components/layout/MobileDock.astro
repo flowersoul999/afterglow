@@ -115,6 +115,8 @@ import { Icon } from "astro-icon/components";
 		setMenuOpenState(false);
 	}
 
+	document.addEventListener("mobile-menu-sheet:close", closeMenuSheet);
+
 	menuBtn?.addEventListener("click", function(e) {
 		e.stopPropagation();
 		var els = getMenuSheetElements();
