@@ -49,8 +49,11 @@ const contactItems = homeConfig.links.map((link) => ({
 const primaryContactItems = contactItems.filter((link) =>
 	primaryContactNames.has(link.name.toLowerCase()),
 );
+// data-umami-base 传的是「读统计数字」用的 API 根路径，不是追踪脚本地址。
+// Umami Cloud 上两者前缀不同（脚本在 /script.js，接口在 /analytics/{region}/api/…），
+// 拿到脚本地址去拼 /api/share 会 404，见 siteConfig 里的说明。
 const umamiBase =
-	(import.meta.env.PUBLIC_UMAMI_BASE as string) ||
+	siteConfig.analytics?.umamiAnalytics?.apiBase ||
 	siteConfig.analytics?.umamiAnalytics?.scriptUrl?.replace(
 		/\/script\.js$/,
 		"",
@@ -185,10 +188,27 @@ const fallbackStatsApiUrl = url("/api/home-stats.json");
 function renderVisitStats(
 	detail: HTMLElement | null,
 	valueNodes: NodeListOf<HTMLElement>,
-	data: { uv?: number; visitors?: number; pv?: number; pageviews?: number },
+	data: {
+		uv?: number | null;
+		visitors?: number | null;
+		pv?: number | null;
+		pageviews?: number | null;
+	},
 ) {
-	const uvRaw = data.uv ?? data.visitors ?? 0;
-	const pvRaw = data.pv ?? data.pageviews ?? 0;
+	const uvRaw = data.uv ?? data.visitors;
+	const pvRaw = data.pv ?? data.pageviews;
+	// 接口失败时返回的是 null，绝不能 `?? 0` 兜成 0——那会把「没读到」伪装成「零访问」，
+	// 2026-11-08 就是这么把一条断链藏了三天。读不到就老实显示 --。
+	if (typeof uvRaw !== "number" || typeof pvRaw !== "number") {
+		if (detail) detail.textContent = "访客 -- / 浏览 --（统计未就绪）";
+		valueNodes.forEach((node) => {
+			if (!node.dataset.statValue) return;
+			delete node.dataset.compactValue;
+			delete node.dataset.fullValue;
+			node.textContent = "--";
+		});
+		return;
+	}
 	const uvCompact = formatCompactNumber(uvRaw);
 	const pvCompact = formatCompactNumber(pvRaw);
 	if (detail) detail.textContent = `访客 ${uvCompact} / 浏览 ${pvCompact}`;
@@ -208,7 +228,7 @@ async function fetchUmamiViaShare(
 	umamiBase: string,
 	websiteId: string,
 	shareId: string,
-): Promise<{ visitors: number; pageviews: number } | null> {
+): Promise<{ visitors: number | null; pageviews: number | null } | null> {
 	const normalizedBase = umamiBase.replace(/\/+$/, "");
 	const shareRes = await fetch(`${normalizedBase}/api/share/${shareId}`, {
 		headers: { Accept: "application/json" },
@@ -234,9 +254,11 @@ async function fetchUmamiViaShare(
 		uv?: number;
 		pv?: number;
 	};
+	const pick = (value: number | null | undefined) =>
+		typeof value === "number" && Number.isFinite(value) ? value : null;
 	return {
-		visitors: Number(stats.visitors ?? stats.uv ?? 0),
-		pageviews: Number(stats.pageviews ?? stats.pv ?? 0),
+		visitors: pick(stats.visitors ?? stats.uv),
+		pageviews: pick(stats.pageviews ?? stats.pv),
 	};
 }
 
@@ -247,6 +269,7 @@ function initVisitStats(layer: HTMLElement) {
 	const fallbackUrl = (layer.dataset.statsFallbackUrl || layer.dataset.statsApiUrl || "").trim();
 	const detail = layer.querySelector<HTMLElement>(".data-card[data-stat-kind='visits'] .data-card__detail");
 	const valueNodes = layer.querySelectorAll<HTMLElement>("[data-stat-value]");
+	const showUnavailable = () => renderVisitStats(detail, valueNodes, {});
 
 	if (umamiBase && websiteId && shareId) {
 		fetchUmamiViaShare(umamiBase, websiteId, shareId)
@@ -256,7 +279,7 @@ function initVisitStats(layer: HTMLElement) {
 			})
 			.catch(() => {
 				if (!fallbackUrl) {
-					if (detail) detail.textContent = "访客 -- / 浏览 --";
+					showUnavailable();
 					return;
 				}
 				fetch(fallbackUrl)
@@ -264,12 +287,10 @@ function initVisitStats(layer: HTMLElement) {
 						if (!response.ok) throw new Error("Fallback failed");
 						return response.json();
 					})
-					.then((data: { uv?: number; visitors?: number; pv?: number; pageviews?: number }) => {
+					.then((data: { uv?: number | null; visitors?: number | null; pv?: number | null; pageviews?: number | null }) => {
 						renderVisitStats(detail, valueNodes, data);
 					})
-					.catch(() => {
-						if (detail) detail.textContent = "访客 -- / 浏览 --";
-					});
+					.catch(showUnavailable);
 			});
 		return;
 	}
@@ -280,12 +301,10 @@ function initVisitStats(layer: HTMLElement) {
 			if (!response.ok) throw new Error("Failed to load Umami stats");
 			return response.json();
 		})
-		.then((data: { uv?: number; visitors?: number; pv?: number; pageviews?: number }) => {
+		.then((data: { uv?: number | null; visitors?: number | null; pv?: number | null; pageviews?: number | null }) => {
 			renderVisitStats(detail, valueNodes, data);
 		})
-		.catch(() => {
-			if (detail) detail.textContent = "访客 -- / 浏览 --";
-		});
+		.catch(showUnavailable);
 }
 
 	function initMetricCards(layer: HTMLElement) {
