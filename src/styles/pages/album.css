@@ -393,40 +393,63 @@
 	text-align: center;
 }
 
+/* 灯箱打开时锁住页面滚动，否则右侧滚动条会压在遮罩层上面 */
+html:has(.album-lightbox[open]) {
+	overflow: hidden;
+}
+
 .album-lightbox {
-	width: 100vw;
+	/* 用 inset 撑满视口，而不是 100vw/100dvh：后者会把页面滚动条宽度
+	   也算进来，导致遮罩层整体右移、关闭按钮被切 */
+	position: fixed;
+	inset: 0;
+	width: auto;
+	height: auto;
 	max-width: none;
-	height: 100dvh;
 	max-height: none;
 	margin: 0;
 	padding: 0;
 	border: 0;
 	overflow: hidden;
-	background: transparent;
-	color: rgba(244, 247, 252, 0.96);
+	overscroll-behavior: contain;
+	/* 底色画在 dialog 自身而非 ::backdrop：既能拿到主题变量，
+	   也不再把整页压成纯黑。浅色为纸白磨砂、暗色为烟灰。 */
+	background:
+		radial-gradient(circle at 26% 8%, rgba(2, 4, 10, 0.05), transparent 46%),
+		color-mix(in srgb, var(--page-bg) 90%, var(--btn-plain-bg-hover));
+	backdrop-filter: blur(20px) saturate(1.04);
+	color: var(--deep-text);
 }
 
 .album-lightbox::backdrop {
-	background: rgba(8, 10, 18, 0.9);
-	backdrop-filter: blur(14px);
+	/* dialog 用 inset 铺满后会空出页面滚动条那条窄缝，
+	   backdrop 补一层同色底把它盖住；变量取不到时退化为透明。 */
+	background: color-mix(in srgb, var(--page-bg) 92%, var(--btn-plain-bg-hover));
 }
 
 .album-lightbox__figure {
 	position: absolute;
-	inset: 4.5rem clamp(4rem, 12vw, 11rem) 3rem;
+	inset: 4.5rem clamp(3.5rem, 13vw, 12rem) 3rem;
 	display: grid;
+	grid-template-rows: minmax(0, 1fr);
+	grid-template-columns: minmax(0, 1fr);
 	place-items: center;
 	margin: 0;
+	overflow: hidden;
 	pointer-events: none;
 }
 
 .album-lightbox__figure img {
 	display: block;
+	width: auto;
+	height: auto;
 	max-width: 100%;
 	max-height: 100%;
-	border-radius: 0.7rem;
+	border-radius: 0.65rem;
 	object-fit: contain;
-	box-shadow: 0 1.5rem 5rem rgba(2, 4, 10, 0.48);
+	box-shadow:
+		0 1.2rem 3.2rem rgba(2, 4, 10, 0.22),
+		0 0 0 1px color-mix(in srgb, var(--deep-text) 8%, transparent);
 }
 
 .album-lightbox__close,
@@ -438,20 +461,23 @@
 	width: 2.65rem;
 	height: 2.65rem;
 	padding: 0;
-	border: 1px solid rgba(244, 247, 252, 0.16);
+	border: 1px solid color-mix(in srgb, var(--deep-text) 14%, transparent);
 	border-radius: 999px;
-	background: rgba(244, 247, 252, 0.1);
-	color: rgba(244, 247, 252, 0.92);
+	background: color-mix(in srgb, var(--page-bg) 74%, transparent);
+	color: color-mix(in srgb, var(--deep-text) 76%, transparent);
 	font-size: 1.35rem;
 	cursor: pointer;
+	box-shadow: 0 0.5rem 1.5rem rgba(2, 4, 10, 0.14);
 	transition:
 		background-color 150ms ease,
+		color 150ms ease,
 		transform 150ms ease;
 }
 
 .album-lightbox__close:hover,
 .album-lightbox__nav:hover {
-	background: rgba(244, 247, 252, 0.2);
+	background: color-mix(in srgb, var(--deep-text) 9%, var(--page-bg));
+	color: var(--deep-text);
 	transform: scale(1.04);
 }
 
@@ -482,7 +508,7 @@
 	z-index: 3;
 	top: 1.55rem;
 	left: 50%;
-	color: rgba(244, 247, 252, 0.72);
+	color: color-mix(in srgb, var(--deep-text) 58%, transparent);
 	font-size: 0.78rem;
 	letter-spacing: 0.08em;
 	transform: translateX(-50%);
@@ -501,7 +527,7 @@
 	background: color-mix(in srgb, var(--primary) 24%, #f5df85);
 	color: rgba(32, 30, 27, 0.92);
 	box-shadow:
-		0 1.3rem 3rem rgba(2, 4, 10, 0.32),
+		0 1.1rem 2.4rem rgba(2, 4, 10, 0.2),
 		inset 0 1px rgba(250, 247, 238, 0.5);
 	cursor: grab;
 	touch-action: none;
@@ -663,12 +689,13 @@
 	}
 
 	.album-lightbox__figure {
-		inset: 4rem 0.6rem 10rem;
+		inset: 3.6rem 0.6rem 11rem;
 	}
 
+	/* 便签在底部通栏，切换按钮若压在它下面会点不到，改为垂直居中 */
 	.album-lightbox__nav {
-		top: auto;
-		bottom: 5.2rem;
+		top: 50%;
+		bottom: auto;
 	}
 
 	.album-lightbox__note {
