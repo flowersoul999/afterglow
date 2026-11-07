@@ -303,8 +303,20 @@ export function buildGuestbookEditedMessageBody(
 	return `${message.legacyReplyMarker}\n${content}`;
 }
 
+/**
+ * 已经本地化好的提示：getGuestbookErrorMessage 直接透传，
+ * 否则会被下面的通用正则映射改写成「留言服务暂时不可用」。
+ */
+export class GuestbookLocalizedError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "GuestbookLocalizedError";
+	}
+}
+
 export function getGuestbookErrorMessage(error: unknown): string {
 	if (error instanceof DOMException && error.name === "AbortError") return "";
+	if (error instanceof GuestbookLocalizedError) return error.message;
 	if (error instanceof Error) {
 		const message = error.message;
 		if (/failed to fetch|networkerror|network request/iu.test(message)) {
