@@ -9,6 +9,7 @@ import MusicManager from "@components/features/MusicManager.astro";
 import MusicPlayerWidget from "@components/features/MusicPlayerWidget.astro";
 import PageLoader from "@components/features/PageLoader.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
+import TabRadialMenu from "@components/features/TabRadialMenu.svelte";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
 
 import {
@@ -459,6 +460,10 @@ const siteLang = lang.replace("_", "-");
 
     <!-- Search Modal -->
     <SearchModal client:idle />
+
+    <!-- 按住 Tab 呼出的径向导航轮盘（2026-11-07 从旧博客移植）
+         挂在 #swup-container 之外：全局单例，跨导航不重建（CLAUDE.md §8-9） -->
+    <TabRadialMenu client:idle />
   </body>
 </html>
 

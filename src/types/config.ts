@@ -680,6 +680,24 @@ export type SakuraConfig = {
 	zIndex: number; // 层级，确保樱花在合适的层级显示
 };
 
+/**
+ * Tab 呼出轮盘（2026-11-07 从旧博客移植）：按住 Tab 在鼠标处弹出 12 项径向菜单，
+ * 松开跳转到最近的高亮项，Esc 取消。
+ */
+export type TabRadialMenuItem = {
+	label: string; // 按钮下方文字
+	href: string; // 站内路径（不含 BASE_URL，渲染时由 url() 补）
+	icon: string; // lucide-svelte 图标名，映射表在 TabRadialMenu.svelte 的 ICONS
+};
+
+export type TabRadialMenuConfig = {
+	enable: boolean; // 总开关
+	// 焦点在输入框 / 文本域 / contenteditable 内时是否放行 Tab（true = 不拦截，表单可用 Tab 切换）
+	ignoreEditable: boolean;
+	// 菜单项，顺序 = 从正上方开始、顺时针的出场顺序；改数量会自动重算角度
+	items: TabRadialMenuItem[];
+};
+
 // Spine 看板娘配置
 export type SpineModelConfig = {
 	enable: boolean; // 是否启用 Spine 看板娘
