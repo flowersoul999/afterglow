@@ -107,6 +107,38 @@ export function stripMomentMedia(body: string | undefined | null): string {
 }
 
 /**
+ * 把正文拆成「纯文字」和「按顺序的媒体 URL」。
+ *
+ * 编辑器的图片区靠它把已写好的 `![](assets/diary/x.webp)` 还原成缩略图列表，
+ * 保存时再按列表顺序重新拼回正文末尾（见 MomentDrawer 的 save）。
+ * 只做拆解，不改动 stripMomentMedia 那套「给摘要用的」行为。
+ */
+export function splitMomentMedia(body: string | undefined | null): {
+	text: string;
+	media: string[];
+} {
+	if (!body) return { text: "", media: [] };
+
+	const media: string[] = [];
+	const text = body.replace(
+		MEDIA_RE,
+		(_match: string, markdownUrl?: string, htmlUrl?: string) => {
+			const url = cleanUrl(markdownUrl ?? htmlUrl ?? "");
+			if (url) media.push(url);
+			return "";
+		},
+	);
+
+	return {
+		text: text
+			.replace(/[ \t]+$/gmu, "")
+			.replace(/\n{3,}/gu, "\n\n")
+			.trim(),
+		media,
+	};
+}
+
+/**
  * 正文转小写纯文本（去 Markdown 标记与图片语法），供前端搜索匹配。
  */
 export function toMomentPlainText(body: string | undefined | null): string {

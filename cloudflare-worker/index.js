@@ -105,6 +105,15 @@ export default {
 			return json({ ok: false, message: "不支持的请求方法" }, 405);
 		}
 
+		// 图片等二进制文件：`/file` 走 textToBase64，图片进去必然损坏，
+		// 所以单开一条只收 base64 原串的通道（说说编辑器上传图用）。
+		if (path === "/api/github/blob" && method === "PUT") {
+			const session = await readSession(request, env);
+			if (!session)
+				return json({ ok: false, message: "未登录或登录已过期" }, 401);
+			return writeBlob(request, session.token);
+		}
+
 		if (path === "/api/github/batch") {
 			const session = await readSession(request, env);
 			if (!session)
@@ -548,6 +557,58 @@ async function writeFile(request, token) {
 	return json({ ok: true, sha: data.content?.sha ?? "" });
 }
 
+/**
+ * 写二进制文件（图片）。
+ *
+ * 与 `/file` 的唯一区别：**不做 textToBase64**。把图片的 base64 当 UTF-8 再编
+ * 一次，字节必然损坏，网页上就是一张裂图。所以这里收到的 base64 原样交给 GitHub。
+ */
+async function writeBlob(request, token) {
+	const body = await readJson(request);
+	if (!body) return json({ ok: false, message: "请求体不是合法 JSON" }, 400);
+
+	const path = typeof body.path === "string" ? body.path : "";
+	const invalid = assertPath(path);
+	if (invalid) return invalid;
+
+	const base64 =
+		typeof body.base64 === "string"
+			? body.base64.replace(/^data:[^,]*,/, "").replace(/\s/g, "")
+			: "";
+	if (!base64) return json({ ok: false, message: "缺少 base64 内容" }, 400);
+
+	// 由 base64 长度反推字节数，超过 8MB 直接拒：博客配图没必要这么大，
+	// 早点拦下比等 GitHub 超时便宜。
+	if (Math.floor((base64.length * 3) / 4) > 8 * 1024 * 1024) {
+		return json({ ok: false, message: "图片超过 8MB，请先压缩" }, 413);
+	}
+
+	const response = await fetch(
+		`${GITHUB_API}/repos/${REPO_OWNER}/${REPO_NAME}/contents/${encodePath(path)}`,
+		{
+			method: "PUT",
+			headers: { ...githubHeaders(token), "Content-Type": "application/json" },
+			body: JSON.stringify({
+				message:
+					typeof body.message === "string" && body.message
+						? body.message
+						: "chore(content): 上传图片",
+				content: base64,
+				branch:
+					typeof body.branch === "string" && body.branch
+						? body.branch
+						: DEFAULT_BRANCH,
+			}),
+		},
+	);
+
+	if (!response.ok) return upstreamError(response);
+
+	const data = await response.json();
+	return json({ ok: true, sha: data.content?.sha ?? "" });
+}
+
+/** 删文件。GitHub 的删除接口强制要求 sha，传错会给 409 */
 async function deleteFile(request, token) {
 	const body = await readJson(request);
 	if (!body) return json({ ok: false, message: "请求体不是合法 JSON" }, 400);
