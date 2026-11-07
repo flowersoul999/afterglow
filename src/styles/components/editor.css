@@ -1103,3 +1103,309 @@
 		transform: translateX(-50%);
 	}
 }
+
+/* ============================================
+ * 五、说说页的「管理」入口（封面右上角）
+ *
+ * 按钮与菜单是 Astro 静态 DOM（MomentsCover.astro），交互全在
+ * moments.astro 的内联脚本里；这里只管长相。
+ * 和卡片上的铅笔/垃圾桶同源：未登录时 html 上没有 .is-editor，整块不出现。
+ * ============================================ */
+.wx-manage {
+	position: absolute;
+	top: 0.75rem;
+	right: 1.25rem;
+	z-index: 30;
+	display: none;
+}
+
+html.is-editor .wx-manage {
+	display: block;
+}
+
+.wx-manage__btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	height: 2.125rem;
+	padding: 0 0.7rem 0 0.6rem;
+	border: 1px solid oklch(1 0 0 / 0.55);
+	border-radius: 9999px;
+	background: oklch(1 0 0 / 0.8);
+	backdrop-filter: blur(8px);
+	color: var(--primary);
+	font-family: inherit;
+	font-size: 0.75rem;
+	font-weight: 600;
+	cursor: pointer;
+	box-shadow: 0 2px 10px oklch(0 0 0 / 0.14);
+	transition:
+		background 0.18s ease,
+		border-color 0.18s ease;
+}
+
+.wx-manage__btn:hover {
+	background: oklch(1 0 0 / 0.95);
+	border-color: var(--primary);
+}
+
+.wx-manage__icon,
+.wx-manage__caret {
+	width: 1rem;
+	height: 1rem;
+	color: var(--primary);
+}
+
+.wx-manage__caret {
+	transition: transform 0.18s ease;
+}
+
+.wx-manage__btn.is-open .wx-manage__caret {
+	transform: rotate(180deg);
+}
+
+.wx-manage__menu {
+	position: absolute;
+	top: calc(100% + 0.5rem);
+	right: 0;
+	z-index: 32;
+	width: 13.5rem;
+	padding: 0.3rem;
+	border: 1px solid var(--line-color);
+	border-radius: 0.75rem;
+	background: var(--float-panel-bg);
+	box-shadow: 0 18px 44px oklch(0 0 0 / 0.18);
+	animation: editor-menu-in 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wx-manage__menu[hidden] {
+	display: none;
+}
+
+@keyframes editor-menu-in {
+	from {
+		opacity: 0;
+		transform: translateY(-4px) scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+.wx-manage__hint {
+	margin: 0 0 0.25rem;
+	padding: 0.4rem 0.55rem 0.45rem;
+	border-bottom: 1px solid var(--line-color);
+	font-size: 0.625rem;
+	line-height: 1.6;
+	color: var(--content-meta);
+}
+
+.wx-manage__item {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	width: 100%;
+	padding: 0.5rem 0.55rem;
+	border: 0;
+	border-radius: 0.5rem;
+	background: transparent;
+	color: var(--btn-content);
+	font-family: inherit;
+	font-size: 0.8125rem;
+	text-align: left;
+	cursor: pointer;
+}
+
+.wx-manage__item:hover {
+	background: var(--btn-plain-bg-hover);
+}
+
+.wx-manage__item small {
+	margin-left: auto;
+	font-size: 0.625rem;
+	color: var(--content-meta);
+}
+
+.wx-manage__item.is-danger {
+	color: oklch(0.52 0.19 25);
+}
+
+.wx-manage__item-icon {
+	width: 1rem;
+	height: 1rem;
+	flex-shrink: 0;
+	color: var(--content-meta);
+}
+
+.wx-manage__item.is-danger .wx-manage__item-icon {
+	color: inherit;
+}
+
+/* ============================================
+ * 六、多选态：勾选圈 + 底部工具条
+ * 靠 <html data-manage-mode> 开关，切页/按 Esc 都会摘掉
+ * ============================================ */
+html[data-manage-mode] .wx-feed-item {
+	position: relative;
+	cursor: pointer;
+}
+
+/* 勾选圈要占地方，所以给卡片多留一点左内边距（默认 2.25rem 太挤，会压到头像） */
+html[data-manage-mode] .moment-card {
+	padding-left: 3rem;
+}
+
+html[data-manage-mode] .wx-feed-item::before {
+	content: "";
+	position: absolute;
+	left: 0.55rem;
+	top: 2rem;
+	z-index: 3;
+	width: 0.95rem;
+	height: 0.95rem;
+	/* 卡片是白底，浅灰描边会看不见，所以填灰底 + 外面托一圈白 */
+	border: 1.5px solid var(--border);
+	border-radius: 50%;
+	background: var(--btn-regular-bg-hover);
+	box-shadow: 0 0 0 3px var(--float-panel-bg);
+	transition:
+		border-color 0.16s ease,
+		background 0.18s ease;
+}
+
+html[data-manage-mode] .wx-feed-item:hover::before {
+	border-color: var(--primary);
+	background: var(--btn-regular-bg-active);
+}
+
+html[data-manage-mode] .wx-feed-item.is-picked::before {
+	border-color: var(--primary);
+	background: var(--primary);
+	box-shadow:
+		0 0 0 3px var(--float-panel-bg),
+		inset 0 0 0 2px var(--float-panel-bg);
+}
+
+html[data-manage-mode] .wx-feed-item.is-picked .moment-card {
+	border-color: var(--primary);
+}
+
+.wx-manage-bar {
+	position: fixed;
+	left: 50%;
+	bottom: 1.5rem;
+	z-index: 9990;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	max-width: min(34rem, calc(100vw - 2rem));
+	padding: 0.5rem 0.6rem 0.5rem 1rem;
+	border-radius: 9999px;
+	background: var(--primary);
+	color: var(--page-bg);
+	box-shadow: 0 16px 40px oklch(0 0 0 / 0.26);
+	transform: translateX(-50%);
+	animation: editor-toast-in 0.22s ease;
+}
+
+.wx-manage-bar[hidden] {
+	display: none;
+}
+
+.wx-manage-bar__text {
+	overflow: hidden;
+	font-size: 0.75rem;
+	font-weight: 500;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.wx-manage-bar__spacer {
+	flex: 1;
+}
+
+.wx-manage-bar__btn {
+	flex-shrink: 0;
+	height: 1.875rem;
+	padding: 0 0.75rem;
+	border: 1px solid oklch(1 0 0 / 0.28);
+	border-radius: 9999px;
+	background: oklch(1 0 0 / 0.1);
+	color: inherit;
+	font-family: inherit;
+	font-size: 0.75rem;
+	white-space: nowrap;
+	cursor: pointer;
+	transition:
+		background 0.18s ease,
+		border-color 0.18s ease,
+		opacity 0.18s ease;
+}
+
+.wx-manage-bar__btn:hover:not(:disabled) {
+	background: oklch(1 0 0 / 0.22);
+	border-color: oklch(1 0 0 / 0.6);
+}
+
+.wx-manage-bar__btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.wx-manage-bar__btn.is-primary {
+	border-color: transparent;
+	background: var(--page-bg);
+	color: var(--primary);
+	font-weight: 600;
+}
+
+.wx-manage-bar__btn.is-primary:hover:not(:disabled) {
+	background: oklch(0.92 0 0);
+}
+
+/* 手机上浮岛在右下角，工具条抬高一点别压在一起 */
+@media (max-width: 1023px) {
+	.wx-manage-bar {
+		bottom: 6rem;
+		max-width: calc(100vw - 1.5rem);
+		padding-left: 0.8rem;
+	}
+
+	.wx-manage-bar__text {
+		font-size: 0.6875rem;
+	}
+}
+
+/* 多选模式的提示语要躲开底部工具条，否则正好盖在全选/删除按钮上 */
+html[data-manage-mode] .editor-toast {
+	bottom: 5.5rem;
+}
+
+@media (max-width: 1023px) {
+	html[data-manage-mode] .editor-toast {
+		bottom: 10rem;
+	}
+}
+
+/* 手机卡片内边距本来就窄，勾选圈单独缩一档 */
+@media (max-width: 480px) {
+	html[data-manage-mode] .moment-card {
+		padding-left: 2.4rem;
+	}
+
+	html[data-manage-mode] .wx-feed-item::before {
+		left: 0.45rem;
+		top: 1.1rem;
+		width: 0.875rem;
+		height: 0.875rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.wx-manage__menu,
+	.wx-manage-bar {
+		animation-duration: 0.01ms;
+	}
+}

@@ -1,4 +1,5 @@
 ---
+import { Icon } from "astro-icon/components";
 import { profileConfig, siteConfig } from "@/config";
 
 interface Props {
@@ -18,6 +19,60 @@ const bio = Array.isArray(profileConfig.bio)
 ---
 
 <div class:list={["wx-cover", className]}>
+  <!-- 站长管理入口：整块由 html.is-editor 控制显隐（见 styles/components/editor.css） -->
+  <div class="wx-manage" data-manage-root>
+    <button
+      type="button"
+      class="wx-manage__btn"
+      data-manage-toggle
+      aria-haspopup="menu"
+      aria-expanded="false"
+    >
+      <Icon name="material-symbols:tune-rounded" class="wx-manage__icon" />
+      <span>管理</span>
+      <Icon
+        name="material-symbols:keyboard-arrow-down-rounded"
+        class="wx-manage__caret"
+      />
+    </button>
+
+    <div class="wx-manage__menu" data-manage-menu role="menu" hidden>
+      <p class="wx-manage__hint">改动会提交到 src/content/动态/</p>
+      <button
+        type="button"
+        class="wx-manage__item"
+        data-manage-action="create"
+        role="menuitem"
+      >
+        <Icon name="material-symbols:add-rounded" class="wx-manage__item-icon" />
+        新建说说
+      </button>
+      <button
+        type="button"
+        class="wx-manage__item"
+        data-manage-action="edit"
+        role="menuitem"
+      >
+        <Icon name="material-symbols:edit-outline" class="wx-manage__item-icon" />
+        编辑说说
+        <small>多选</small>
+      </button>
+      <button
+        type="button"
+        class="wx-manage__item is-danger"
+        data-manage-action="delete"
+        role="menuitem"
+      >
+        <Icon
+          name="material-symbols:delete-outline"
+          class="wx-manage__item-icon"
+        />
+        删除说说
+        <small>多选</small>
+      </button>
+    </div>
+  </div>
+
   <!-- 封面图 -->
   <div class="wx-cover-img-box">
     <img

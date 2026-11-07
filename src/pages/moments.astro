@@ -323,6 +323,17 @@ const filterMeta = {
     </div>
   </div>
 
+  <!-- 站长多选工具条：只在不为空时显示（data-manage-bar hidden 由脚本控制） -->
+  <div class="wx-manage-bar" data-manage-bar hidden>
+    <span class="wx-manage-bar__text" data-manage-bar-text>已选 0 条</span>
+    <span class="wx-manage-bar__spacer"></span>
+    <button type="button" class="wx-manage-bar__btn" data-manage-all>全选</button>
+    <button type="button" class="wx-manage-bar__btn is-primary" data-manage-confirm>
+      编辑
+    </button>
+    <button type="button" class="wx-manage-bar__btn" data-manage-cancel>取消</button>
+  </div>
+
   <!-- 移动端（≤1023px）：左栏三件套收进右下角这 3 个按钮，点谁弹谁 -->
   <div class="wx-mobile-tools" data-moments-tools>
     <button
@@ -839,6 +850,299 @@ const filterMeta = {
     /* Swup 换页后回到默认视图 */
     document.addEventListener("swup:content:replaced", function () { view = ""; sync(); });
     document.addEventListener("astro:page-load", function () { view = ""; sync(); });
+  })();
+  </script>
+
+  <!-- 站长管理入口：菜单开合 / 多选 / 批量删除
+       全部走 document 级事件委托 + window guard —— 脚本在 Swup 容器内，换页时
+       不会重新执行，所以不能给按钮逐个 addEventListener（§11.4）。 -->
+  <script is:inline>
+  (function () {
+    if (window.__momentManageBound) return;
+    window.__momentManageBound = true;
+
+    var mode = "";
+    var confirming = false;
+    var confirmTimer = null;
+
+    function feed() { return document.getElementById("moments-feed"); }
+    function barEl() { return document.querySelector("[data-manage-bar]"); }
+    function menuEl() { return document.querySelector("[data-manage-menu]"); }
+    function toggleEl() { return document.querySelector("[data-manage-toggle]"); }
+
+    function pickedItems() {
+      var f = feed();
+      if (!f) return [];
+      return Array.prototype.slice.call(f.querySelectorAll(".wx-feed-item.is-picked"));
+    }
+
+    function visibleItems() {
+      var f = feed();
+      if (!f) return [];
+      return Array.prototype.slice.call(f.querySelectorAll(".wx-feed-item"))
+        .filter(function (item) { return item.offsetParent !== null; });
+    }
+
+    /* 卡片的 entry id 就挂在 .moment-card 的 id 上（形如 2026/11/2026-11-07） */
+    function itemId(item) {
+      var card = item.querySelector(".moment-card[id]");
+      return card ? card.id : "";
+    }
+
+    function toast(text, isError) {
+      var el = document.createElement("div");
+      el.className = "editor-toast" + (isError ? " is-error" : "");
+      el.textContent = text;
+      document.body.appendChild(el);
+      setTimeout(function () { el.remove(); }, 3400);
+    }
+
+    function syncBar() {
+      var el = barEl();
+      if (!el) return;
+      if (!mode) {
+        el.hidden = true;
+        return;
+      }
+      el.hidden = false;
+
+      var count = pickedItems().length;
+      var text = el.querySelector("[data-manage-bar-text]");
+      if (text) {
+        text.textContent = "已选 " + count + " 条";
+      }
+
+      var confirmBtn = el.querySelector("[data-manage-confirm]");
+      if (confirmBtn) {
+        if (mode === "edit") {
+          confirmBtn.textContent = "编辑";
+        } else if (confirming) {
+          confirmBtn.textContent = "确认删除？";
+        } else {
+          confirmBtn.textContent = count > 0 ? "删除 " + count + " 条" : "删除";
+        }
+        confirmBtn.disabled = count === 0;
+      }
+    }
+
+    function resetMode() {
+      mode = "";
+      confirming = false;
+      if (confirmTimer) { clearTimeout(confirmTimer); confirmTimer = null; }
+      document.documentElement.removeAttribute("data-manage-mode");
+      var f = feed();
+      if (f) {
+        f.querySelectorAll(".wx-feed-item.is-picked").forEach(function (item) {
+          item.classList.remove("is-picked");
+        });
+      }
+      syncBar();
+    }
+
+    function startMode(next) {
+      mode = next;
+      confirming = false;
+      document.documentElement.setAttribute("data-manage-mode", next);
+      syncBar();
+      toast(next === "edit" ? "点一张卡片选中，再点「编辑」" : "点卡片选中要删除的说说", false);
+    }
+
+    function closeMenu() {
+      var m = menuEl();
+      var b = toggleEl();
+      if (m) m.hidden = true;
+      if (b) {
+        b.classList.remove("is-open");
+        b.setAttribute("aria-expanded", "false");
+      }
+    }
+
+    function openMenu() {
+      var m = menuEl();
+      var b = toggleEl();
+      if (!m || !b) return;
+      m.hidden = !m.hidden;
+      b.classList.toggle("is-open", !m.hidden);
+      b.setAttribute("aria-expanded", String(!m.hidden));
+    }
+
+    /* 删除：读 sha → DELETE。逐条来，一条失败不影响后面 —— 反正都是独立 commit */
+    async function deleteMoments(items) {
+      var ids = items.map(itemId).filter(Boolean);
+      if (!ids.length) return;
+
+      var branch = "main";
+      try {
+        var me = await fetch("/api/auth/me", { credentials: "same-origin", cache: "no-store" });
+        if (me.ok) {
+          var profile = await me.json();
+          if (profile && profile.branch) branch = profile.branch;
+        }
+      } catch (error) {
+        /* 取不到就按 main 试，失败了下面会报错 */
+      }
+
+      var done = 0;
+      for (var i = 0; i < ids.length; i += 1) {
+        var path = "src/content/动态/" + ids[i] + ".md";
+        var query = new URLSearchParams({ path: path, ref: branch });
+        try {
+          var read = await fetch("/api/github/file?" + query.toString(), {
+            credentials: "same-origin",
+            cache: "no-store",
+          });
+          if (!read.ok) throw new Error("读取源文件失败");
+          var data = await read.json();
+          var sha = data && data.file && data.file.sha;
+          if (!sha) throw new Error("找不到 " + ids[i] + ".md");
+
+          var del = await fetch("/api/github/file", {
+            method: "DELETE",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              path: path,
+              sha: sha,
+              message: "chore(moments): 删除说说 " + ids[i],
+              branch: branch,
+            }),
+          });
+          if (!del.ok) {
+            var detail = await del.json().catch(function () { return {}; });
+            throw new Error((detail && detail.message) || "删除失败");
+          }
+          done += 1;
+          items[i].remove();
+        } catch (error) {
+          toast(error instanceof Error ? error.message : "删除失败", true);
+        }
+      }
+
+      resetMode();
+      if (done > 0) {
+        toast("已提交删除 " + done + " 条，1~3 分钟后生效", false);
+      }
+    }
+
+    /* ---- 菜单：开合 / 选项 ---- */
+    document.addEventListener("click", function (event) {
+      var target = event.target;
+      if (!(target instanceof Element)) return;
+
+      if (target.closest("[data-manage-toggle]")) {
+        openMenu();
+        return;
+      }
+
+      var action = target.closest("[data-manage-action]");
+      if (action) {
+        closeMenu();
+        var kind = action.getAttribute("data-manage-action");
+        if (kind === "create") {
+          document.dispatchEvent(
+            new CustomEvent("editor:open-moment", { detail: {} }),
+          );
+        } else if (kind === "edit" || kind === "delete") {
+          startMode(kind);
+        }
+        return;
+      }
+
+      if (!target.closest("[data-manage-root]")) closeMenu();
+    });
+
+    /* ---- 多选模式下点卡片＝选中，capture 阶段拦掉卡片自己的点击 ---- */
+    document.addEventListener(
+      "click",
+      function (event) {
+        if (!mode) return;
+        var target = event.target;
+        if (!(target instanceof Element)) return;
+
+        var item = target.closest(".wx-feed-item");
+        if (!item) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        item.classList.toggle("is-picked");
+        confirming = false;
+        syncBar();
+      },
+      true,
+    );
+
+    /* ---- 工具条 ---- */
+    document.addEventListener("click", function (event) {
+      var target = event.target;
+      if (!(target instanceof Element)) return;
+
+      if (target.closest("[data-manage-cancel]")) {
+        resetMode();
+        return;
+      }
+
+      if (target.closest("[data-manage-all]")) {
+        var items = visibleItems();
+        var allPicked = items.every(function (item) {
+          return item.classList.contains("is-picked");
+        });
+        items.forEach(function (item) {
+          item.classList.toggle("is-picked", !allPicked);
+        });
+        confirming = false;
+        syncBar();
+        return;
+      }
+
+      if (target.closest("[data-manage-confirm]")) {
+        var picked = pickedItems();
+        if (!picked.length) return;
+
+        if (mode === "edit") {
+          if (picked.length > 1) {
+            toast("一次只能编辑一条", true);
+            return;
+          }
+          var id = itemId(picked[0]);
+          resetMode();
+          if (id) {
+            document.dispatchEvent(
+              new CustomEvent("editor:open-moment", { detail: { id: id } }),
+            );
+          }
+          return;
+        }
+
+        if (mode === "delete") {
+          if (!confirming) {
+            confirming = true;
+            syncBar();
+            if (confirmTimer) clearTimeout(confirmTimer);
+            confirmTimer = setTimeout(function () {
+              confirming = false;
+              syncBar();
+            }, 4000);
+            return;
+          }
+          if (confirmTimer) { clearTimeout(confirmTimer); confirmTimer = null; }
+          void deleteMoments(picked);
+        }
+      }
+    });
+
+    /* ---- 换页后清干净，别把模式带到别的页面 ---- */
+    function reset() {
+      resetMode();
+      closeMenu();
+    }
+    document.addEventListener("swup:content:replaced", reset);
+    document.addEventListener("astro:page-load", reset);
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") return;
+      closeMenu();
+      if (mode) resetMode();
+    });
   })();
   </script>
 
