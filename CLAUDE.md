@@ -675,6 +675,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
   **按要求不吸顶**（position: static）。标签行已按要求删除，只留相册名。
 - 照片卡片可显示简短描述；单张照片支持独立 `caption`、`tags`、`takenAt`，灯箱显示日期、描述和标签，描述便签可拖动。
 - 灯箱是页内自研的（跨照片切换、键盘左右/Esc、触摸滑动）；照片卡片支持鼠标/触摸拖动，方向键也可移动。
+- **灯箱尺寸与配色（2026-11-07）**：对话框用 `position: fixed; inset: 0` 撑满视口，**不要改回 `100vw/100dvh`**（会把页面滚动条宽度算进来，遮罩整体右移、关闭钮被切）；照片区是 `grid-template-rows: minmax(0, 1fr)` 的居中栅格，`max-height: 100%` 才有效，否则长截图会按原尺寸撑开被裁。遮罩底色画在 `.album-lightbox` 自身并用主题变量（浅色近白磨砂 / 暗色烟灰），`::backdrop` 只负责补滚动条那道缝，**不要再写死深色 rgba**。灯箱打开时 `html:has(.album-lightbox[open]) { overflow: hidden }` 锁滚动；手机端便签在底部通栏，切换按钮必须保持垂直居中，否则被便签盖住点不到。
 - 相册交互控制器位于 `src/utils/album-gallery-controller.ts`，通过 `AbortController` 清理事件，并在 `swup:content:replaced` 后重新挂载；新增筛选按钮必须使用 `data-album-filter-id`，不能与照片卡片的 `data-album-id` 混用。
 - 旧博客相册已迁移 5 张照片，数据见 `src/content/相册/old-jojo-gallery.json`，资源位于 `public/assets/images/albums/old-jojo-gallery/`。
 - 设计记录见 `docs/superpowers/specs/2026-11-06-draggable-album-design.md`。
@@ -720,6 +721,24 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **不移植参考站专属能力**：当前项目没有 `llm-wiki`、`postShare` 和参考站的 `swup-lifecycle` 工具，目录同步时不要为了文件逐行一致引入这些系统；分享继续使用系统分享，失败时退化为复制链接，用户主动取消分享不触发复制。
 - **fixed 元素的过渡约束**：目录面板祖先不能获得 `transform` / `filter`，否则 fixed 定位和纸飞机轨迹会漂移；`src/styles/transitions/swup.css` 已通过 `:has(.article-toc-panel)` 让文章页退化为纯透明度过渡，禁止删除。
 
+### 5.24 Tab 呼出导航轮盘（2026-11-07 从旧博客移植）
+
+按住 <kbd>Tab</kbd> 在鼠标处弹出 12 项径向导航，移鼠标吸附最近项，松开跳转、<kbd>Esc</kbd> 取消。移植自旧 Next.js 博客的 `tab-radial-menu.tsx`。
+
+- **四件套**：组件 `src/components/features/TabRadialMenu.svelte`、配置 `src/config/tabRadialMenuConfig.ts`、类型 `src/types/config.ts` 的 `TabRadialMenuConfig` / `TabRadialMenuItem`、挂载点 `src/layouts/Layout.astro`（`<SearchModal>` 之后，`client:idle`）。
+- **挂 `#swup-container` 之外**：全局单例，跨导航不重建；当前页高亮靠监听 `document` 的 `astro:page-load` 重读 `pathname`，同时把残留的打开态收掉。别搬进 Swup 容器，否则每次换页都要重绑一套全局键盘监听。
+- **图标必须走 `lucide-svelte`**：Svelte 组件里用不了 astro-icon，配置的 `icon` 是自定的语义键（`home`/`posts`/…），映射表在组件的 `ICONS` 常量里，加新图标两处一起改。
+- ⚠️ **Tab 是无障碍焦点键，拦截必须留后门**，这三条是相对旧站的改良，别为了「和旧站一致」改回去：
+  - `ignoreEditable: true` —— `INPUT` / `TEXTAREA` / `SELECT` / `contenteditable` 内放行 Tab，否则搜索框、评论框、留言板里没法切到下一个字段（旧站一律 preventDefault，这些地方等于残废）。
+  - **Shift+Tab 与 Ctrl/Alt/Cmd+Tab 放行** —— 反向前进不该被当成呼出，抢过来会让用户莫名跳页。
+  - **触屏不启用** —— 用 `matchMedia("(hover: hover) and (pointer: fine)")` 判定，命中不上连键盘监听都不绑（手机上既没 Tab 也没 mousemove）。
+- 其余键盘细节沿用旧站：`keydown` 用 **capture** 阶段拦截（输入框抢不走）、`e.repeat` 忽略（按住不松会连发）、`window.blur` 收掉、`keyup` 时才真正跳转。
+- **动效是纯 CSS**（`transform` + 逐项 `--i` 的 `transition-delay`），没为本功能引入 motion / GSAP。打开时从圆心 `translate` 到目标位并 `scale`，关闭按 `--trm-last` 反序收拢；`prefers-reduced-motion` 下降级为直接就位。
+- **几何自适应**：基准半径 **176**（不是旧站的 140 —— 12 项在 140 下弧长只有 73px，而按钮就有 64px，标签会跟相邻按钮叠在一起，实测截图确认过），实际取 `min(176, max(96, min(vw,vh)/2 - 88))`；圆心被钳制在视口内（`padX = r+56`、`padY = r+76`），窗口小到放不下就居中。圆心 30px 死区内不选中，留给中心玻璃圆。**改菜单项数量时要同步复核这个半径**。
+- **配色**：遮罩 `rgb(0 0 0 / 0.5)` + `backdrop-filter: blur(2px)`（旧站是 0.30 无模糊；本站页面多铺背景图 / 画布，0.30 压不住）。压在遮罩上的文字一律用组件内局部变量 `--trm-ghost*`（浅色），**不能套 `--deep-text`** —— 它在暗色主题下会变白，压到黑遮罩上等于消失。选中项用 `--navbar-highlight-bg` / `--navbar-highlight-text`（与导航栏当前项同一套反色语言），当前页只加一道 `--deep-text` 描边。
+- ⚠️ **暗色下按钮底要单独提亮**：`--page-bg` 暗色只有 `oklch(0.08)`，和压暗后的背景几乎同色，`:global(:root.dark) .trm__tile` 把它提到 `--btn-card-bg-active`（暗色 0.20）才分得出来。
+- 层级 `z-index: 1100`（高于 `--z-toast` 的 1080）。
+
 ---
 
 ## 6. 配置系统
@@ -741,6 +760,8 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 | `homeConfig.ts` | `homeConfig` | 首页配置（2026 新增，文档曾遗漏） |
 
 评论、留言板和文章浏览量当前统一使用 Waline：`commentConfig.type = "waline"`，服务地址只从 `PUBLIC_WALINE_SERVER` 读取。聊天式留言板唯一公开入口与数据频道均为 `/life/guestbook/`，旧 `/guestbook/` 只做 301 跳转；频道常量在 `src/utils/guestbook-route.ts`，禁止重新写死成另一条路径。生产环境在 GitHub Actions Secret 中配置服务地址；Waline 独立部署到 Vercel + Neon，服务端启用 `COMMENT_AUDIT=true`，部署步骤见 `docs/deploy-github-pages.md` 第四节。禁止在仓库中硬编码 Waline 地址、数据库连接或管理员凭据。
+
+**⚠️ 前端请求必须有超时（2026-11-08 踩过）**：Waline 挂在 `*.vercel.app` 上，国内直连时 DNS 被污染、TCP 被静默丢包，而 `fetch` 本身没有超时 —— 请求会一直 pending，页面永久停在骨架屏上，既不显示内容也不报错，用户只会说「一直卡住打不开」。`GuestbookChat.svelte` 的 `createRequestGuard` 给每次请求 15 秒超时，并区分「超时」和「外部取消」两种 `AbortSignal`：超时抛 `GuestbookLocalizedError`（文案会原样显示），主动取消仍静默返回。同时 `fetchAllMessages` 的失败重试只在「已经成功取到过数据」时才做页区间对半拆 —— 否则一次连不上最多放大成 127 次串行请求，整轮还有 `MAX_SPLIT_REQUESTS` 上限。新增任何调用 Waline 的地方都要套这个 guard；抛出本地化提示时用 `GuestbookLocalizedError`，不要用 `new Error(i18n(...))`（会被 `getGuestbookErrorMessage` 的正则改写成「留言服务暂时不可用」，配置类错误就看不出来了）。**给国内访问找出路（Cloudflare Worker 反代 / Vercel 绑自定义域名 / 迁出 Vercel 三条路线的取舍与完整步骤）见 `docs/deploy-waline-cn-access.md`** —— 推荐 Worker 反代：`jojocode.cn` 本来就走 Cloudflare 代理，加一个子域名不碰 Vercel 配置，也就绕开了 CF 橙云导致证书续期失败的坑。
 
 ### 其他配置
 
