@@ -50,53 +50,60 @@ export const homeConfig = {
 				host: "jojo",
 				visitor: "访客",
 			},
-			menuTitle: "想聊点什么？",
+			menuTitle: "想看哪一块呀？",
 			typingSpeed: 45,
 			autoDelay: 1600,
 			intro: [
-				{ speaker: "host", text: "欸，来客人啦。欢迎来到 jojostar。" },
+				{ speaker: "host", text: "哇，有客人来啦！欢迎欢迎～" },
 				{
 					speaker: "host",
-					text: `这里是 ${profileConfig.name} 的个人空间，技术、生活和喜欢的东西都会慢慢收进来。`,
+					text: `这里是 ${profileConfig.name} 的小站，技术、生活和喜欢的东西都收在里面～`,
 				},
 				{ speaker: "host", text: primaryBio },
-				{ speaker: "host", text: "想先了解哪一块？点下面的话题，我们慢慢逛。" },
+				{
+					speaker: "host",
+					text: "想先看哪儿呀？点下面的小按钮，我带你逛！",
+				},
 			],
 			topics: [
 				{
-					title: "关于我",
+					title: "认识一下",
 					lines: [
-						{ speaker: "visitor", text: "这里的站长是谁呀？" },
-						{
-							speaker: "host",
-							text: `${profileConfig.name}，也可以叫 ${displayName}。`,
-						},
+						{ speaker: "visitor", text: "站长是谁呀？" },
 						{
 							speaker: "host",
 							text:
-								profileConfig.occupation || "喜欢折腾技术，也认真记录生活。",
+								displayName === profileConfig.name
+									? `是我呀，${profileConfig.name}！`
+									: `是我呀，${profileConfig.name}！也可以叫我 ${displayName}～`,
 						},
 						{
 							speaker: "host",
-							text: bioLines[1] || "如果你喜欢，那么欢迎来到我的世界。",
+							text: profileConfig.occupation
+								? `现在是 ${profileConfig.occupation} 哦！`
+								: "现在嘛，算是半个技术博主～",
+						},
+						{
+							speaker: "host",
+							text: "写代码、写文章、看番，这三件事能让我待一整天～",
 						},
 					],
 				},
 				{
-					title: "博客特色",
+					title: "这里有什么",
 					lines: [
-						{ speaker: "visitor", text: "这个博客主要写什么？" },
+						{ speaker: "visitor", text: "这里都放些什么呀？" },
 						{
 							speaker: "host",
-							text: "这里会分享技术见解、实用工具、ACG 相关内容，也会留下日常生活的碎片。",
+							text: "技术笔记、好用的工具、ACG 相关的东西，还有生活里的小碎片！",
 						},
 						{
 							speaker: "host",
-							text: "首页也放了站点数据、文章导航和作品展示，慢慢滚动会有完整的视觉演出。",
+							text: "首页有站点数据、文章导航和作品展示，往下滚还有超好看的演出哦～",
 						},
 						{
 							speaker: "host",
-							text: "别急着走，下面还有很多值得翻一翻的地方。",
+							text: "别急着走嘛，下面还有好多好玩的，慢慢逛！",
 						},
 					],
 				},
