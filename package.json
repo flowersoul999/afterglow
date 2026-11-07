@@ -22,7 +22,8 @@
     "compress-images:dry": "node scripts/compress-images.mjs --dry-run",
     "compress-albums": "node scripts/compress-images.mjs --dir=albums --min=0 --quality=80",
     "compress-albums:dry": "node scripts/compress-images.mjs --dir=albums --min=0 --quality=80 --dry-run",
-    "test:album": "node --experimental-strip-types src/utils/local-album.test.ts && node --experimental-strip-types src/utils/album-gallery.test.ts"
+    "test:album": "node --experimental-strip-types src/utils/local-album.test.ts && node --experimental-strip-types src/utils/album-gallery.test.ts",
+    "test:admin-batch": "node --experimental-strip-types src/utils/editor/batch-queue.test.ts && node --experimental-strip-types src/utils/editor/github-client.test.ts && node cloudflare-worker/batch.test.mjs"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.10",

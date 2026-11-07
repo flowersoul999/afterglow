@@ -29,6 +29,7 @@
  *   GET    /api/github/file     → 读文件（不存在时 file: null）
  *   PUT    /api/github/file     → 写 / 新建文件
  *   DELETE /api/github/file     → 删文件
+ *   POST   /api/github/batch    → 多文件合成一个原子提交
  */
 
 /* ------------------------------------------------------------------ 常量 */
@@ -101,6 +102,14 @@ export default {
 			if (method === "GET") return readFile(request, session.token);
 			if (method === "PUT") return writeFile(request, session.token);
 			if (method === "DELETE") return deleteFile(request, session.token);
+			return json({ ok: false, message: "不支持的请求方法" }, 405);
+		}
+
+		if (path === "/api/github/batch") {
+			const session = await readSession(request, env);
+			if (!session)
+				return json({ ok: false, message: "未登录或登录已过期" }, 401);
+			if (method === "POST") return writeBatch(request, session.token);
 			return json({ ok: false, message: "不支持的请求方法" }, 405);
 		}
 
@@ -573,6 +582,292 @@ async function deleteFile(request, token) {
 	if (!response.ok) return upstreamError(response);
 
 	return json({ ok: true });
+}
+
+/* ------------------------------------------------------- GitHub 批量提交 */
+
+const BATCH_LIMIT = 30;
+const BATCH_TOTAL_BYTES = 5 * 1024 * 1024;
+
+function withPathSuffix(path, attempt) {
+	if (attempt <= 1) return path;
+	return path.replace(/(\.mdx?)$/i, `-${attempt}$1`);
+}
+
+/** 给仓库已有路径和本批次重名统一避让，保持输入顺序。 */
+export function resolveBatchPaths(items, existingPaths) {
+	const occupied = new Set(existingPaths);
+	return items.map((item) => {
+		let attempt = 1;
+		let path = item.path;
+		while (occupied.has(path)) {
+			attempt += 1;
+			path = withPathSuffix(item.path, attempt);
+		}
+		occupied.add(path);
+		return { ...item, path };
+	});
+}
+
+class GitHubBatchError extends Error {
+	constructor(message, status, stage) {
+		super(message);
+		this.name = "GitHubBatchError";
+		this.status = status;
+		this.stage = stage;
+	}
+}
+
+async function githubJson(
+	fetchImpl,
+	url,
+	token,
+	options = {},
+	stage = "github",
+) {
+	const response = await fetchImpl(url, {
+		...options,
+		headers: {
+			...githubHeaders(token),
+			...(options.body ? { "Content-Type": "application/json" } : {}),
+			...(options.headers || {}),
+		},
+	});
+	if (!response.ok) {
+		let message = `GitHub 返回 HTTP ${response.status}`;
+		try {
+			const data = await response.json();
+			if (typeof data?.message === "string") message = data.message;
+		} catch {
+			// 保留默认消息
+		}
+		throw new GitHubBatchError(message, response.status, stage);
+	}
+	return response.json();
+}
+
+function gitRefPath(branch) {
+	return branch.split("/").map(encodeURIComponent).join("/");
+}
+
+/**
+ * 使用 Git Data API 创建多个 blob、一个 tree、一个 commit，最后只更新一次 ref。
+ * ref 更新发生并成功之后，整批内容才对分支可见。
+ */
+export async function commitBatchFiles({
+	token,
+	branch,
+	message,
+	items,
+	fetchImpl = fetch,
+}) {
+	const repoApi = `${GITHUB_API}/repos/${REPO_OWNER}/${REPO_NAME}`;
+	let lastError = null;
+
+	for (let attempt = 0; attempt < 2; attempt += 1) {
+		try {
+			const ref = await githubJson(
+				fetchImpl,
+				`${repoApi}/git/ref/heads/${gitRefPath(branch)}`,
+				token,
+				{},
+				"ref-read",
+			);
+			const parentSha = ref.object?.sha;
+			if (!parentSha) {
+				throw new GitHubBatchError("目标分支没有可用提交", 409, "ref-read");
+			}
+
+			const parent = await githubJson(
+				fetchImpl,
+				`${repoApi}/git/commits/${encodeURIComponent(parentSha)}`,
+				token,
+				{},
+				"commit-read",
+			);
+			const baseTreeSha = parent.tree?.sha;
+			if (!baseTreeSha) {
+				throw new GitHubBatchError(
+					"目标提交没有可用文件树",
+					409,
+					"commit-read",
+				);
+			}
+
+			const baseTree = await githubJson(
+				fetchImpl,
+				`${repoApi}/git/trees/${encodeURIComponent(baseTreeSha)}?recursive=1`,
+				token,
+				{},
+				"tree-read",
+			);
+			if (baseTree.truncated) {
+				throw new GitHubBatchError(
+					"仓库文件树过大且返回不完整，已停止批量提交",
+					409,
+					"tree-read",
+				);
+			}
+
+			const existingPaths = new Set(
+				Array.isArray(baseTree.tree)
+					? baseTree.tree
+							.map((entry) => entry?.path)
+							.filter((path) => typeof path === "string")
+					: [],
+			);
+			const resolved = resolveBatchPaths(items, existingPaths);
+			const blobs = await Promise.all(
+				resolved.map((item) =>
+					githubJson(
+						fetchImpl,
+						`${repoApi}/git/blobs`,
+						token,
+						{
+							method: "POST",
+							body: JSON.stringify({
+								content: item.text,
+								encoding: "utf-8",
+							}),
+						},
+						"blob-create",
+					),
+				),
+			);
+
+			const tree = await githubJson(
+				fetchImpl,
+				`${repoApi}/git/trees`,
+				token,
+				{
+					method: "POST",
+					body: JSON.stringify({
+						base_tree: baseTreeSha,
+						tree: resolved.map((item, index) => ({
+							path: item.path,
+							mode: "100644",
+							type: "blob",
+							sha: blobs[index].sha,
+						})),
+					}),
+				},
+				"tree-create",
+			);
+
+			const commit = await githubJson(
+				fetchImpl,
+				`${repoApi}/git/commits`,
+				token,
+				{
+					method: "POST",
+					body: JSON.stringify({
+						message,
+						tree: tree.sha,
+						parents: [parentSha],
+					}),
+				},
+				"commit-create",
+			);
+
+			await githubJson(
+				fetchImpl,
+				`${repoApi}/git/refs/heads/${gitRefPath(branch)}`,
+				token,
+				{
+					method: "PATCH",
+					body: JSON.stringify({ sha: commit.sha, force: false }),
+				},
+				"ref-update",
+			);
+
+			return {
+				commitSha: commit.sha,
+				items: resolved.map((item, index) => ({
+					...item,
+					sha: blobs[index].sha,
+				})),
+			};
+		} catch (error) {
+			lastError = error;
+			const canRetry =
+				error instanceof GitHubBatchError &&
+				error.stage === "ref-update" &&
+				(error.status === 409 || error.status === 422) &&
+				attempt === 0;
+			if (!canRetry) throw error;
+		}
+	}
+
+	throw lastError ?? new Error("批量提交失败");
+}
+
+function validateBatchItems(items) {
+	if (!Array.isArray(items) || items.length === 0) {
+		return { error: "待提交内容不能为空" };
+	}
+	if (items.length > BATCH_LIMIT) {
+		return { error: `每批最多提交 ${BATCH_LIMIT} 条内容` };
+	}
+
+	let totalBytes = 0;
+	const normalized = [];
+	for (const [index, item] of items.entries()) {
+		const path = typeof item?.path === "string" ? item.path : "";
+		if (
+			!path.startsWith(CONTENT_PREFIX) ||
+			path.includes("..") ||
+			!/\.md$/i.test(path)
+		) {
+			return { error: `第 ${index + 1} 条内容路径不合法` };
+		}
+		if (typeof item.text !== "string") {
+			return { error: `第 ${index + 1} 条内容缺少 Markdown` };
+		}
+		totalBytes += new TextEncoder().encode(item.text).byteLength;
+		normalized.push({
+			path,
+			text: item.text,
+			collectionId:
+				typeof item.collectionId === "string" ? item.collectionId : "",
+			label: typeof item.label === "string" ? item.label : "",
+		});
+	}
+	if (totalBytes > BATCH_TOTAL_BYTES) {
+		return { error: "本批内容超过 5MB，请拆成两批提交" };
+	}
+	return { items: normalized };
+}
+
+async function writeBatch(request, token) {
+	const body = await readJson(request);
+	if (!body) return json({ ok: false, message: "请求体不是合法 JSON" }, 400);
+
+	const checked = validateBatchItems(body.items);
+	if (checked.error) return json({ ok: false, message: checked.error }, 400);
+
+	const branch =
+		typeof body.branch === "string" && body.branch
+			? body.branch
+			: DEFAULT_BRANCH;
+	const message =
+		typeof body.message === "string" && body.message
+			? body.message
+			: `feat(content): 批量新增 ${checked.items.length} 条内容`;
+
+	try {
+		const result = await commitBatchFiles({
+			token,
+			branch,
+			message,
+			items: checked.items,
+		});
+		return json({ ok: true, ...result });
+	} catch (error) {
+		if (error instanceof GitHubBatchError) {
+			return json({ ok: false, message: error.message }, error.status || 500);
+		}
+		return json({ ok: false, message: "批量提交失败，请稍后重试" }, 500);
+	}
 }
 
 /* ---------------------------------------------------------------- 辅助 */
