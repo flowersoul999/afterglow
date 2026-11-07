@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import { Icon } from "astro-icon/components";
+import EditorMobileMenuEntry from "@/components/editor/EditorMobileMenuEntry.svelte";
 import { commentConfig } from "@/config";
 import { profileConfig } from "@/config/profileConfig";
 import { siteConfig } from "@/config/siteConfig";
@@ -172,6 +173,9 @@ const groups = [
       )
     ))}
   </nav>
+
+  <!-- 站长入口只放在真实的手机菜单末尾，普通访客不主动打开菜单就不会看到。 -->
+  <EditorMobileMenuEntry client:load />
 </div>
 
 <script is:inline define:vars={{ walineServerURL }}>

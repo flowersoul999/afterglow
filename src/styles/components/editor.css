@@ -100,6 +100,123 @@
 }
 
 /* ============================================
+ * 手机导航菜单底部入口
+ * ============================================ */
+.editor-mobile-menu {
+	display: none;
+	flex-shrink: 0;
+	padding: 0.75rem 1rem max(0.875rem, env(safe-area-inset-bottom));
+	border-top: 1px solid var(--line-divider);
+	background: var(--float-panel-bg);
+}
+
+.editor-mobile-menu__login,
+.editor-mobile-menu__manage {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	width: 100%;
+	min-height: 2.75rem;
+	padding: 0 0.625rem;
+	border: 0;
+	border-radius: 0.625rem;
+	background: transparent;
+	color: var(--content-meta);
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+	transition:
+		background 0.18s ease,
+		color 0.18s ease,
+		opacity 0.18s ease;
+}
+
+.editor-mobile-menu__login {
+	opacity: 0.62;
+}
+
+.editor-mobile-menu__login:hover:not(:disabled),
+.editor-mobile-menu__login:focus-visible,
+.editor-mobile-menu__manage:hover,
+.editor-mobile-menu__manage:focus-visible {
+	background: var(--btn-plain-bg-hover);
+	color: var(--deep-text);
+	opacity: 1;
+}
+
+.editor-mobile-menu__login:disabled {
+	cursor: default;
+	opacity: 0.38;
+}
+
+.editor-mobile-menu__copy {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+
+.editor-mobile-menu__copy strong {
+	font-size: 0.75rem;
+	font-weight: 500;
+}
+
+.editor-mobile-menu__copy small {
+	overflow: hidden;
+	color: var(--content-meta);
+	font-size: 0.6875rem;
+	font-weight: 400;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.editor-mobile-menu__actions {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0.5rem;
+	margin-top: 0.375rem;
+}
+
+.editor-mobile-menu__actions button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	min-height: 2.75rem;
+	padding: 0 0.5rem;
+	border: 1px solid var(--line-color);
+	border-radius: 0.625rem;
+	background: transparent;
+	color: var(--content-meta);
+	font-size: 0.6875rem;
+	cursor: pointer;
+	transition:
+		background 0.18s ease,
+		color 0.18s ease,
+		border-color 0.18s ease;
+}
+
+.editor-mobile-menu__actions button:hover,
+.editor-mobile-menu__actions button:focus-visible {
+	border-color: var(--content-meta);
+	background: var(--btn-plain-bg-hover);
+	color: var(--deep-text);
+}
+
+@media (max-width: 1023px) {
+	.editor-mobile-menu {
+		display: block;
+	}
+
+	/* 手机端入口已移到菜单底部，资料卡里不再重复显示。 */
+	.nav-profile .editor-nav--card {
+		display: none;
+	}
+}
+
+/* ============================================
  * 二、登录弹窗（复用 .privacy-modal 骨架）
  * ============================================ */
 .editor-login__panel {
