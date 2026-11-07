@@ -54,6 +54,22 @@ export interface WriteOptions {
 	sha?: string;
 }
 
+export interface BatchWriteItem {
+	path: string;
+	text: string;
+	collectionId: string;
+	label: string;
+}
+
+export interface BatchWriteResultItem extends Omit<BatchWriteItem, "text"> {
+	sha: string;
+}
+
+export interface BatchWriteResult {
+	commitSha: string;
+	items: BatchWriteResultItem[];
+}
+
 /**
  * 带 HTTP 状态码的错误，调用方据此区分「登录失效」「文件被改动」「服务没部署」。
  *
@@ -214,6 +230,30 @@ export async function writeFile(options: WriteOptions): Promise<string> {
 
 	const data = (await response.json()) as { sha?: string };
 	return data.sha ?? "";
+}
+
+/** 把多条新内容合成一个 Git 提交。 */
+export async function writeBatch(options: {
+	items: BatchWriteItem[];
+	message: string;
+	branch: string;
+}): Promise<BatchWriteResult> {
+	const response = await fetch(`${GITHUB_PROXY}/batch`, {
+		method: "POST",
+		credentials: "same-origin",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(options),
+	});
+
+	if (!response.ok) {
+		throw new EditorApiError(await readError(response), response.status);
+	}
+
+	const data = (await response.json()) as Partial<BatchWriteResult>;
+	return {
+		commitSha: data.commitSha ?? "",
+		items: Array.isArray(data.items) ? data.items : [],
+	};
 }
 
 /** 删文件。GitHub 的删除接口强制要求 sha，传错会给 409 */

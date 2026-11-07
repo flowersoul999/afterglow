@@ -11,6 +11,7 @@
 import {
 	ArrowLeft,
 	Eye,
+	ListPlus,
 	Loader2,
 	Pencil,
 	Plus,
@@ -37,6 +38,7 @@ interface Props {
 	saving: boolean;
 	category: string;
 	onSave: () => void;
+	onQueue: () => void;
 	onDelete: () => void;
 	onClose: () => void;
 	onMobileBack: () => void;
@@ -51,6 +53,7 @@ let {
 	saving,
 	category = $bindable(""),
 	onSave,
+	onQueue,
 	onDelete,
 	onClose,
 	onMobileBack,
@@ -119,7 +122,7 @@ const gridFields = $derived(
 	collection.fields.filter((field) => field.key !== "title"),
 );
 
-function submit(): void {
+function syncForm(): void {
 	if (saving) return;
 
 	for (const field of collection.fields) {
@@ -131,8 +134,16 @@ function submit(): void {
 		}
 		writeField(doc, field.key, value);
 	}
+}
 
+function submit(): void {
+	syncForm();
 	onSave();
+}
+
+function queueDraft(): void {
+	syncForm();
+	onQueue();
 }
 
 function addTag(): void {
@@ -212,6 +223,17 @@ function askDelete(): void {
 					取消
 				</button>
 			{/if}
+			{#if isNew}
+				<button
+					type="button"
+					class="admin-btn admin-btn--sm"
+					onclick={queueDraft}
+					disabled={saving}
+				>
+					<ListPlus size={13} aria-hidden="true" />
+					加入待提交
+				</button>
+			{/if}
 			<button
 				type="button"
 				class="admin-btn admin-btn--primary admin-btn--sm"
@@ -221,7 +243,8 @@ function askDelete(): void {
 				{#if saving}
 					<Loader2 size={13} class="spin" aria-hidden="true" /> 提交中…
 				{:else}
-					<Plus size={13} aria-hidden="true" /> 提交
+					<Plus size={13} aria-hidden="true" />
+					{isNew ? "直接提交" : "提交"}
 				{/if}
 			</button>
 		</div>

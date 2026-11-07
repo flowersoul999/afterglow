@@ -13,17 +13,27 @@ import {
 	ArrowLeft,
 	BarChart3,
 	ExternalLink,
+	Files,
 	Github,
 	Loader2,
 	RefreshCw,
 } from "lucide-svelte";
 import { onMount } from "svelte";
+import AdminBatchQueue from "@/components/admin/AdminBatchQueue.svelte";
 import AdminEditor from "@/components/admin/AdminEditor.svelte";
 import AdminList from "@/components/admin/AdminList.svelte";
 import { adminCollections, findCollection } from "@/config/admin-collections";
 import {
+	BATCH_QUEUE_STORAGE_KEY,
+	createQueuedDraftId,
+	parseQueuedDrafts,
+	type QueuedDraft,
+	upsertQueuedDraft,
+} from "@/utils/editor/batch-queue";
+import {
 	type AdminEntry,
 	buildPath,
+	invalidateEntries,
 	listEntries,
 	loadEntry,
 	removeEntry,
@@ -33,10 +43,13 @@ import {
 	type ContentDoc,
 	createDocument,
 	nowStamp,
+	parseContent,
 	readField,
+	serializeContent,
 	writeField,
 } from "@/utils/editor/content-serializer";
 import { editor } from "@/utils/editor/editor-store";
+import { writeBatch } from "@/utils/editor/github-client";
 import "@/styles/pages/admin.css";
 
 let collectionId = $state(adminCollections[0].id);
@@ -54,6 +67,11 @@ let sha = $state("");
 let docLoading = $state(false);
 let docError = $state("");
 let saving = $state(false);
+let queuedDrafts = $state<QueuedDraft[]>([]);
+let editingQueueId = $state("");
+let queueOpen = $state(false);
+let batchSubmitting = $state(false);
+let batchError = $state("");
 let listRequestSeq = 0;
 let entryRequestSeq = 0;
 /** 新建时的分类（目录名），保存时决定文件落在哪 */
@@ -84,6 +102,16 @@ function notify(text: string): void {
 	toastTimer = setTimeout(() => {
 		toast = "";
 	}, 3200);
+}
+
+function persistQueue(next: QueuedDraft[]): void {
+	queuedDrafts = next;
+	if (typeof sessionStorage === "undefined") return;
+	if (next.length === 0) {
+		sessionStorage.removeItem(BATCH_QUEUE_STORAGE_KEY);
+		return;
+	}
+	sessionStorage.setItem(BATCH_QUEUE_STORAGE_KEY, JSON.stringify(next));
 }
 
 async function refreshList(force = false): Promise<void> {
@@ -136,6 +164,7 @@ function startCreate(): void {
 	selectedPath = "";
 	sha = "";
 	docError = "";
+	editingQueueId = "";
 	draftCategory = collection.defaultCategory ?? "";
 
 	const draft = createDocument();
@@ -175,13 +204,15 @@ function closeEditor(): void {
 	doc = null;
 	sha = "";
 	docError = "";
+	editingQueueId = "";
 }
 
-async function handleSave(): Promise<void> {
-	if (!doc || saving) return;
-	saving = true;
-	docError = "";
-
+function currentDraftMeta(): {
+	title: string;
+	stamp: string;
+	path: string;
+} | null {
+	if (!doc) return null;
 	const titleValue = readField(doc, "title");
 	const title =
 		(typeof titleValue === "string" && titleValue.trim()) || "未命名";
@@ -190,10 +221,26 @@ async function handleSave(): Promise<void> {
 		typeof dateValue === "string" && dateValue
 			? dateValue
 			: nowStamp(!collection.dateOnly);
+	return {
+		title,
+		stamp,
+		path: buildPath(collection, {
+			title,
+			date: stamp,
+			category: draftCategory,
+		}),
+	};
+}
 
-	const path = isNew
-		? buildPath(collection, { title, date: stamp, category: draftCategory })
-		: selectedPath;
+async function handleSave(): Promise<void> {
+	if (!doc || saving) return;
+	saving = true;
+	docError = "";
+
+	const meta = currentDraftMeta();
+	if (!meta) return;
+
+	const path = isNew ? meta.path : selectedPath;
 
 	try {
 		const saved = await saveEntry({
@@ -203,8 +250,11 @@ async function handleSave(): Promise<void> {
 			sha,
 			isNew,
 			branch: editor.branch,
-			label: title,
+			label: meta.title,
 		});
+		if (editingQueueId) {
+			removeQueuedDraft(editingQueueId);
+		}
 		notify("已提交，正在重新构建，1~3 分钟后生效");
 		await refreshList(true);
 		// 新建后重新打开刚提交的文件：必须拿到它真实的 sha，
@@ -220,6 +270,94 @@ async function handleSave(): Promise<void> {
 		docError = editor.describeError(error);
 	} finally {
 		saving = false;
+	}
+}
+
+function handleQueue(): void {
+	if (!doc || !isNew) return;
+	docError = "";
+	const meta = currentDraftMeta();
+	if (!meta) return;
+
+	try {
+		const next = upsertQueuedDraft(queuedDrafts, {
+			id: editingQueueId || createQueuedDraftId(),
+			collectionId: collection.id,
+			collectionLabel: collection.label,
+			title: meta.title,
+			category: draftCategory,
+			path: meta.path,
+			text: serializeContent(doc),
+		});
+		persistQueue(next);
+		notify(editingQueueId ? "待提交内容已更新" : "已加入待提交队列");
+		startCreate();
+	} catch (error) {
+		docError = error instanceof Error ? error.message : "加入待提交队列失败";
+	}
+}
+
+function editQueuedDraft(item: QueuedDraft): void {
+	const target = findCollection(item.collectionId);
+	if (collectionId !== target.id) {
+		listRequestSeq += 1;
+		collectionId = target.id;
+		query = "";
+		entries = [];
+		void refreshList();
+	}
+	entryRequestSeq += 1;
+	mobileListMode = false;
+	isNew = true;
+	selectedPath = "";
+	sha = "";
+	docError = "";
+	draftCategory = item.category;
+	editingQueueId = item.id;
+	doc = parseContent(item.text);
+	queueOpen = false;
+}
+
+function removeQueuedDraft(id: string): void {
+	persistQueue(queuedDrafts.filter((item) => item.id !== id));
+	if (editingQueueId === id) editingQueueId = "";
+}
+
+function clearQueuedDrafts(): void {
+	persistQueue([]);
+	editingQueueId = "";
+	batchError = "";
+}
+
+async function submitQueuedDrafts(): Promise<void> {
+	if (queuedDrafts.length === 0 || batchSubmitting) return;
+	batchSubmitting = true;
+	batchError = "";
+	try {
+		await writeBatch({
+			branch: editor.branch,
+			message: `feat(content): 批量新增 ${queuedDrafts.length} 条内容`,
+			items: queuedDrafts.map((item) => ({
+				path: item.path,
+				text: item.text,
+				collectionId: item.collectionId,
+				label: item.title,
+			})),
+		});
+		for (const collectionId of new Set(
+			queuedDrafts.map((item) => item.collectionId),
+		)) {
+			invalidateEntries(collectionId);
+		}
+		clearQueuedDrafts();
+		queueOpen = false;
+		closeEditor();
+		await refreshList(true);
+		notify("整批内容已提交，正在重新构建，1~3 分钟后生效");
+	} catch (error) {
+		batchError = editor.describeError(error);
+	} finally {
+		batchSubmitting = false;
 	}
 }
 
@@ -257,6 +395,9 @@ function switchCollection(id: string): void {
 }
 
 onMount(() => {
+	queuedDrafts = parseQueuedDrafts(
+		sessionStorage.getItem(BATCH_QUEUE_STORAGE_KEY),
+	);
 	void editor.bootstrap();
 	return () => {
 		if (toastTimer) clearTimeout(toastTimer);
@@ -302,6 +443,20 @@ $effect(() => {
 					disabled={listLoading}
 				>
 					<RefreshCw size={13} class={listLoading ? "spin" : ""} />
+				</button>
+				<button
+					type="button"
+					class="admin-btn admin__batch-trigger"
+					class:is-active={queuedDrafts.length > 0}
+					aria-label={`打开待提交队列，共 ${queuedDrafts.length} 条`}
+					onclick={() => {
+						batchError = "";
+						queueOpen = true;
+					}}
+				>
+					<Files size={14} aria-hidden="true" />
+					<span>待提交</span>
+					<b aria-live="polite">{queuedDrafts.length}</b>
 				</button>
 				<a
 					class="admin-btn admin__umami-link"
@@ -404,6 +559,7 @@ $effect(() => {
 					saving={saving}
 					bind:category={draftCategory}
 					onSave={handleSave}
+					onQueue={handleQueue}
 					onDelete={handleDelete}
 					onClose={closeEditor}
 					onMobileBack={() => (mobileListMode = true)}
@@ -437,4 +593,16 @@ $effect(() => {
 	{#if toast}
 		<div class="admin__toast" role="status" aria-live="polite">{toast}</div>
 	{/if}
+
+	<AdminBatchQueue
+		open={queueOpen}
+		items={queuedDrafts}
+		submitting={batchSubmitting}
+		error={batchError}
+		onClose={() => (queueOpen = false)}
+		onEdit={editQueuedDraft}
+		onRemove={removeQueuedDraft}
+		onClear={clearQueuedDrafts}
+		onSubmit={submitQueuedDrafts}
+	/>
 </div>

@@ -56,7 +56,7 @@
 src/
 ├── assets/images/       # 头像、封面等构建时图片
 ├── components/          # 按功能域组织的组件（161 个文件）
-│   ├── admin/           # 站内后台 /admin（2026-11-04）：AdminApp 三栏骨架 / AdminList 条目列表 / AdminEditor 表单+Markdown 编辑+预览 (3)
+│   ├── admin/           # 站内后台 /admin（2026-11-04，11-07 补混合内容批量提交）：AdminApp 三栏骨架 / AdminList 条目列表 / AdminEditor 表单+Markdown 编辑+预览 / AdminBatchQueue 待提交队列 (4)
 │   ├── analytics/       # GA, Clarity, Umami (3)
 │   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
@@ -122,7 +122,7 @@ docs/                     # 使用/部署文档（含 manage-local-albums.md / d
 cloudflare-worker/        # ⚠️ 站长登录用的 Cloudflare Worker（2026-11-04）：只接管 /api/*。
                           # **唯一有服务端逻辑的地方**，不参与 Astro 构建、不是 npm 依赖，
                           # 靠 Cloudflare 控制台粘贴 index.js 部署（Route: jojocode.cn/api/*）。
-                          # 接口：/api/auth/{login,callback,me,logout} + /api/github/{file,tree}。
+                          # 接口：/api/auth/{login,callback,me,logout} + /api/github/{file,tree,batch}。
                           # 站点本身仍是 GitHub Pages 托管，两者互不干扰。说明见第 24 节
 ```
 
@@ -1357,7 +1357,7 @@ EditorRoot.svelte（⚠️ 挂 MainGridLayout.astro、#navbar-wrapper **外面**
 └── editor.toast             # 提交提示
 
 /admin（独立全屏路由，不套 MainGridLayout，也不参与 Swup）
-└── AdminApp.svelte → AdminList.svelte + AdminEditor.svelte
+└── AdminApp.svelte → AdminList.svelte + AdminEditor.svelte + AdminBatchQueue.svelte
 
 cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地方）
                              # 靠控制台粘贴部署，不是 npm 依赖、不参与构建
@@ -1367,19 +1367,20 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 
 | 文件 | 职责 |
 |------|------|
-| `src/utils/editor/github-client.ts` | 浏览器侧封装：会话探测、读/写/删/列目录（全部走 `/api`）；`probeLoginService` 负责在跳转前确认 Worker 在不在 |
+| `src/utils/editor/github-client.ts` | 浏览器侧封装：会话探测、读/写/删/列目录/批量提交（全部走 `/api`）；`probeLoginService` 负责在跳转前确认 Worker 在不在 |
 | `src/utils/editor/editor-store.ts` | 登录态（store 契约）、OAuth 回跳原因翻译、错误翻译、toast |
 | `src/utils/editor/editor-ui.ts` | 弹窗/抽屉的开合、抽屉模式与意图 |
 | `src/utils/editor/moment-serializer.ts` | 说说 md ↔ 草稿（抽屉专用）；**未知 frontmatter 字段收进 `extra` 原样吐回** |
 | `src/utils/editor/content-serializer.ts` | **通用 frontmatter**：拆成有序 entry，没改过的原样写回（改一个字段只产生一行 diff）。支持内联数组 `[a, b]` 与块数组两种写法，`gap` 记录 `---` 与正文之间的空行 |
 | `src/utils/editor/content-repo.ts` | 集合列目录（递归 + 20s 缓存）、路径模板展开、撞名 `-2` 重试 |
+| `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
 | `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
 | `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部站长入口；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
-| `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览） |
+| `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉） |
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
 | `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
 | `src/styles/pages/admin.css` | 后台样式，只由 AdminApp import |
-| `cloudflare-worker/index.js` | 服务端全部逻辑：8 个路由 + Cookie + AES-GCM 信封加密 + 路径护栏 |
+| `cloudflare-worker/index.js` | 服务端全部逻辑：9 个路由 + Cookie + AES-GCM 信封加密 + 路径护栏；`POST /api/github/batch` 用 Git Data API 把最多 30 条内容合成一个原子提交 |
 
 ### 为什么需要 Worker（关键认知）
 
@@ -1436,11 +1437,12 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 
 `node .workbuddy/preview/test-worker.mjs` —— 24 项断言，覆盖路由防呆、501/401/403/400、state 加解密互通、路径逃逸、登出清 Cookie。**不依赖外网**，改完 Worker 先跑它。
 
-### 后台 /admin 的三条约定
+### 后台 /admin 的四条约定
 
 1. **列表只读文件名，不预读 frontmatter。** 面经 108 篇逐篇读就是 108 次请求，慢且烧额度。文件名本身可读（面经带序号、说说带日期），真实标题打开时再显示。别为了「列表上多显示几个字段」去全量读一遍。
 2. **frontmatter 保序保留，不要改成「解析成对象再序列化」。** 那样字段会重排、注释会消失、不认识的字段会被吃掉，每次保存都制造一整片 diff。`content-serializer.ts` 的做法是拆成有序 entry、没改过的写 `original`。实测 26 个文件（文章 + 面经 + 说说）解析再序列化逐字节一致 —— 改这块之后要重跑这个校验。
 3. **/admin 只能整页进入。** Swup 只替换容器内容，不会重新挂载 Astro 岛，SPA 导航进来会白屏。任何指向 `/admin` 的链接都要带 `data-no-swup`；后台内的链接同理。
+4. **批量提交必须原子更新一次分支。** 前端队列可以混合文章、说说和更新日志，但 Worker 必须创建多个 blob、一个 tree、一个 commit，最后只 PATCH 一次 ref；禁止退化成循环调用 Contents API，否则会产生半批成功和重复构建。同名路径在完整仓库树与本批次内统一追加 `-2`、`-3`，ref 冲突只自动重试一次。
 
 ### 编辑按钮的显隐
 

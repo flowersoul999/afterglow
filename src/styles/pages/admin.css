@@ -99,6 +99,29 @@
 	margin-left: auto;
 }
 
+.admin__batch-trigger b {
+	display: grid;
+	min-width: 1.25rem;
+	height: 1.25rem;
+	place-items: center;
+	padding: 0 0.25rem;
+	border-radius: 9999px;
+	background: var(--btn-regular-bg-hover);
+	color: var(--deep-text);
+	font-size: 0.6875rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.admin__batch-trigger.is-active {
+	border-color: color-mix(in oklch, var(--primary) 55%, var(--line-color));
+	color: var(--deep-text);
+}
+
+.admin__batch-trigger.is-active b {
+	background: var(--primary);
+	color: var(--page-bg);
+}
+
 .admin__umami-link {
 	gap: 0.35rem;
 }
@@ -1062,6 +1085,212 @@
 	animation: admin-toast-in 0.22s ease;
 }
 
+/* ============================================
+ * 待提交队列
+ * ============================================ */
+.admin-batch {
+	position: fixed;
+	inset: 0;
+	z-index: 240;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.admin-batch__backdrop {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	border: 0;
+	background: oklch(0 0 0 / 0.38);
+	cursor: default;
+	animation: admin-batch-fade 0.18s ease;
+}
+
+.admin-batch__panel {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	width: min(30rem, 92vw);
+	height: 100%;
+	border-left: 1px solid var(--line-color);
+	background: var(--float-panel-bg);
+	box-shadow: -16px 0 40px oklch(0 0 0 / 0.16);
+	animation: admin-batch-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.admin-batch__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 1.25rem 1.25rem 1rem;
+	border-bottom: 1px solid var(--line-color);
+}
+
+.admin-batch__eyebrow {
+	margin: 0 0 0.15rem;
+	color: var(--content-meta);
+	font-size: 0.625rem;
+	font-weight: 600;
+	letter-spacing: 0.12em;
+}
+
+.admin-batch__head h2 {
+	margin: 0;
+	font-size: 1rem;
+	line-height: 1.4;
+}
+
+.admin-batch__summary {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.7rem 1.25rem;
+	border-bottom: 1px solid var(--line-color);
+	background: var(--btn-card-bg-hover);
+	color: var(--content-meta);
+	font-size: 0.75rem;
+}
+
+.admin-batch__list {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 0.75rem;
+}
+
+.admin-batch__item {
+	display: grid;
+	grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 0.65rem;
+	padding: 0.75rem;
+	margin-bottom: 0.5rem;
+	border: 1px solid var(--line-color);
+	border-radius: 0.625rem;
+	background: var(--page-bg);
+}
+
+.admin-batch__index {
+	display: grid;
+	width: 1.75rem;
+	height: 1.75rem;
+	place-items: center;
+	border-radius: 0.45rem;
+	background: var(--btn-regular-bg-hover);
+	color: var(--content-meta);
+	font-size: 0.6875rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.admin-batch__content {
+	min-width: 0;
+}
+
+.admin-batch__item-head {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	min-width: 0;
+}
+
+.admin-batch__item-head strong {
+	overflow: hidden;
+	color: var(--deep-text);
+	font-size: 0.8125rem;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.admin-batch__type {
+	flex: 0 0 auto;
+	padding: 0.05rem 0.35rem;
+	border-radius: 9999px;
+	background: var(--btn-regular-bg-hover);
+	color: var(--content-meta);
+	font-size: 0.625rem;
+}
+
+.admin-batch__content code {
+	display: block;
+	margin-top: 0.25rem;
+	overflow: hidden;
+	color: var(--content-meta);
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 0.625rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.admin-batch__item-actions {
+	display: flex;
+	gap: 0.25rem;
+}
+
+.admin-batch__remove {
+	color: oklch(0.52 0.19 25);
+}
+
+.admin-batch__empty {
+	display: grid;
+	justify-items: center;
+	gap: 0.35rem;
+	padding: 4rem 1rem;
+	color: var(--content-meta);
+	text-align: center;
+}
+
+.admin-batch__empty p {
+	margin: 0.4rem 0 0;
+	color: var(--deep-text);
+	font-weight: 600;
+}
+
+.admin-batch__empty span {
+	font-size: 0.75rem;
+}
+
+.admin-batch__error {
+	margin: 0 1rem 0.75rem;
+	padding: 0.65rem 0.75rem;
+	border: 1px solid color-mix(in oklch, oklch(0.52 0.19 25) 24%, transparent);
+	border-radius: 0.5rem;
+	background: oklch(0.52 0.19 25 / 0.08);
+	color: oklch(0.52 0.19 25);
+	font-size: 0.75rem;
+	line-height: 1.6;
+}
+
+.admin-batch__foot {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 1rem 1.25rem;
+	border-top: 1px solid var(--line-color);
+	background: var(--btn-card-bg-hover);
+}
+
+.admin-batch__submit {
+	flex: 1;
+}
+
+@keyframes admin-batch-fade {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes admin-batch-in {
+	from {
+		transform: translateX(1.5rem);
+		opacity: 0;
+	}
+}
+
 @keyframes admin-toast-in {
 	from {
 		opacity: 0;
@@ -1477,6 +1706,20 @@
 		display: none;
 	}
 
+	.admin__batch-trigger > span {
+		display: none;
+	}
+
+	.admin__batch-trigger {
+		padding-inline: 0.45rem;
+	}
+
+	.admin__batch-trigger b {
+		min-width: 1.1rem;
+		height: 1.1rem;
+		font-size: 0.625rem;
+	}
+
 	.admin__top-right .admin__umami-link {
 		width: 2rem;
 		padding: 0;
@@ -1529,6 +1772,34 @@
 
 	.admin-editor__actions .admin-btn {
 		min-height: 2.5rem;
+	}
+
+	.admin-batch__panel {
+		width: 100%;
+	}
+
+	.admin-batch__head,
+	.admin-batch__summary,
+	.admin-batch__foot {
+		padding-inline: 1rem;
+	}
+
+	.admin-batch__item {
+		grid-template-columns: 1.5rem minmax(0, 1fr);
+	}
+
+	.admin-batch__index {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
+	.admin-batch__item-actions {
+		grid-column: 2;
+	}
+
+	.admin-batch__item-actions .admin-icon-btn {
+		width: 2.75rem;
+		height: 2.75rem;
 	}
 
 	.admin-editor__body {
