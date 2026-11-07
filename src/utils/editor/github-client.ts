@@ -232,6 +232,34 @@ export async function writeFile(options: WriteOptions): Promise<string> {
 	return data.sha ?? "";
 }
 
+/**
+ * 写二进制文件（图片）。
+ *
+ * 走 `PUT /api/github/blob`，和 `writeFile` 分开是因为文本接口会把内容当 UTF-8
+ * 再编一次 base64，图片必然损坏。`base64` 允许带 `data:image/...;base64,` 前缀，
+ * 服务端会剥掉。
+ */
+export async function writeBlob(options: {
+	path: string;
+	base64: string;
+	message: string;
+	branch: string;
+}): Promise<string> {
+	const response = await fetch(`${GITHUB_PROXY}/blob`, {
+		method: "PUT",
+		credentials: "same-origin",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(options),
+	});
+
+	if (!response.ok) {
+		throw new EditorApiError(await readError(response), response.status);
+	}
+
+	const data = (await response.json()) as { sha?: string };
+	return data.sha ?? "";
+}
+
 /** 把多条新内容合成一个 Git 提交。 */
 export async function writeBatch(options: {
 	items: BatchWriteItem[];
