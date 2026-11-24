@@ -122,7 +122,7 @@ docs/                     # 使用/部署文档（含 manage-local-albums.md / d
 cloudflare-worker/        # ⚠️ 站长登录用的 Cloudflare Worker（2026-11-04）：只接管 /api/*。
                           # **唯一有服务端逻辑的地方**，不参与 Astro 构建、不是 npm 依赖，
                           # 靠 Cloudflare 控制台粘贴 index.js 部署（Route: jojocode.cn/api/*）。
-                          # 接口：/api/auth/{login,callback,me,logout} + /api/github/{file,tree,batch}。
+                          # 接口：/api/auth/{login,callback,me,logout} + /api/github/{file,blob,tree,batch}。
                           # 站点本身仍是 GitHub Pages 托管，两者互不干扰。说明见第 24 节
 ```
 
@@ -378,6 +378,20 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 | `--line-divider` | 分割线 |
 | `--float-panel-bg` | 浮动面板背景 |
 | `--border` | 边框色 |
+| `--ambient-warm` / `--ambient-mint` / `--ambient-violet` | 页面环境光（仅亮色使用，见下） |
+
+> **亮色主题 = 暖纸（2026-11-24 起）**
+> 站长反馈「除主页外背景全是死白」，所以亮色整条灰阶都往 hue 65~82（黄橙）偏了一点点：
+> `--page-bg` 是奶油米白 `oklch(0.979 0.011 82)`，`--deep-text` 是深褐黑 `oklch(0.145 0.014 65)`，
+> 其余令牌的色度统一控在 `0.010~0.016`。**新增颜色令牌时不要再用 `oklch(x 0 0)` 这种零色度灰** ——
+> 纯中性灰压在米色底上会因同时对比读作「冷灰」，文字和卡片会显脏。
+>
+> 环境光在 `styles/base/ambient-backdrop.css`（`body::before` 铺三层 `radial-gradient`，
+> 圆心全在视口外、`position: fixed` + `z-index: -1`）。首页（`body[class~="lg:is-home"]`）
+> 与暗色主题（`:root.dark`）都 `content: none` 不生成。**调光晕只改上面那三个 `--ambient-*`
+> 变量的透明度/色相，别去改 CSS 里的渐变本身**；`--page-bg` 的 chroma 不要超过 `0.02`，否则变脏黄。
+>
+> 暗色主题**保持纯黑灰阶不动**（站长明确要求），改亮色时别顺手把 `:root.dark` 一起改了。
 
 ---
 
@@ -670,6 +684,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **本地静态优先（2026-11-06）**：相册 frontmatter 的 `localFolder` 指向 `public/assets/images/albums/<目录>`，Astro 构建时递归扫描 AVIF/GIF/JPEG/PNG/WebP 并把 URL 嵌入页面；不需要图床、付款方式或 Token。完整使用步骤见 `docs/manage-local-albums.md`。
 - **兼容回退**：`photos` 可补充显式 URL；仅当本地与 `photos` 都为空时，才使用 `imgbedFolder` 请求 `/api/manage/list`。`PUBLIC_IMAGEBED_API_TOKEN` 会注入浏览器，只能授予 `list` 权限，禁止上传、删除或管理权限。
 - **双模式**：默认进入可拖动的散落模式，照片位置写入 `localStorage` 并在刷新后保持；可切换到照片墙模式继续使用 CSS columns 瀑布流（5/4/3/2 列）。单相册页 `/album/<id>/` 与 `BounceCards` **已删除**。
+- **新建相册入口（2026-11-24）**：管理菜单 `data-manage-action="new-album"` → 派发 `album:new` → `EditorRoot` 调 `albumUi.openNewAlbum()` → `AlbumDrawer` 的 `new` 模式写 `src/content/相册/<id>.json`（`writeFile` 不带 sha = 新建；带 sha = 更新）。`id` 由 `sanitizeAlbumId` 限成 ASCII（中文清成空串后拦下提示，**不做拼音猜测**），`localFolder` 恒等于 `id`，照片落 `public/assets/images/albums/<id>/`。保存前先 `readFile` 探重名。**照片墙（全部照片平铺）与相册筛选条不受影响**，新相册只是筛选条上多一枚名字；建完要等 Actions 重建才可见。
 - 本地目录扫描器在 `src/utils/local-album.ts`：忽略隐藏文件、符号链接和非图片文件，稳定排序并编码 URL；拒绝绝对路径和 `..` 越界。测试命令 `pnpm test:album`。
 - **顶部筛选条**：搜索 + 计数 + 清空（第 1 行）、相册名（第 2 行，选中 = 主题色 + 2px 下划线）。
   **按要求不吸顶**（position: static）。标签行已按要求删除，只留相册名。
@@ -1392,6 +1407,9 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/editor-store.ts` | 登录态（store 契约）、OAuth 回跳原因翻译、错误翻译、toast |
 | `src/utils/editor/editor-ui.ts` | 弹窗/抽屉的开合、抽屉模式与意图 |
 | `src/utils/editor/moment-serializer.ts` | 说说 md ↔ 草稿（抽屉专用）；**未知 frontmatter 字段收进 `extra` 原样吐回** |
+| `src/utils/editor/album-serializer.ts` | 相册 json ↔ 草稿（照片弹窗 / 新建相册共用）；相册是 json 不是 md，所以走 `JSON.parse/stringify`，**未知键（cover / imgbedFolder / draft 及逐张未知字段）同样原样保留**。新建相关的三个纯函数：`sanitizeAlbumId`（ASCII 化 + 40 字封顶）、`newAlbumFolderId`（`album-<时间戳><随机>`）、`createAlbumDraft`（`localFolder` 恒等于 `id`）。有 13 条单测，见 `test:admin-batch` |
+| `src/utils/editor/album-ui.ts` | 相册弹窗的开合与目标（哪个相册、哪张照片、还是新建一本）；`AlbumDrawerMode = create \| edit \| new`，刻意不塞进 `editor-ui.ts`，两边字段几乎不重叠 |
+| `src/utils/editor/image-upload.ts` | 图片上传：canvas 缩到长边 1920 转 webp（gif/svg 直传），走 `PUT /api/github/blob`。说说落 `动态/assets/diary/`，相册落 `public/assets/images/albums/<localFolder>/` |
 | `src/utils/editor/content-serializer.ts` | **通用 frontmatter**：拆成有序 entry，没改过的原样写回（改一个字段只产生一行 diff）。支持内联数组 `[a, b]` 与块数组两种写法，`gap` 记录 `---` 与正文之间的空行 |
 | `src/utils/editor/content-repo.ts` | 集合列目录（递归 + 20s 缓存）、路径模板展开、撞名 `-2` 重试 |
 | `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
@@ -1401,7 +1419,7 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
 | `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
 | `src/styles/pages/admin.css` | 后台样式，只由 AdminApp import |
-| `cloudflare-worker/index.js` | 服务端全部逻辑：9 个路由 + Cookie + AES-GCM 信封加密 + 路径护栏；`POST /api/github/batch` 用 Git Data API 把最多 30 条内容合成一个原子提交 |
+| `cloudflare-worker/index.js` | 服务端全部逻辑：8 条路由（`/file` 按 GET/PUT/DELETE 分支）+ Cookie + AES-GCM 信封加密 + 路径护栏；`POST /api/github/batch` 用 Git Data API 把最多 30 条内容合成一个原子提交。**图片必须走 `PUT /api/github/blob`**：`/file` 走 `textToBase64`（UTF-8 重编码），二进制进去必然损坏，`/blob` 只收 base64 原串直接透传（上限 8MB） |
 
 ### 为什么需要 Worker（关键认知）
 

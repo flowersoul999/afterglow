@@ -146,8 +146,10 @@
    结构见 src/pages/posts/[...slug].astro 的 Layer 2。
    ============================================ */
 .post-intro-card {
-  /* 浅灰面板底色 —— 本项目的 --card-bg 是 transparent（极简风），这里单独给一套 */
-  --intro-surface-bg: oklch(0.965 0 0);
+  /* 浅灰面板底色 —— 本项目的 --card-bg 是 transparent（极简风），这里单独给一套。
+     2026-11-24 暖纸化：原来是无色相的 oklch(0.965 0 0)，压在暖米底上会读作「冷灰」
+     （同时对比效应），所以往 hue 78 偏一点点，和 --page-bg 同一族。 */
+  --intro-surface-bg: oklch(0.958 0.014 78);
   border: 1px solid color-mix(in oklab, var(--line-divider) 60%, transparent);
   border-radius: 0.75rem;
   background: var(--intro-surface-bg);
