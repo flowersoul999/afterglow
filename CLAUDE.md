@@ -56,7 +56,7 @@
 src/
 ├── assets/images/       # 头像、封面等构建时图片
 ├── components/          # 按功能域组织的组件（161 个文件）
-│   ├── admin/           # 站内后台 /admin（2026-11-04，11-07 补混合内容批量提交）：AdminApp 三栏骨架 / AdminList 条目列表 / AdminEditor 表单+Markdown 编辑+预览 / AdminBatchQueue 待提交队列 (4)
+│   ├── admin/           # 站内后台 /admin（2026-11-04，11-07 补混合内容批量提交，11-24 补「状态」面板）：AdminApp 三栏骨架 / AdminList 条目列表 / AdminEditor 表单+Markdown 编辑+预览 / AdminBatchQueue 待提交队列 / AdminStatusBoard 我的状态（私有仓库时间轴+两日对比，横跨中右两栏） (5)
 │   ├── analytics/       # GA, Clarity, Umami (3)
 │   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
@@ -110,7 +110,7 @@ src/
 ├── types/               # TypeScript 类型：config.ts, bangumi.ts, guestbook-chat.ts
 └── utils/               # 工具函数（75 个文件，含 local-album 本地相册扫描 / changelog / tag-graph / tts-text / music-player-controller 等）
     ├── 8 个控制器模块   # 见第 10 节
-    ├── editor/          # 站长编辑（2026-11-03，11-04 后台化）：github-client.ts（会话 + Contents 读写删 + 列目录，全走 /api 代理）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化，抽屉专用）、content-serializer.ts（**通用 frontmatter，保序保留**，后台用）、content-repo.ts（列集合/生成路径/撞名重试）
+    ├── editor/          # 站长编辑（2026-11-03，11-04 后台化）：github-client.ts（会话 + Contents 读写删 + 列目录，全走 /api 代理）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化，抽屉专用）、content-serializer.ts（**通用 frontmatter，保序保留**，后台用）、content-repo.ts（列集合/生成路径/撞名重试）、private-client.ts（**私有仓库通道**，`/api/private/*`，「状态」专用）、status-serializer.ts（状态 json ↔ 记录，photos 存相对路径）
     └── 33 个业务工具    # content-utils, category-tree（文件夹即分类，多级 `a/b` 推导 + CategoryNode 树）, date-utils, image-utils, url-utils, tts-text（朗读正文提取）...
 
 # 根目录其他重要文件
@@ -1412,10 +1412,12 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/image-upload.ts` | 图片上传：canvas 缩到长边 1920 转 webp（gif/svg 直传），走 `PUT /api/github/blob`。说说落 `动态/assets/diary/`，相册落 `public/assets/images/albums/<localFolder>/` |
 | `src/utils/editor/content-serializer.ts` | **通用 frontmatter**：拆成有序 entry，没改过的原样写回（改一个字段只产生一行 diff）。支持内联数组 `[a, b]` 与块数组两种写法，`gap` 记录 `---` 与正文之间的空行 |
 | `src/utils/editor/content-repo.ts` | 集合列目录（递归 + 20s 缓存）、路径模板展开、撞名 `-2` 重试 |
+| `src/utils/editor/private-client.ts` | **私有仓库通道**（`/api/private/*`）：list/read/write/writeBlob/delete + `statusPhotoUrl`。只给「我的状态」用，读写的是独立私有仓库，不是博客主仓 |
+| `src/utils/editor/status-serializer.ts` | 状态 json ↔ 记录：`dayKey`（**本地时区**，不能用 `toISOString`）、`thumbOf`（缩略图按 `-thumb` 命名约定推导）、`parseStatus`/`serializeStatus`；未知键进 `extra` 原样保留 |
 | `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
 | `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
 | `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部站长入口；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
-| `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉） |
+| `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉）、AdminStatusBoard（我的状态：时间轴 + 上传 + 两日对比，选中 `privateBoard` 集合时替换「列表 + 编辑」两栏） |
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
 | `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
 | `src/styles/pages/admin.css` | 后台样式，只由 AdminApp import |
@@ -1474,7 +1476,7 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 
 ### 本地怎么测
 
-`node .workbuddy/preview/test-worker.mjs` —— 24 项断言，覆盖路由防呆、501/401/403/400、state 加解密互通、路径逃逸、登出清 Cookie。**不依赖外网**，改完 Worker 先跑它。
+`node .workbuddy/preview/test-worker.mjs` —— 33 项断言，覆盖路由防呆、501/401/403/400、state 加解密互通、路径逃逸、登出清 Cookie，以及私有通道的三道门（Cookie → 站长身份 → PAT）和 `statusx` 这种前缀撞脸的路径。**不依赖外网**，改完 Worker 先跑它。
 
 ### 后台 /admin 的四条约定
 
@@ -1505,6 +1507,50 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 | 提示「不是站长」 | 登录的 GitHub 账号不是 `flowersoul999`（判定在服务端，前端改不了） |
 
 完整操作步骤见 `docs/deploy-github-pages.md` 第七节。
+
+### 私有通道：「我的状态」（2026-11-24）
+
+`/admin` 左侧的「状态」每天记一组照片，**数据不在博客仓库里**，而在独立的私有仓库
+（默认 `flowersoul999/afterglow-private`）。原因很直接：主仓 `afterglow` 是公开的，
+照片 commit 进去就等于公开；站点不渲染只是「藏起来」，不是「藏得住」。
+
+```
+AdminStatusBoard.svelte
+  ├─ GET  /api/private/tree?path=status      列日期（一天一个 json）
+  ├─ GET  /api/private/file?path=status/x.json
+  ├─ PUT  /api/private/file                  写记录
+  ├─ PUT  /api/private/blob                  传照片（原图 1600 + 缩略图 480）
+  └─ GET  /api/private/raw?path=...          <img src> 直接吃，同源 Cookie 鉴权
+        ↓ Worker 用 PRIVATE_TOKEN（fine-grained PAT）访问私有仓库
+status/<YYYY-MM-DD>.json  { "date": "...", "photos": ["assets/2026-11/xxx.webp"] }
+```
+
+**为什么不用现有 OAuth token**：scope 是 `public_repo`，碰不到私有仓库；提到 `repo`
+等于把账号下**所有**私有仓库的读写权塞进一个 Cookie。所以单独一枚只授权这一个仓库
+Contents 读写的 fine-grained PAT，放 Worker Secret，登录链路一个字都不用改。
+
+**部署（三步，都需手动）**：
+1. GitHub 建私有仓库 `afterglow-private`（空仓库即可，目录会自己建）；
+2. Settings → Developer settings → Fine-grained tokens：Repository access 只勾这一个仓库，
+   Permissions → Contents = Read and write，生成后复制 `github_pat_...`；
+3. Cloudflare Worker → Settings → Variables and Secrets 加 Secret `PRIVATE_TOKEN`；
+   Settings → Triggers → Routes **再加一条** `jojocode.cn/api/private/*`（少了它整块面板 404）；
+   然后把新的 `cloudflare-worker/index.js` 全文重新粘一遍并 Deploy。
+   可选变量：`PRIVATE_REPO_OWNER` / `PRIVATE_REPO_NAME` / `PRIVATE_BRANCH`（换仓库不用改代码）。
+
+**四个坑**：
+- **上传必须串行。** GitHub 不支持对同一分支并发提交，第二张起必然 422。`addPhotos` 是
+  `for...of` 里 `await`，别改成 `Promise.all`。每传完一张写一次 json，中途失败只丢后面的。
+- **`dayKey()` 必须用本地时区。** `toISOString().slice(0,10)` 是 UTC，中国时区晚上 8 点后
+  会算成第二天，睡前拍的照片就记到明天去了。
+- **`/raw` 要给 `immutable` 长缓存。** 私有图片每次过 Worker 转发，没缓存的话时间轴一天八张
+  图就是八次跨洋请求。文件名带时间戳 + 随机串、内容不变，缓存是安全的。
+- **不注册 content collection。** 状态没有公开页面，`src/content.config.ts` 里没有 `status`，
+  `.gitignore` 也不用加白名单 —— 它压根不经过 `src/content/`。
+
+**排障**：提示「私有仓库还没配 PRIVATE_TOKEN」= 第 3 步没做；面板报 404 = Route 少一条；
+报 403「只有站长能访问私有内容」= 登录的 GitHub 账号不是站长；图片全是裂图 = PAT 少了
+Contents 权限，或者 `PRIVATE_TOKEN` 过期（fine-grained PAT 有有效期）。
 
 ---
 

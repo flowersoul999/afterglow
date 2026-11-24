@@ -57,6 +57,14 @@ export interface AdminCollection {
 	categoryEditable?: boolean;
 	/** 路径模板：`{category}` / `{yyyy}` / `{mm}` / `{dd}` / `{slug}` */
 	pathTemplate: string;
+	/**
+	 * true = 这个集合不读 `src/content`，改由一个专属面板走私有仓库通道。
+	 *
+	 * 目前只有「状态」用到：它的数据在独立私有仓库里，不进博客构建，
+	 * 通用表单（AdminEditor）也表达不了「一天一组照片」这种形态。
+	 * 见 src/components/admin/AdminStatusBoard.svelte。
+	 */
+	privateBoard?: boolean;
 }
 
 /** 文章：分类就是文件夹，路径 `文章/<分类>/<slug>.md` */
@@ -184,7 +192,31 @@ const changelog: AdminCollection = {
 	],
 };
 
-export const adminCollections: AdminCollection[] = [posts, moments, changelog];
+/**
+ * 我的状态：唯一一个**不往 src/content 写**的集合。
+ *
+ * 数据落在独立私有仓库的 `status/` 目录（一天一个 json + 一组照片），
+ * 由 AdminStatusBoard 读写，所以这里的 fields 是空的 —— 通用表单不参与。
+ * `dir` 写的是私有仓库内的相对目录，不是博客仓库路径，别照它去 find。
+ */
+const status: AdminCollection = {
+	id: "status",
+	label: "状态",
+	icon: "态",
+	dir: "status",
+	dateField: "date",
+	dateOnly: true,
+	pathTemplate: "{yyyy}-{mm}-{dd}",
+	fields: [],
+	privateBoard: true,
+};
+
+export const adminCollections: AdminCollection[] = [
+	posts,
+	moments,
+	status,
+	changelog,
+];
 
 export function findCollection(id: string): AdminCollection {
 	return adminCollections.find((item) => item.id === id) ?? posts;
