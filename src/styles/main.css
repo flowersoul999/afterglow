@@ -33,6 +33,9 @@
 /* --- 基础重置 --- */
 @import './base/reset.css';
 
+/* --- 页面环境光（亮色主题的暖纸柔光底，暗色不生成） --- */
+@import './base/ambient-backdrop.css';
+
 /* --- 组件样式 --- */
 @import './components/theme-transition.css';
 @import './components/cards.css';

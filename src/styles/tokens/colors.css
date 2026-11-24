@@ -1,58 +1,72 @@
 /* ===== 设计令牌：颜色 =====
-   所有颜色色度归零，仅保留明度变化（极简中性灰阶）
-   --primary 为中性深灰，仅作点缀。 */
+   亮色主题 = **暖纸**（2026-11-24 站长要求「除主页外别再是死白/死黑」）：
+   原本所有色度归零的纯灰阶，现在整条灰阶都往 hue 70~82（黄橙）方向偏一点点，
+   底色是奶油米白，文字是深褐黑。色度控制在 0.010~0.016，只做「温度」不做「颜色」，
+   所以页面依旧极简，只是不再冷硬。
+   注意：色相统一落在 65~80，色度不要超过 0.02 —— 超过就会显得脏黄。
+
+   暗色主题保持纯黑 + 纯灰阶不动（站长明确要求），见下方 `:root.dark`。
+   --primary 仍是最深的墨色，仅作点缀。 */
 
 :root {
-  --primary: oklch(0.30 0 0);
-  --page-bg: oklch(1 0 0);
+  --primary: oklch(0.30 0.010 70);
+  --page-bg: oklch(0.979 0.011 82);
   --card-bg: transparent;
   --card-bg-transparent: transparent;
 
-  --btn-content: oklch(0.25 0 0);
+  --btn-content: oklch(0.27 0.010 70);
   --btn-regular-bg: transparent;
-  --btn-regular-bg-hover: oklch(0.94 0 0);
-  --btn-regular-bg-active: oklch(0.90 0 0);
+  --btn-regular-bg-hover: oklch(0.947 0.013 80);
+  --btn-regular-bg-active: oklch(0.912 0.015 80);
 
-  --btn-plain-bg-hover: oklch(0.94 0 0);
-  --btn-plain-bg-active: oklch(0.90 0 0);
+  --btn-plain-bg-hover: oklch(0.947 0.013 80);
+  --btn-plain-bg-active: oklch(0.912 0.015 80);
 
-  --btn-card-bg-hover: oklch(0.96 0 0);
-  --btn-card-bg-active: oklch(0.92 0 0);
+  --btn-card-bg-hover: oklch(0.958 0.012 80);
+  --btn-card-bg-active: oklch(0.925 0.014 80);
 
   --enter-btn-bg: transparent;
-  --enter-btn-bg-hover: oklch(0.94 0 0);
-  --enter-btn-bg-active: oklch(0.90 0 0);
+  --enter-btn-bg-hover: oklch(0.947 0.013 80);
+  --enter-btn-bg-active: oklch(0.912 0.015 80);
 
-  --deep-text: oklch(0.10 0 0);
-  --title-active: oklch(0.30 0 0);
+  --deep-text: oklch(0.145 0.014 65);
+  --title-active: oklch(0.31 0.010 70);
 
-  --line-divider: oklch(0.85 0 0);
-  --line-color: oklch(0.85 0 0);
-  --border: oklch(0.80 0 0);
-  --meta-divider: oklch(0.75 0 0);
-  --content-meta: oklch(0.45 0 0);
+  --line-divider: oklch(0.885 0.012 78);
+  --line-color: oklch(0.885 0.012 78);
+  --border: oklch(0.83 0.014 78);
+  --meta-divider: oklch(0.775 0.012 75);
+  --content-meta: oklch(0.455 0.010 72);
 
-  --inline-code-bg: oklch(0.95 0 0);
-  --inline-code-color: oklch(0.20 0 0);
-  --selection-bg: oklch(0.85 0 0);
-  --codeblock-bg: oklch(0.97 0 0);
-  --codeblock-topbar-bg: oklch(0.93 0 0);
+  --inline-code-bg: oklch(0.945 0.014 78);
+  --inline-code-color: oklch(0.24 0.014 68);
+  --selection-bg: oklch(0.90 0.030 78);
+  --codeblock-bg: oklch(0.962 0.010 80);
+  --codeblock-topbar-bg: oklch(0.934 0.013 78);
 
-  --license-block-bg: oklch(0.97 0 0);
+  --license-block-bg: oklch(0.962 0.010 80);
 
-  --link-underline: oklch(0.85 0 0);
-  --link-hover: oklch(0.50 0 0);
-  --link-active: oklch(0.30 0 0);
+  --link-underline: oklch(0.865 0.014 78);
+  --link-hover: oklch(0.50 0.012 70);
+  --link-active: oklch(0.31 0.010 70);
 
-  --float-panel-bg: oklch(1 0 0);
+  --float-panel-bg: oklch(0.988 0.012 80);
 
   /* 音乐播放器：音量滑块填充 / 滑块描边等需要与卡片底同色的实心块 */
-  --music-surface: oklch(0.89 0 0);
+  --music-surface: oklch(0.905 0.014 78);
 
   /* 导航栏：胶囊底 + 滑动高亮块（当前项与悬停项共用一块，反色显示） */
-  --navbar-bg: oklch(0.925 0 0);
-  --navbar-highlight-bg: oklch(0 0 0);
-  --navbar-highlight-text: oklch(1 0 0);
+  --navbar-bg: oklch(0.938 0.014 80);
+  --navbar-highlight-bg: oklch(0.18 0.014 66);
+  --navbar-highlight-text: oklch(0.985 0.008 82);
+
+  /* 页面环境光（由 styles/base/ambient-backdrop.css 铺在 body 底层）：
+     暖杏 + 藕紫 + 一点薄荷，三团的透明度都在 0.3~0.5，
+     只在视口边缘渗进来，正文中间几乎是底色的原样。
+     暗色主题不用这组值（那边直接 display: none）。 */
+  --ambient-warm: oklch(0.82 0.095 55 / 0.50);
+  --ambient-violet: oklch(0.86 0.060 295 / 0.42);
+  --ambient-mint: oklch(0.90 0.040 170 / 0.30);
 
   --scrollbar-bg-light: rgba(0, 0, 0, 0.4);
   --scrollbar-bg-hover-light: rgba(0, 0, 0, 0.5);
@@ -69,19 +83,19 @@
   --display-light-icon: 1;
   --display-dark-icon: 0;
 
-  --admonitions-color-tip: oklch(0.55 0 0);
-  --admonitions-color-note: oklch(0.55 0 0);
-  --admonitions-color-important: oklch(0.55 0 0);
-  --admonitions-color-warning: oklch(0.55 0 0);
-  --admonitions-color-caution: oklch(0.40 0 0);
+  --admonitions-color-tip: oklch(0.55 0.012 70);
+  --admonitions-color-note: oklch(0.55 0.012 70);
+  --admonitions-color-important: oklch(0.55 0.012 70);
+  --admonitions-color-warning: oklch(0.55 0.014 70);
+  --admonitions-color-caution: oklch(0.40 0.014 68);
 
   --toc-badge-bg: transparent;
-  --toc-btn-hover: oklch(0.94 0 0);
-  --toc-btn-active: oklch(0.90 0 0);
+  --toc-btn-hover: oklch(0.947 0.013 80);
+  --toc-btn-active: oklch(0.912 0.015 80);
   --toc-width: 14rem;
-  --toc-item-active: oklch(0.20 0 0);
+  --toc-item-active: oklch(0.20 0.014 68);
 
-  --color-selection-bar: linear-gradient(to right, oklch(0.20 0 0), oklch(0.50 0 0), oklch(0.80 0 0));
+  --color-selection-bar: linear-gradient(to right, oklch(0.20 0.014 68), oklch(0.50 0.014 70), oklch(0.80 0.014 76));
 
   --guestbook-panel: transparent;
   --guestbook-surface: transparent;
@@ -222,9 +236,9 @@
 
 /* ===== 标签关系图谱 ===== */
 :root {
-	--tag-graph-surface: #fafafa;
-	--tag-graph-text: #18181b;
-	--tag-graph-muted: #52525b;
+	--tag-graph-surface: oklch(0.972 0.014 78);
+	--tag-graph-text: oklch(0.22 0.012 70);
+	--tag-graph-muted: oklch(0.47 0.010 72);
 	--tag-graph-tooltip-bg: rgba(24, 24, 27, 0.94);
 	--tag-graph-tooltip-text: #fafafa;
 	--tag-graph-tooltip-border: rgba(255, 255, 255, 0.16);
@@ -262,7 +276,7 @@
 	--graph-chip-checked: oklch(0.55 0.12 190);
 	/* 移动端 dock 的实色底：图谱页那条竖条要和 mobile-dock 同底色，
 	   局部变量继承不出去，所以提到 token 层 */
-	--mobile-dock-surface: #e7e7e7;
+	--mobile-dock-surface: oklch(0.918 0.013 78);
 }
 
 :root.dark {

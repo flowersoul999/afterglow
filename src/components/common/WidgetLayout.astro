@@ -51,9 +51,11 @@ const className = Astro.props.class;
 <style define:vars={{ collapsedHeight }}>
     widget-layout {
         display: block;
-        border: 1px solid rgba(0, 0, 0, 0.08);
+        /* 2026-11-24 暖纸化：原来是硬编码 #fff，在暖米底上会读成一块「冷白」，
+           改用面板 token（亮色是暖白、暗色是近黑），描边也换成深墨的低透明度。 */
+        border: 1px solid color-mix(in oklab, var(--deep-text) 8%, transparent);
         border-radius: 10px;
-        background: #fff;
+        background: var(--float-panel-bg);
         padding-left: 1rem;
         padding-right: 1rem;
         padding-bottom: 0.75rem;
@@ -68,7 +70,7 @@ const className = Astro.props.class;
     }
 
     widget-layout:hover {
-        border-color: rgba(0, 0, 0, 0.15);
+        border-color: color-mix(in oklab, var(--deep-text) 15%, transparent);
         box-shadow: 0 0 20px 4px rgba(0, 0, 0, 0.08);
     }
 
