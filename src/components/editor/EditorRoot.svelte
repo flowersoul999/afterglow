@@ -53,7 +53,7 @@ onMount(() => {
 	};
 	document.addEventListener("editor:open-moment", onOpenMoment);
 
-	// 相册页的管理入口同理：新增照片 / 编辑单张照片都走自定义事件
+	// 相册页的管理入口同理：新增照片 / 编辑单张照片 / 新建相册都走自定义事件
 	const onOpenAlbum = (event: Event): void => {
 		const detail = (event as CustomEvent<{ albumId?: string; src?: string }>)
 			.detail;
@@ -66,10 +66,17 @@ onMount(() => {
 	};
 	document.addEventListener("album:open-photo", onOpenAlbum);
 
+	// 新建相册没有目标 id，单独一个事件，省得在两个 handler 里判断 mode
+	const onNewAlbum = (): void => {
+		albumUi.openNewAlbum();
+	};
+	document.addEventListener("album:new", onNewAlbum);
+
 	return () => {
 		document.removeEventListener("click", onClick);
 		document.removeEventListener("editor:open-moment", onOpenMoment);
 		document.removeEventListener("album:open-photo", onOpenAlbum);
+		document.removeEventListener("album:new", onNewAlbum);
 	};
 });
 </script>

@@ -57,6 +57,59 @@ export function emptyAlbumPhoto(): AlbumPhotoFile {
 }
 
 /**
+ * 相册标识清洗。
+ *
+ * id 同时要当文件名（`相册/<id>.json`）和图片目录名（`albums/<id>/`），
+ * 所以只留 ASCII 的安全字符 —— 中文标题直接转成空串，由调用方拦下并提示，
+ * 不做拼音转换（仓库里没有拼音依赖，猜出来的 slug 比报错更难维护）。
+ */
+export function sanitizeAlbumId(input: string): string {
+	const cleaned = input
+		.trim()
+		.toLowerCase()
+		.replace(/[^a-z0-9_-]+/g, "-")
+		.replace(/^-+/, "");
+	return cleaned.slice(0, 40).replace(/-+$/, "");
+}
+
+/** 新建相册时的默认标识：`album-<36 进制时间戳><4 位随机>`，撞车概率可以忽略 */
+export function newAlbumFolderId(seed: number = Date.now()): string {
+	const stamp = Math.max(0, Math.floor(seed)).toString(36).slice(-4);
+	const salt = Math.random().toString(36).slice(2, 6);
+	return `album-${stamp}${salt}`;
+}
+
+/**
+ * 新建相册的空白草稿。
+ *
+ * `localFolder` 直接等于 id：相册页会扫描这个目录，新图传进同一目录，
+ * 才能和目录扫描结果按 src 去重后表现为同一批照片（见 albumUploadFolder）。
+ */
+export function createAlbumDraft(options: {
+	id: string;
+	title: string;
+	date: string;
+	subtitle?: string;
+	location?: string;
+	tags?: string[];
+}): AlbumFile {
+	const id = sanitizeAlbumId(options.id);
+	return {
+		id,
+		title: options.title.trim(),
+		subtitle: (options.subtitle ?? "").trim(),
+		date: options.date,
+		location: (options.location ?? "").trim(),
+		tags: options.tags ?? [],
+		cover: "",
+		localFolder: id,
+		imgbedFolder: "",
+		photos: [],
+		extra: {},
+	};
+}
+
+/**
  * 上传落点：优先跟 localFolder 走。
  *
  * 相册页会扫描 `localFolder` 目录把图片都收进来，新图放进同一个目录，

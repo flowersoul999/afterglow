@@ -3,9 +3,12 @@ import test from "node:test";
 import {
 	albumPath,
 	albumUploadFolder,
+	createAlbumDraft,
 	emptyAlbumPhoto,
 	indexOfPhoto,
+	newAlbumFolderId,
 	parseAlbumFile,
+	sanitizeAlbumId,
 	serializeAlbum,
 } from "./album-serializer.ts";
 
@@ -46,14 +49,20 @@ test("解析时保留编辑器不认识的顶层键与逐张未知键", () => {
 	assert.equal(album.title, "旧日相片");
 	assert.equal(album.localFolder, "old-jojo-gallery");
 	assert.deepEqual(album.tags, ["旧博客", "生活碎片"]);
-	assert.equal(album.cover, "/assets/images/albums/old-jojo-gallery/cover.webp");
+	assert.equal(
+		album.cover,
+		"/assets/images/albums/old-jojo-gallery/cover.webp",
+	);
 	assert.equal(album.extra.draft, false);
 
 	assert.equal(album.photos.length, 2);
 	assert.deepEqual(album.photos[0].tags, ["日常"]);
-	assert.deepEqual((album.photos[0] as unknown as Record<string, unknown>).exif, {
-		iso: 100,
-	});
+	assert.deepEqual(
+		(album.photos[0] as unknown as Record<string, unknown>).exif,
+		{
+			iso: 100,
+		},
+	);
 });
 
 test("裸字符串照片被拍平成对象", () => {
@@ -90,7 +99,9 @@ test("空描述和空标签不写进输出", () => {
 	album.photos[2].src = "/assets/x.webp";
 
 	const text = serializeAlbum(album);
-	const reparsed = JSON.parse(text) as { photos: Array<Record<string, unknown>> };
+	const reparsed = JSON.parse(text) as {
+		photos: Array<Record<string, unknown>>;
+	};
 	const added = reparsed.photos[2];
 
 	assert.deepEqual(Object.keys(added), ["src"]);
@@ -116,4 +127,66 @@ test("按 src 定位照片", () => {
 		0,
 	);
 	assert.equal(indexOfPhoto(album, "/assets/nope.webp"), -1);
+});
+
+/* ---------------------------------------------------------------- 新建相册 */
+
+test("相册标识被清成文件名安全的 ASCII", () => {
+	assert.equal(sanitizeAlbumId("  Old Jojo Gallery  "), "old-jojo-gallery");
+	assert.equal(sanitizeAlbumId("../../etc/passwd"), "etc-passwd");
+	assert.equal(sanitizeAlbumId("2026 冬天"), "2026");
+	// 纯中文清完是空串：由调用方拦下提示，不猜拼音
+	assert.equal(sanitizeAlbumId("冬天"), "");
+	assert.equal(sanitizeAlbumId("-"), "");
+});
+
+test("相册标识长度封顶 40 且不以连字符收尾", () => {
+	const long = sanitizeAlbumId(`${"a".repeat(38)} 尾`);
+	assert.equal(long.length, 38);
+	assert.ok(!long.endsWith("-"));
+
+	const capped = sanitizeAlbumId(`${"a".repeat(39)}-中文`);
+	assert.ok(capped.length <= 40);
+	assert.ok(!capped.endsWith("-"));
+});
+
+test("默认标识长这样：album-时间戳随机串", () => {
+	const id = newAlbumFolderId(1764000000000);
+	assert.match(id, /^album-[a-z0-9]{4}[a-z0-9]{4}$/);
+	assert.equal(sanitizeAlbumId(id), id);
+});
+
+test("新建草稿的 localFolder 跟 id 一致，序列化能往返", () => {
+	const draft = createAlbumDraft({
+		id: "2026-winter",
+		title: "2026 冬天",
+		date: "2026-11-24",
+		subtitle: "第一场雪",
+		location: "哈尔滨",
+		tags: ["冬天"],
+	});
+
+	assert.equal(draft.localFolder, "2026-winter");
+	assert.equal(albumUploadFolder(draft), "2026-winter");
+	assert.deepEqual(draft.photos, []);
+
+	const reparsed = parseAlbumFile(serializeAlbum(draft), draft.id);
+	assert.equal(reparsed.title, "2026 冬天");
+	assert.equal(reparsed.subtitle, "第一场雪");
+	assert.equal(reparsed.location, "哈尔滨");
+	assert.equal(reparsed.date, "2026-11-24");
+	assert.equal(reparsed.localFolder, "2026-winter");
+	assert.deepEqual(reparsed.tags, ["冬天"]);
+	assert.deepEqual(reparsed.photos, []);
+});
+
+test("新建草稿的 id 会被清洗后再落盘", () => {
+	const draft = createAlbumDraft({
+		id: "  My Album  ",
+		title: "我的相册",
+		date: "2026-11-24",
+	});
+
+	assert.equal(draft.id, "my-album");
+	assert.equal(albumPath(draft.id), "src/content/相册/my-album.json");
 });

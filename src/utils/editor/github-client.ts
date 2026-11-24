@@ -87,7 +87,7 @@ export class EditorApiError extends Error {
 	}
 }
 
-async function readError(response: Response): Promise<string> {
+export async function readError(response: Response): Promise<string> {
 	try {
 		const data = (await response.json()) as { message?: string };
 		return data.message ?? `HTTP ${response.status}`;

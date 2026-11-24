@@ -9,14 +9,14 @@
  * 混在一个快照里只会让两边都读到一堆用不上的空字段。
  */
 
-export type AlbumDrawerMode = "create" | "edit";
+export type AlbumDrawerMode = "create" | "edit" | "new";
 
 export interface AlbumUiSnapshot {
 	open: boolean;
 	mode: AlbumDrawerMode;
-	/** 目标相册的 entry.id，如 `old-jojo-gallery` */
+	/** 目标相册的 entry.id，如 `old-jojo-gallery`；新建模式留空 */
 	albumId: string;
-	/** 编辑模式下要改的那张照片的 src；新增模式留空 */
+	/** 编辑模式下要改的那张照片的 src；新增 / 新建相册模式留空 */
 	src: string;
 }
 
@@ -53,6 +53,11 @@ export class AlbumUi {
 
 	openCreate(albumId: string): void {
 		this.patch({ mode: "create", albumId, src: "", open: true });
+	}
+
+	/** 新建一整本相册：不需要目标 id，抽屉里自己生成 */
+	openNewAlbum(): void {
+		this.patch({ mode: "new", albumId: "", src: "", open: true });
 	}
 
 	openEdit(albumId: string, src: string): void {
