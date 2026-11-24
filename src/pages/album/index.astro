@@ -84,6 +84,8 @@ const albumMeta = await Promise.all(
 			tags: album.data.tags || [],
 			photos,
 			folder: album.data.imgbedFolder || "",
+			// 新增照片时要往这个目录里传，不能只给图床路径
+			localFolder: album.data.localFolder || "",
 		};
 	}),
 );

@@ -20,6 +20,7 @@ interface AlbumViewModel {
 	location: string;
 	tags: string[];
 	folder: string;
+	localFolder: string;
 	photos: AlbumPhotoViewModel[];
 }
 
@@ -134,6 +135,84 @@ const initialPhotos = albums.flatMap((album) =>
 				<Icon name="material-symbols:restart-alt-rounded" is:inline />
 				<span>复位照片</span>
 			</button>
+
+			<!-- 管理入口：只有登录后 html.is-editor 存在时才显示（样式见 editor.css 的 .wx-manage） -->
+			<div class="wx-manage album-manage" data-manage-root>
+				<button
+					type="button"
+					class="wx-manage__btn"
+					data-manage-toggle
+					aria-expanded="false"
+					aria-haspopup="menu"
+				>
+					<Icon
+						name="material-symbols:tune-rounded"
+						class="wx-manage__icon"
+						is:inline
+					/>
+					<span>管理</span>
+					<Icon
+						name="material-symbols:expand-more-rounded"
+						class="wx-manage__caret"
+						is:inline
+					/>
+				</button>
+				<div class="wx-manage__menu" data-manage-menu hidden role="menu">
+					<p class="wx-manage__hint">管理相册与照片，只对管理员显示</p>
+					<button
+						type="button"
+						class="wx-manage__item"
+						data-manage-action="new-album"
+						role="menuitem"
+					>
+						<Icon
+							name="material-symbols:photo-album-outline"
+							class="wx-manage__item-icon"
+							is:inline
+						/>
+						新建相册<small>起名 · 可直接放图</small>
+					</button>
+					<button
+						type="button"
+						class="wx-manage__item"
+						data-manage-action="create"
+						role="menuitem"
+					>
+						<Icon
+							name="material-symbols:add-photo-alternate-rounded"
+							class="wx-manage__item-icon"
+							is:inline
+						/>
+						新增照片<small>拖 / 选 / URL</small>
+					</button>
+					<button
+						type="button"
+						class="wx-manage__item"
+						data-manage-action="edit"
+						role="menuitem"
+					>
+						<Icon
+							name="material-symbols:edit-rounded"
+							class="wx-manage__item-icon"
+							is:inline
+						/>
+						编辑描述<small>点一张照片</small>
+					</button>
+					<button
+						type="button"
+						class="wx-manage__item is-danger"
+						data-manage-action="delete"
+						role="menuitem"
+					>
+						<Icon
+							name="material-symbols:delete-rounded"
+							class="wx-manage__item-icon"
+							is:inline
+						/>
+						删除照片<small>可多选</small>
+					</button>
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -195,6 +274,25 @@ const initialPhotos = albums.flatMap((album) =>
 		没有找到符合条件的照片
 	</p>
 
+	<!-- 多选态底部工具条：只在管理模式出现，逻辑在下面那段内联脚本里 -->
+	<div
+		class="wx-manage-bar"
+		data-manage-bar
+		hidden
+		role="toolbar"
+		aria-label="照片管理"
+	>
+		<span class="wx-manage-bar__text" data-manage-bar-text>已选 0 张</span>
+		<span class="wx-manage-bar__spacer"></span>
+		<button type="button" class="wx-manage-bar__btn" data-manage-edit>
+			编辑
+		</button>
+		<button type="button" class="wx-manage-bar__btn is-primary" data-manage-confirm>
+			删除
+		</button>
+		<button type="button" class="wx-manage-bar__btn" data-manage-cancel>取消</button>
+	</div>
+
 	<dialog class="album-lightbox" data-album-lightbox aria-label="照片查看器">
 		<div class="album-lightbox__counter" data-album-lightbox-counter></div>
 		<button
@@ -251,4 +349,436 @@ const initialPhotos = albums.flatMap((album) =>
 	import { registerAlbumGallery } from "@/utils/album-gallery-controller";
 
 	registerAlbumGallery();
+</script>
+
+<script is:inline>
+	/**
+	 * 相册页的管理入口
+	 *
+	 * 为什么是内联 + 事件委托：相册是构建期渲染的静态 DOM，换页会被 Swup
+	 * 整体换掉，所以监听只能挂在 document 上；而且这段逻辑不需要 Svelte，
+	 * 单独开组件反而要为它加一个常驻外壳。
+	 *
+	 * 分工：新增和改描述交给常驻的 AlbumDrawer（走 album:open-photo 事件），
+	 * 删除在本地做 —— 读相册 json → 从 photos 里摘掉 → 写回，整条链路不需要 UI。
+	 *
+	 * 一个必须讲清楚的边界：相册页的照片有两份来源，json 里声明的 photos 和
+	 * localFolder 目录扫描出来的文件。后者不在 json 里，摘不掉，遇到就跳过并提示。
+	 */
+	(function () {
+		if (window.__albumManageBound) return;
+		window.__albumManageBound = true;
+
+		function q(selector, ctx) {
+			return (ctx || document).querySelector(selector);
+		}
+
+		function qa(selector, ctx) {
+			return Array.prototype.slice.call(
+				(ctx || document).querySelectorAll(selector),
+			);
+		}
+
+		function payloadAlbums() {
+			var node = q("[data-album-payload]");
+			if (!node || !node.textContent) return [];
+			try {
+				var parsed = JSON.parse(node.textContent);
+				return Array.isArray(parsed) ? parsed : [];
+			} catch (error) {
+				return [];
+			}
+		}
+
+		/** 当前选中的相册：先看筛选标签，只有一张相册时直接用它 */
+		function activeAlbum() {
+			var tab = q(".album-tab.is-active");
+			var id = tab && tab.dataset ? tab.dataset.albumFilterId : "";
+			var albums = payloadAlbums();
+			if (!id) return albums.length === 1 ? albums[0] : null;
+			for (var i = 0; i < albums.length; i += 1) {
+				if (albums[i].id === id) return albums[i];
+			}
+			return null;
+		}
+
+		function toast(text, isError) {
+			var el = q(".editor-toast");
+			if (el) el.remove();
+			el = document.createElement("div");
+			el.className = "editor-toast" + (isError ? " is-error" : "");
+			el.setAttribute("role", "status");
+			el.textContent = text;
+			document.body.appendChild(el);
+			window.setTimeout(function () {
+				if (el.parentNode) el.remove();
+			}, 3400);
+		}
+
+		/* ------------------------------------------------------------ 多选态 */
+
+		var mode = "";
+		var armed = false;
+
+		function cards() {
+			return qa("[data-photo-card]");
+		}
+
+		function pickedCards() {
+			return cards().filter(function (card) {
+				return card.classList.contains("is-picked");
+			});
+		}
+
+		function clearPicks() {
+			cards().forEach(function (card) {
+				card.classList.remove("is-picked");
+				card.removeAttribute("aria-pressed");
+			});
+		}
+
+		/** 勾选圈用真实 DOM 而不是伪元素：scatter 模式下卡片是旋转的，伪元素不好调 */
+		function ensurePicks() {
+			cards().forEach(function (card) {
+				if (q(".alb-pick", card)) return;
+				var dot = document.createElement("span");
+				dot.className = "alb-pick";
+				dot.setAttribute("aria-hidden", "true");
+				card.appendChild(dot);
+			});
+		}
+
+		function dropPicks() {
+			qa(".alb-pick").forEach(function (dot) {
+				dot.remove();
+			});
+		}
+
+		function syncBar() {
+			var bar = q("[data-manage-bar]");
+			if (!bar) return;
+
+			if (!mode) {
+				bar.hidden = true;
+				document.documentElement.removeAttribute("data-album-manage");
+				return;
+			}
+
+			bar.hidden = false;
+			document.documentElement.setAttribute("data-album-manage", mode);
+
+			var count = pickedCards().length;
+			var text = q("[data-manage-bar-text]", bar);
+			if (text) {
+				text.textContent =
+					mode === "edit"
+						? count === 1
+							? "已选 1 张"
+							: "点一张照片来编辑"
+						: "已选 " + count + " 张";
+			}
+
+			var editBtn = q("[data-manage-edit]", bar);
+			if (editBtn) editBtn.disabled = count !== 1;
+
+			var delBtn = q("[data-manage-confirm]", bar);
+			if (delBtn) {
+				delBtn.disabled = count === 0;
+				if (count === 0) armed = false;
+				delBtn.textContent = armed ? "确认删除 " + count + " 张" : "删除";
+			}
+		}
+
+		function startMode(next) {
+			mode = next;
+			armed = false;
+			clearPicks();
+			ensurePicks();
+			syncBar();
+			toast(
+				next === "edit"
+					? "点一张照片选中，再点「编辑」"
+					: "点照片选中要删除的，可以多选",
+				false,
+			);
+		}
+
+		function resetMode() {
+			mode = "";
+			armed = false;
+			clearPicks();
+			dropPicks();
+			syncBar();
+		}
+
+		/* ------------------------------------------------------------ 菜单 */
+
+		function openMenu() {
+			var menu = q("[data-manage-menu]");
+			var toggle = q("[data-manage-toggle]");
+			if (!menu || !toggle) return;
+			menu.hidden = false;
+			toggle.classList.add("is-open");
+			toggle.setAttribute("aria-expanded", "true");
+		}
+
+		function closeMenu() {
+			var menu = q("[data-manage-menu]");
+			var toggle = q("[data-manage-toggle]");
+			if (!menu || !toggle) return;
+			menu.hidden = true;
+			toggle.classList.remove("is-open");
+			toggle.setAttribute("aria-expanded", "false");
+		}
+
+		function menuOpen() {
+			var menu = q("[data-manage-menu]");
+			return Boolean(menu && !menu.hidden);
+		}
+
+		/* ------------------------------------------------------------ 删除 */
+
+		function photoOf(card) {
+			return {
+				albumId: card.dataset.albumId || "",
+				src: card.dataset.photoSrc || "",
+			};
+		}
+
+		function branchOf() {
+			// 内联脚本拿不到 editor store，走一次会话接口；失败就按 main 试
+			return fetch("/api/auth/me", {
+				credentials: "same-origin",
+				cache: "no-store",
+			})
+				.then(function (response) {
+					if (!response.ok) return "main";
+					return response.json().then(function (profile) {
+						return (profile && profile.branch) || "main";
+					});
+				})
+				.catch(function () {
+					return "main";
+				});
+		}
+
+		async function deletePicked() {
+			var targets = pickedCards().map(photoOf);
+			if (targets.length === 0) return;
+
+			var branch = await branchOf();
+			// 同一张相册只读一次、写一次，避免 N 张照片 N 次 commit
+			var byAlbum = {};
+			targets.forEach(function (item) {
+				if (!item.albumId || !item.src) return;
+				if (!byAlbum[item.albumId]) byAlbum[item.albumId] = [];
+				byAlbum[item.albumId].push(item.src);
+			});
+
+			var removedSrc = [];
+			var failures = [];
+
+			for (var albumId in byAlbum) {
+				if (!Object.prototype.hasOwnProperty.call(byAlbum, albumId)) continue;
+				var path = "src/content/相册/" + albumId + ".json";
+				var query = new URLSearchParams({ path: path, ref: branch });
+				try {
+					var read = await fetch("/api/github/file?" + query.toString(), {
+						credentials: "same-origin",
+						cache: "no-store",
+					});
+					if (!read.ok) throw new Error("读取相册文件失败");
+					var data = await read.json();
+					var sha = data && data.file && data.file.sha;
+					var text = data && data.file && data.file.text;
+					if (!sha || !text) throw new Error("找不到 " + albumId + ".json");
+
+					var album = JSON.parse(text);
+					var list = Array.isArray(album.photos) ? album.photos : [];
+					var before = list.length;
+					var drop = byAlbum[albumId];
+					var kept = list.filter(function (photo) {
+						var src = typeof photo === "string" ? photo : photo && photo.src;
+						return drop.indexOf(src) < 0;
+					});
+					// 目录扫描出来的照片不在 json 里，删不掉，如实报出来
+					var missing = drop.length - (before - kept.length);
+					kept.forEach(function (photo) {
+						var src = typeof photo === "string" ? photo : photo && photo.src;
+						removedSrc.push(src);
+					});
+					if (before === kept.length) {
+						failures.push(
+							missing > 0
+								? "有 " + missing + " 张来自本地目录，需要在仓库里删文件"
+								: "相册文件里没找到要删的照片",
+						);
+						continue;
+					}
+
+					album.photos = kept;
+					var put = await fetch("/api/github/file", {
+						method: "PUT",
+						credentials: "same-origin",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							path: path,
+							text: JSON.stringify(album, null, "\t") + "\n",
+							message: "content(album): 删除照片 " + albumId,
+							branch: branch,
+							sha: sha,
+						}),
+					});
+					if (!put.ok) {
+						var detail = await put.json().catch(function () {
+							return {};
+						});
+						throw new Error((detail && detail.message) || "写入失败");
+					}
+				} catch (error) {
+					failures.push(error instanceof Error ? error.message : "删除失败");
+				}
+			}
+
+			resetMode();
+			if (removedSrc.length > 0) {
+				// 先摘掉卡片，节省一次刷新等待；构建完成后本来也会消失
+				cards().forEach(function (card) {
+					if (removedSrc.indexOf(card.dataset.photoSrc || "") >= 0) {
+						card.remove();
+					}
+				});
+				toast(
+					"已提交删除 " + removedSrc.length + " 张，1~3 分钟后生效",
+					false,
+				);
+			}
+			if (failures.length > 0) {
+				toast(failures[0], true);
+			}
+		}
+
+		/* ------------------------------------------------------------ 事件 */
+
+		document.addEventListener("click", function (event) {
+			var target = event.target;
+			if (!(target instanceof Element)) return;
+
+			if (target.closest("[data-manage-toggle]")) {
+				event.preventDefault();
+				if (menuOpen()) closeMenu();
+				else openMenu();
+				return;
+			}
+
+			var action = target.closest("[data-manage-action]");
+			if (action) {
+				event.preventDefault();
+				closeMenu();
+				var kind = action.dataset.manageAction;
+
+				// 新建相册不需要目标相册，直接交给常驻抽屉，由它写一个新的 json
+				if (kind === "new-album") {
+					document.dispatchEvent(new CustomEvent("album:new"));
+					return;
+				}
+
+				if (kind === "create") {
+					var album = activeAlbum();
+					if (!album) {
+						toast("先在上方选一个相册，再新增照片", true);
+						return;
+					}
+					document.dispatchEvent(
+						new CustomEvent("album:open-photo", {
+							detail: { albumId: album.id },
+						}),
+					);
+					return;
+				}
+
+				startMode(kind);
+				return;
+			}
+
+			if (!target.closest("[data-manage-root]")) closeMenu();
+
+			var bar = target.closest("[data-manage-bar]");
+			if (bar) {
+				event.preventDefault();
+				if (target.closest("[data-manage-cancel]")) {
+					resetMode();
+					return;
+				}
+				if (target.closest("[data-manage-edit]")) {
+					var one = pickedCards()[0];
+					if (!one) return;
+					var info = photoOf(one);
+					resetMode();
+					document.dispatchEvent(
+						new CustomEvent("album:open-photo", {
+							detail: { albumId: info.albumId, src: info.src },
+						}),
+					);
+					return;
+				}
+				if (target.closest("[data-manage-confirm]")) {
+					if (!armed) {
+						armed = true;
+						syncBar();
+						toast("再点一次确认删除", false);
+						return;
+					}
+					void deletePicked();
+				}
+			}
+		});
+
+		/**
+		 * 多选态下点卡片只是选中，不能打开大图。
+		 * 相册的拖拽/点击都委托在 stage 上，所以在捕获阶段截住就够了。
+		 */
+		function guard(event) {
+			if (!mode) return;
+			var target = event.target;
+			if (!(target instanceof Element)) return;
+			var card = target.closest("[data-photo-card]");
+			if (!card) return;
+			event.preventDefault();
+			event.stopPropagation();
+			if (event.type !== "pointerdown") return;
+
+			if (mode === "edit") {
+				clearPicks();
+				card.classList.add("is-picked");
+			} else {
+				card.classList.toggle("is-picked");
+			}
+			card.setAttribute("aria-pressed", "true");
+			syncBar();
+		}
+
+		document.addEventListener("pointerdown", guard, true);
+		document.addEventListener("click", guard, true);
+
+		document.addEventListener("keydown", function (event) {
+			if (event.key !== "Escape") return;
+			if (menuOpen()) {
+				closeMenu();
+				return;
+			}
+			if (mode) resetMode();
+		});
+
+		// Swup 换页后旧元素全没了，状态必须归零，不然会在新页面上留一条空工具条
+		function hardReset() {
+			mode = "";
+			armed = false;
+			closeMenu();
+			syncBar();
+		}
+
+		document.addEventListener("swup:content:replaced", hardReset);
+		document.addEventListener("astro:page-load", hardReset);
+	})();
 </script>

@@ -720,3 +720,78 @@ html:has(.album-lightbox[open]) {
 		transition: none;
 	}
 }
+
+/* ============================================
+ * 管理入口 + 多选态
+ *
+ * 按钮/菜单/底部工具条的骨架复用 editor.css 里的 .wx-manage / .wx-manage-bar
+ * （说说页已经在用），这里只补三件相册特有的事：
+ * ① 按钮跟工具栏走，不吸在封面角上（.wx-manage 默认是 absolute）
+ * ② 照片上的勾选圈 —— 散落模式下卡片带旋转，用真 DOM 元素而不是伪元素
+ * ③ 多选时禁止拖拽，光标改成手型
+ * ============================================ */
+.album-manage {
+	position: relative;
+	top: auto;
+	right: auto;
+	flex-shrink: 0;
+}
+
+.album-manage .wx-manage__menu {
+	/* 工具栏贴右边缘，菜单往左展开才不会溢出卡片 */
+	right: 0;
+}
+
+html[data-album-manage] .alb-photo {
+	cursor: pointer;
+	touch-action: auto;
+}
+
+html[data-album-manage] .alb-photo:hover,
+html[data-album-manage] .alb-photo:focus-visible {
+	filter: none;
+}
+
+.alb-pick {
+	position: absolute;
+	top: -0.5rem;
+	left: -0.5rem;
+	z-index: 3;
+	display: grid;
+	place-items: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	border: 1.5px solid var(--line-color);
+	border-radius: 9999px;
+	background: var(--float-panel-bg);
+	box-shadow: 0 2px 8px oklch(0 0 0 / 0.18);
+}
+
+/* 选中后填实心 + 打勾，别只靠加粗边框区分（照片底色太杂） */
+[data-photo-card].is-picked .alb-pick {
+	border-color: var(--primary);
+	background: var(--primary);
+}
+
+[data-photo-card].is-picked .alb-pick::after {
+	content: "";
+	width: 0.55rem;
+	height: 0.3rem;
+	margin-top: -0.12rem;
+	border-bottom: 2px solid var(--background-primary);
+	border-left: 2px solid var(--background-primary);
+	transform: rotate(-45deg);
+}
+
+[data-photo-card].is-picked .alb-photo__frame {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+
+/* 相册弹窗比说说抽屉瘦一圈：只有四行字段，拉满全屏反而空 */
+@media (min-width: 768px) {
+	.editor-drawer.is-narrow {
+		width: min(30rem, 42vw);
+	}
+}
+

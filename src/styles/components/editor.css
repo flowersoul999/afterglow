@@ -1379,12 +1379,14 @@ html[data-manage-mode] .wx-feed-item.is-picked .moment-card {
 }
 
 /* 多选模式的提示语要躲开底部工具条，否则正好盖在全选/删除按钮上 */
-html[data-manage-mode] .editor-toast {
+html[data-manage-mode] .editor-toast,
+html[data-album-manage] .editor-toast {
 	bottom: 5.5rem;
 }
 
 @media (max-width: 1023px) {
-	html[data-manage-mode] .editor-toast {
+	html[data-manage-mode] .editor-toast,
+	html[data-album-manage] .editor-toast {
 		bottom: 10rem;
 	}
 }
