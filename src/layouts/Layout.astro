@@ -591,7 +591,9 @@ const siteLang = lang.replace("_", "-");
   type WalineModule = typeof import("@waline/client/full");
   (window as unknown as { __loadWaline?: () => Promise<WalineModule> }).__loadWaline = () =>
     import("@waline/client/full").then((mod) => {
-      // 样式与脚本同批按需加载，忽略 CSS 模块的返回值
+      // 样式与脚本同批按需加载，忽略 CSS 模块的返回值。
+      // 这个子路径只导出 css，没有类型声明，tsc 会报 2307，用 expect-error 压掉。
+      // @ts-expect-error -- @waline/client/style 是纯 css 导出，无 d.ts
       void import("@waline/client/style");
       return mod;
     });
