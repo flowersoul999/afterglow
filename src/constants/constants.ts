@@ -15,9 +15,7 @@ export const DEFAULT_THEME = LIGHT_MODE; // 仅作为向后兼容的默认值，
  */
 export const BACKDROP_CLASSIC = "classic",
 	BACKDROP_WARM = "warm";
-export type BackdropStyle =
-	| typeof BACKDROP_CLASSIC
-	| typeof BACKDROP_WARM;
+export type BackdropStyle = typeof BACKDROP_CLASSIC | typeof BACKDROP_WARM;
 export const DEFAULT_BACKDROP_STYLE: BackdropStyle = BACKDROP_WARM;
 
 // Banner height unit: vh
