@@ -1162,6 +1162,7 @@ return controller;
 | 在组件 `<style>`（scoped）里用 `:root.xxx` / `html.xxx` 当**祖先选择器**（如 `:root.is-editor .foo{}`） | Astro 的作用域处理会把前缀连同作用域一起吃掉，编译后只剩 `.foo[data-astro-cid]`，条件样式变成无条件生效（2026-11-03 说说编辑按钮「登录前后都显示」事故，产物里 `:root.is-editor` 直接消失） | 跨作用域的祖先一律包 `:global()`：`:global(html.is-editor) .foo{}`，编译后前缀原样保留 |
 | 在纯静态站（无 adapter）里做「密码登录」 | 没有服务端就没有可信的校验点，密码只能在前端比对，读源码即可绕过，等于没有密码 | 要么上服务端（Edge Function / Worker，令牌放服务端、前端只拿 HttpOnly Cookie），要么直接让用户填能真正决定权限的凭证（见 §24） |
 | 全局 `keydown` 拦截只对「首次按下」`preventDefault`，把 `e.repeat` 分支直接 `return` | 按住键不放时浏览器会持续派发 auto-repeat `keydown`，**每一次都是一次完整的默认动作**（Tab 移焦点、方向键滚动），于是轮盘/面板还开着，焦点继续在背后页面里跳（2026-11-25 Tab 轮盘事故：长按 Tab 焦点一路跳到导航按钮） | 用「键是否物理按下」的状态位（如 `TabRadialMenu.svelte` 的 `tabDown`）在 capture 阶段吞掉所有后续事件，并在 `window blur` / `astro:page-load` 重置（keyup 丢失会永久吞键）；`preventDefault` 必须排在所有 `return` 之前 |
+| 拿 Umami 上报脚本地址（`scriptUrl`）取 `origin` 去拼 `/api/share`、`/api/websites` | Umami Cloud 的读数接口在 `/analytics/{region}` 前缀下，根路径请求 404，首页 UV/PV 永远显示 `--`（2026-11-08 首修，`9b297bc` 首页移植时回归，11-25 二次修复） | 统一用 `siteConfig.analytics.umamiAnalytics.apiBase`（Cloud 自动推导 region 前缀）；桌面端 `HomeDataLayer.astro` 与移动端 `HomeMobile.astro` 必须同步改，勿只改一处 |
 
 ---
 

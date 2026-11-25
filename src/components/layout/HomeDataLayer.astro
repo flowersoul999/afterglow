@@ -214,9 +214,14 @@ const primaryContact =
 	) ?? contactLinks[0];
 
 const umamiConfig = siteConfig.analytics?.umamiAnalytics;
-const statsBaseUrl = umamiConfig?.scriptUrl
-	? new URL(umamiConfig.scriptUrl).origin
-	: "";
+// 读数接口根路径 ≠ 上报脚本地址：Umami Cloud 的 /api/share、/api/websites
+// 在 /analytics/us 前缀下，拿脚本地址取 origin 会丢掉前缀导致 404（11-08 修过，
+// 11-09 首页大改又改回去，11-25 再次修复）。siteConfig 已推导好 apiBase，优先用它。
+const statsBaseUrl = (
+	umamiConfig?.apiBase ||
+	umamiConfig?.scriptUrl?.replace(/\/script\.js$/, "") ||
+	""
+).replace(/\/+$/, "");
 const statsShareId = umamiConfig?.shareId ?? "";
 
 /** 卡片外壳：4 张卡共用同一骨架，只有插画、详情与文案不同 */

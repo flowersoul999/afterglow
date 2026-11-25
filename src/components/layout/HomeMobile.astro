@@ -59,9 +59,14 @@ const contactItems = homeConfig.links.map((link) => ({
 	href: link.url,
 }));
 const umamiConfig = siteConfig.analytics?.umamiAnalytics;
-const statsBaseUrl = umamiConfig?.scriptUrl
-	? new URL(umamiConfig.scriptUrl).origin
-	: "";
+// 读数接口根路径 ≠ 上报脚本地址：Umami Cloud 的 /api/share、/api/websites
+// 在 /analytics/us 前缀下，拿脚本地址取 origin 会丢掉前缀导致 404。
+// siteConfig 已推导好 apiBase，优先用它；缺配置时退回脚本地址并剥掉 /script.js。
+const statsBaseUrl = (
+	umamiConfig?.apiBase ||
+	umamiConfig?.scriptUrl?.replace(/\/script\.js$/, "") ||
+	""
+).replace(/\/+$/, "");
 const statsShareId = umamiConfig?.shareId ?? "";
 ---
 
@@ -348,15 +353,15 @@ const statsShareId = umamiConfig?.shareId ?? "";
 			})
 			.then((data: { uv?: number; visitors?: number; pv?: number; pageviews?: number }) => {
 				if (signal.aborted || !root.isConnected) return;
-				const uvRaw = data.uv ?? data.visitors ?? 0;
-				const pvRaw = data.pv ?? data.pageviews ?? 0;
+				const uvRaw = data.uv ?? data.visitors ?? null;
+				const pvRaw = data.pv ?? data.pageviews ?? null;
 				valueNodes.forEach((node) => {
 					const isUv = node.dataset.mobileStat === "UV";
 					const raw = isUv ? uvRaw : pvRaw;
-					node.textContent = formatCompactNumber(raw);
+					node.textContent = raw === null ? "--" : formatCompactNumber(raw);
 					const button = node.closest<HTMLElement>("[data-stat-key]");
 					if (button) {
-						button.dataset.popupValue = Number(raw).toLocaleString();
+						button.dataset.popupValue = raw === null ? "--" : Number(raw).toLocaleString();
 					}
 				});
 			})
