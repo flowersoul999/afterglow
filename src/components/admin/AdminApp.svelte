@@ -22,6 +22,8 @@ import { onMount } from "svelte";
 import AdminBatchQueue from "@/components/admin/AdminBatchQueue.svelte";
 import AdminEditor from "@/components/admin/AdminEditor.svelte";
 import AdminList from "@/components/admin/AdminList.svelte";
+import AdminMascot from "@/components/admin/AdminMascot.svelte";
+import AdminStarfield from "@/components/admin/AdminStarfield.svelte";
 import AdminStatusBoard from "@/components/admin/AdminStatusBoard.svelte";
 import { adminCollections, findCollection } from "@/config/admin-collections";
 import {
@@ -83,6 +85,28 @@ let mobileListMode = $state(true);
 
 let toast = $state("");
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
+let confettiOn = $state(false);
+let confettiKey = $state(0);
+let confettiTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** 撒花纸片：径向散开、四种主题色轮换，纯 CSS 动画不引第三方库 */
+const CONFETTI = Array.from({ length: 14 }, (_, index) => {
+	const angle = (index / 14) * Math.PI * 2;
+	const distance = 68 + (index % 3) * 24;
+	const palette = [
+		"oklch(0.82 0.145 88)",
+		"oklch(0.68 0.2 300)",
+		"oklch(0.75 0.13 210)",
+		"oklch(0.78 0.15 5)",
+	];
+	return {
+		color: palette[index % palette.length],
+		delay: `${(index % 4) * 35}ms`,
+		x: `${(Math.cos(angle) * distance).toFixed(0)}px`,
+		y: `${(Math.sin(angle) * distance - 26).toFixed(0)}px`,
+		rotate: `${(index % 2 ? -1 : 1) * (180 + index * 27)}deg`,
+	};
+});
 /** 首次确认登录后自动拉一次列表，之后靠手动刷新 / 保存后失效缓存 */
 let listBooted = false;
 
@@ -101,6 +125,12 @@ const filtered = $derived.by(() => {
 
 function notify(text: string): void {
 	toast = text;
+	confettiKey += 1;
+	confettiOn = true;
+	if (confettiTimer) clearTimeout(confettiTimer);
+	confettiTimer = setTimeout(() => {
+		confettiOn = false;
+	}, 1150);
 	if (toastTimer) clearTimeout(toastTimer);
 	toastTimer = setTimeout(() => {
 		toast = "";
@@ -407,6 +437,7 @@ onMount(() => {
 	void editor.bootstrap();
 	return () => {
 		if (toastTimer) clearTimeout(toastTimer);
+		if (confettiTimer) clearTimeout(confettiTimer);
 	};
 });
 
@@ -419,9 +450,14 @@ $effect(() => {
 </script>
 
 <div class="admin">
+	<AdminStarfield />
 	<header class="admin__top">
 		<div class="admin__brand">
-			<span class="admin__brand-mark">✦</span>
+			<span class="admin__brand-mark" aria-hidden="true">
+				<svg viewBox="0 0 24 24" fill="currentColor">
+					<path d="M12 1.6l2.1 6.5 6.8.1-5.5 4 2.1 6.5-5.5-4-5.5 4 2.1-6.5-5.5-4 6.8-.1z"></path>
+				</svg>
+			</span>
 			<span class="admin__brand-name">JOJOSTAR</span>
 			<span class="admin__brand-tag">后台</span>
 		</div>
@@ -592,16 +628,32 @@ $effect(() => {
 						{#if docError}
 							<span class="admin__state is-error">{docError}</span>
 						{:else}
-							<div class="admin__empty">
-								<span class="admin__empty-mark">✦</span>
-								<p>左边选一条，或者新建一篇</p>
-								<code>{collection.dir}</code>
-							</div>
+						<div class="admin__empty">
+							<AdminMascot />
+							<p>左边选一条，或者新建一篇</p>
+							<code>{collection.dir}</code>
+						</div>
 						{/if}
 					</main>
 				{/if}
 			{/if}
 		</div>
+	{/if}
+
+	{#if confettiOn}
+		{#key confettiKey}
+			<div class="admin__confetti" aria-hidden="true">
+				{#each CONFETTI as piece}
+					<i
+						style:--c={piece.color}
+						style:--d={piece.delay}
+						style:--x={piece.x}
+						style:--y={piece.y}
+						style:--r={piece.rotate}
+					></i>
+				{/each}
+			</div>
+		{/key}
 	{/if}
 
 	{#if toast}

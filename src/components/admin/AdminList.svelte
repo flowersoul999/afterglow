@@ -46,6 +46,14 @@ function showDate(entry: AdminEntry): string {
 	if (!date) return "";
 	return date === entry.display ? "" : date;
 }
+
+/** 本月新增：只按文件名里的日期算，不额外读任何文件（见 §24 后台约定） */
+const monthCount = $derived.by(() => {
+	const now = new Date();
+	const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+	return entries.filter((entry) => dateFromName(entry.name).startsWith(prefix))
+		.length;
+});
 </script>
 
 <section class="admin-list">
@@ -66,6 +74,17 @@ function showDate(entry: AdminEntry): string {
 				bind:value={query}
 			/>
 		</label>
+
+		<div class="admin-stats">
+			<div class="admin-stat admin-stat--gold">
+				<span class="admin-stat__label">当前条目</span>
+				<span class="admin-stat__value">{entries.length}</span>
+			</div>
+			<div class="admin-stat admin-stat--violet">
+				<span class="admin-stat__label">本月新增</span>
+				<span class="admin-stat__value">+{monthCount}</span>
+			</div>
+		</div>
 	</div>
 
 	<div class="admin-list__scroll">
@@ -85,18 +104,19 @@ function showDate(entry: AdminEntry): string {
 				{query ? "没有匹配的条目" : "这个集合还是空的"}
 			</p>
 		{:else}
-			{#each entries as entry (entry.path)}
-				{@render item(entry)}
+			{#each entries as entry, index (entry.path)}
+				{@render item(entry, index)}
 			{/each}
 		{/if}
 	</div>
 </section>
 
-{#snippet item(entry: AdminEntry)}
+{#snippet item(entry: AdminEntry, index: number)}
 	<button
 		type="button"
 		class="admin-item"
 		class:is-active={entry.path === selectedPath}
+		style:--i={index}
 		onclick={() => onSelect(entry.path)}
 	>
 		<span class="admin-item__title">{entry.display}</span>
