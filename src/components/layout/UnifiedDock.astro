@@ -35,6 +35,11 @@ const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
   </button>
 
   <div class="ud-stack" id="ud-stack" data-expanded="false">
+    <button class="ud-btn ud-btn--theme" id="ud-backdrop-btn" type="button" aria-label="背景风格">
+      <span class="ud-backdrop-warm"><Icon name="material-symbols:palette-outline" is:inline /></span>
+      <span class="ud-backdrop-classic" style="display:none"><Icon name="material-symbols:contrast" is:inline /></span>
+      <span class="ud-tooltip">背景</span>
+    </button>
     <button class="ud-btn ud-btn--theme" id="ud-theme-btn" type="button" aria-label="主题">
       <span class="ud-theme-light"><Icon name="material-symbols:wb-sunny-outline-rounded" is:inline /></span>
       <span class="ud-theme-dark" style="display:none"><Icon name="material-symbols:dark-mode-outline-rounded" is:inline /></span>
@@ -283,6 +288,41 @@ const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
 
     updateUnifiedThemeIcons();
     window.addEventListener("theme-change", updateUnifiedThemeIcons, { signal });
+
+    // ===== 背景风格（warm 暖纸 / classic 黑白）=====
+    // 状态由 <html data-backdrop> 承载，首帧已由 Layout.astro 的 head 脚本写好，
+    // 这里只负责切换与换图标 —— 令牌都是 CSS 变量，改属性即生效，无需重新渲染。
+    // 注意只在亮色下看得出差别（暗色两套共用纯黑），所以图标只切不提示。
+    const udBackdropBtn = document.getElementById("ud-backdrop-btn");
+    const udBackdropWarm = udBackdropBtn?.querySelector(".ud-backdrop-warm") as HTMLElement | null;
+    const udBackdropClassic = udBackdropBtn?.querySelector(".ud-backdrop-classic") as HTMLElement | null;
+
+    function updateBackdropIcon() {
+      const isWarm = document.documentElement.getAttribute("data-backdrop") !== "classic";
+      if (udBackdropWarm) udBackdropWarm.style.display = isWarm ? "" : "none";
+      if (udBackdropClassic) udBackdropClassic.style.display = isWarm ? "none" : "";
+      udBackdropBtn?.setAttribute(
+        "aria-label",
+        isWarm ? "背景风格：暖纸，点击切换为黑白" : "背景风格：黑白，点击切换为暖纸",
+      );
+    }
+
+    udBackdropBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const next =
+        document.documentElement.getAttribute("data-backdrop") === "warm"
+          ? "classic"
+          : "warm";
+      try {
+        localStorage.setItem("backdropStyle", next);
+      } catch (_) {
+        // 隐私模式下写不进去也不影响本次切换，只是刷新后回到默认
+      }
+      document.documentElement.setAttribute("data-backdrop", next);
+      updateBackdropIcon();
+    });
+
+    updateBackdropIcon();
 
     const drawerMap: Record<string, string> = {
       "ud-toc-btn": "dock-drawer-toc",

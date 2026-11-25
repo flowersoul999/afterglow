@@ -378,20 +378,24 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 | `--line-divider` | 分割线 |
 | `--float-panel-bg` | 浮动面板背景 |
 | `--border` | 边框色 |
-| `--ambient-warm` / `--ambient-mint` / `--ambient-violet` | 页面环境光（仅亮色使用，见下） |
+| `--intro-surface-bg` | 文章开头信息面板底色 |
+| `--ambient-warm` / `--ambient-mint` / `--ambient-violet` | 页面环境光（仅 warm 主题使用，见下） |
 
-> **亮色主题 = 暖纸（2026-11-24 起）**
-> 站长反馈「除主页外背景全是死白」，所以亮色整条灰阶都往 hue 65~82（黄橙）偏了一点点：
-> `--page-bg` 是奶油米白 `oklch(0.979 0.011 82)`，`--deep-text` 是深褐黑 `oklch(0.145 0.014 65)`，
-> 其余令牌的色度统一控在 `0.010~0.016`。**新增颜色令牌时不要再用 `oklch(x 0 0)` 这种零色度灰** ——
-> 纯中性灰压在米色底上会因同时对比读作「冷灰」，文字和卡片会显脏。
+> **亮色主题有两套，用 `<html data-backdrop>` 切换（2026-11-24 起）**
+> `classic` = 原来的纯白 + 零色度灰阶（`tokens/colors.css` 的 `:root`）；
+> `warm` = 暖纸奶油米白 + 三团淡柔光 + 深褐黑字（同文件的 `:root[data-backdrop="warm"]:not(.dark)`）。
+> 默认值 `siteConfig.themeColor.backdrop`，访问者选择存 `localStorage.backdropStyle`；
+> 入口是桌面悬浮坞的「背景」按钮和手机菜单抽屉底部的「背景风格」一行。
 >
-> 环境光在 `styles/base/ambient-backdrop.css`（`body::before` 铺三层 `radial-gradient`，
-> 圆心全在视口外、`position: fixed` + `z-index: -1`）。首页（`body[class~="lg:is-home"]`）
-> 与暗色主题（`:root.dark`）都 `content: none` 不生成。**调光晕只改上面那三个 `--ambient-*`
-> 变量的透明度/色相，别去改 CSS 里的渐变本身**；`--page-bg` 的 chroma 不要超过 `0.02`，否则变脏黄。
->
-> 暗色主题**保持纯黑灰阶不动**（站长明确要求），改亮色时别顺手把 `:root.dark` 一起改了。
+> - ⚠️ **暗色两套共用 `:root.dark`**，切 warm 在暗色下没有变化 —— 站长明确要求暗色保持纯黑。
+> - ⚠️ warm 块必须带 `:not(.dark)`：`:root.dark` 与它的特异性都是 `0,2,0`，否则暗色会被覆盖。
+> - ⚠️ **新增颜色令牌两套都要给**，漏一套时切到 classic 那个变量会落空。
+> - ⚠️ 不要再写 `oklch(x 0 0)` 这种零色度灰进 warm 块：纯中性灰压在米色底上会因同时对比读作「冷灰」。
+> - 环境光在 `styles/base/ambient-backdrop.css`，生成条件全写在一条选择器里
+>   （`data-backdrop="warm"` + `:not(.dark)` + 非首页）；**调光晕只改那三个 `--ambient-*`
+>   变量的透明度/色相**，别去改梯度本身。`--page-bg` 的 chroma 不要超过 `0.02`，过线变脏黄。
+> - 首帧不闪靠两步：`<html>` 的默认值由 Astro 服务端渲染，`Layout.astro` 的 head 内联脚本
+>   再按 localStorage 覆盖，都在首次绘制前完成。
 
 ---
 

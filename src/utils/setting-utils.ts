@@ -1,5 +1,9 @@
 import {
+	BACKDROP_CLASSIC,
+	BACKDROP_WARM,
+	type BackdropStyle,
 	DARK_MODE,
+	DEFAULT_BACKDROP_STYLE,
 	DEFAULT_THEME,
 	LIGHT_MODE,
 	SYSTEM_MODE,
@@ -369,4 +373,55 @@ export function applyBannerTitleEnabledToDocument(enabled: boolean): void {
 			bannerTextOverlay.classList.add("user-hidden");
 		}
 	}
+}
+
+// ===== 页面背景风格（classic 黑白 / warm 暖纸）=====
+// 与 waves / bannerTitle 同一套模式：localStorage 存选择，
+// `<html data-backdrop>` 承载状态，CSS 用属性选择器切换令牌组，不需要重新渲染。
+
+export function getDefaultBackdropStyle(): BackdropStyle {
+	return siteConfig.themeColor.backdrop ?? DEFAULT_BACKDROP_STYLE;
+}
+
+export function getStoredBackdropStyle(): BackdropStyle {
+	if (
+		typeof localStorage === "undefined" ||
+		typeof localStorage.getItem !== "function"
+	) {
+		return getDefaultBackdropStyle();
+	}
+	const stored = localStorage.getItem("backdropStyle");
+	// 只认这两个值：localStorage 是用户可改的，脏数据要能自动落回默认
+	if (stored === BACKDROP_WARM || stored === BACKDROP_CLASSIC) {
+		return stored;
+	}
+	return getDefaultBackdropStyle();
+}
+
+export function applyBackdropStyleToDocument(style: BackdropStyle): void {
+	if (typeof document === "undefined") {
+		return;
+	}
+	document.documentElement.setAttribute("data-backdrop", style);
+}
+
+export function setBackdropStyle(style: BackdropStyle): void {
+	if (
+		typeof localStorage === "undefined" ||
+		typeof localStorage.setItem !== "function"
+	) {
+		return;
+	}
+	localStorage.setItem("backdropStyle", style);
+	applyBackdropStyleToDocument(style);
+}
+
+/** 在 classic / warm 之间来回切，返回切换后的值 */
+export function toggleBackdropStyle(): BackdropStyle {
+	const next =
+		getStoredBackdropStyle() === BACKDROP_WARM
+			? BACKDROP_CLASSIC
+			: BACKDROP_WARM;
+	setBackdropStyle(next);
+	return next;
 }
