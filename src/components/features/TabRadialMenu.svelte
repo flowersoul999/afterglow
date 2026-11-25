@@ -65,6 +65,11 @@ const items = tabRadialMenuConfig.items.map((item) => ({
 }));
 
 let open = $state(false);
+/**
+ * Tab 是否处于物理按下状态（普通变量：只给事件回调读，不参与渲染）。
+ * 不用 `open` 代替它 —— Esc 取消后轮盘已关，但手还按着 Tab，浏览器仍在派发 repeat。
+ */
+let tabDown = false;
 let centerX = $state(0);
 let centerY = $state(0);
 let radius = $state(BASE_RADIUS);
@@ -170,14 +175,23 @@ onMount(() => {
 			return;
 		}
 		if (e.key !== "Tab") return;
+
+		// 轮盘已呼出（或 Esc 取消后手还没松开）：一律吞掉后续 Tab。
+		// ⚠️ 这条必须排在所有 return 之前。按住 Tab 时浏览器会持续派发 repeat keydown，
+		// 每一次 repeat 都是一次完整的「Tab 默认动作」——原来 repeat 直接 return，
+		// 等于打开轮盘后把后续焦点切换全部放行，焦点于是继续在背后页面里跳（2026-11-25 修）。
+		if (tabDown) {
+			e.preventDefault();
+			return;
+		}
+
 		if (!pointerOk) return;
 		// Shift+Tab（反向切换焦点）与带修饰键的组合一律放行，抢过来只会让用户莫名跳页
 		if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
-		// 按住 Tab 不松会连续触发 keydown（e.repeat），轮盘已开也不重复呼出
+		// 按住 Tab 不松会连续触发 keydown（e.repeat），只有首次需要处理
 		if (e.repeat) return;
 		// 输入控件里保留原生 Tab 行为（否则搜索框 / 评论框无法切换字段）
 		if (
-			!open &&
 			tabRadialMenuConfig.ignoreEditable &&
 			isEditableElement(document.activeElement)
 		) {
@@ -185,7 +199,7 @@ onMount(() => {
 		}
 
 		e.preventDefault(); // 其余情况一律阻止浏览器默认的焦点切换
-		if (open) return;
+		tabDown = true;
 
 		(document.activeElement as HTMLElement | null)?.blur?.();
 		const geo = resolveGeometry(mouse.x, mouse.y);
@@ -197,8 +211,13 @@ onMount(() => {
 	};
 
 	const onKeyUp = (e: KeyboardEvent) => {
-		if (e.key !== "Tab" || !open) return;
+		if (e.key !== "Tab") return;
+		// 放行过的 Tab（输入框内 / Shift+Tab / repeat）不接管，keyup 也还给它
+		if (!tabDown) return;
+		tabDown = false;
+		// keyup 的默认动作在个别浏览器里也会移焦点，一并吞掉
 		e.preventDefault();
+		if (!open) return;
 		// 松开 Tab：有选中项就跳转，什么都没选中则收起
 		if (active >= 0) goTo(active);
 		else close();
@@ -206,7 +225,14 @@ onMount(() => {
 
 	const onPageLoad = () => {
 		pathname = window.location.pathname;
+		tabDown = false; // 换页前按下的 Tab 已经在别的页面里松开了，keyup 收不到
 		close(); // 换页后残留的打开态要收掉
+	};
+
+	const onWindowBlur = () => {
+		// 切标签页 / 切窗口时 keyup 永远不会派发过来，不重置 tabDown 会永久吞掉 Tab
+		tabDown = false;
+		close();
 	};
 
 	const onResize = () => {
@@ -222,7 +248,7 @@ onMount(() => {
 	window.addEventListener("keydown", onKeyDown, { capture: true });
 	window.addEventListener("keyup", onKeyUp, { capture: true });
 	window.addEventListener("resize", onResize, { passive: true });
-	window.addEventListener("blur", close);
+	window.addEventListener("blur", onWindowBlur);
 	document.addEventListener("astro:page-load", onPageLoad);
 	finePointer.addEventListener("change", onPointerModeChange);
 
@@ -231,7 +257,7 @@ onMount(() => {
 		window.removeEventListener("keydown", onKeyDown, { capture: true });
 		window.removeEventListener("keyup", onKeyUp, { capture: true });
 		window.removeEventListener("resize", onResize);
-		window.removeEventListener("blur", close);
+		window.removeEventListener("blur", onWindowBlur);
 		document.removeEventListener("astro:page-load", onPageLoad);
 		finePointer.removeEventListener("change", onPointerModeChange);
 	};
