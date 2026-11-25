@@ -8,6 +8,7 @@ import FontManager from "@components/features/FontManager.astro";
 import GlassBackdrop from "@components/features/GlassBackdrop.astro";
 import MusicManager from "@components/features/MusicManager.astro";
 import MusicPlayerWidget from "@components/features/MusicPlayerWidget.astro";
+import DynamicIsland from "@components/layout/DynamicIsland.astro";
 import PageLoader from "@components/features/PageLoader.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import TabRadialMenu from "@components/features/TabRadialMenu.svelte";
@@ -131,10 +132,10 @@ const siteLang = lang.replace("_", "-");
         display: none;
       }
 
-      body[class~="lg:is-home"] #main-content-wrapper,
-      body[class~="lg:is-home"] #main-grid > .footer {
+      body[class~="lg:is-home"] #main-content-wrapper {
         grid-column: 1 / -1;
       }
+      /* 页脚已移出 #main-grid（整屏宽），由 .dcf 自己按 --page-width 居中 */
     </style>
     {siteConfig.analytics?.googleAnalyticsId && (
             <GoogleAnalytics analyticsId={siteConfig.analytics.googleAnalyticsId} />
@@ -493,6 +494,8 @@ const siteLang = lang.replace("_", "-");
     {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
     <ConfigCarrier />
     <MusicManager />
+    <!-- 参考站灵动岛：替代桌面端导航栏，Swup 容器外持久存在 -->
+    <DynamicIsland />
     <slot />
 
     <!-- 左下角悬浮音乐播放器：挂 Swup 容器（#swup-container）外，

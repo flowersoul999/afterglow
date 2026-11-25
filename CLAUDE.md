@@ -63,7 +63,7 @@ src/
 │   ├── controls/        # 交互控件：搜索、归档三视图树（ArchivePanel/ArchiveTree）、主题、Dock (8)
 │   ├── editor/          # 站长在线编辑（2026-11-03，11-04 改 GitHub OAuth，11-07 补手机菜单入口）：EditorNavButton 桌面资料卡入口 / EditorMobileMenuEntry 手机导航菜单末项 / EditorLoginModal OAuth 登录 / MomentDrawer 说说抽屉 / EditorRoot 常驻外壳（唯一 import editor.css 的地方） (5)
 │   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器)
-│   ├── layout/          # 布局组件：Navbar(含灵动岛音乐面), Footer, SideBar, HomeHero(参考站版), HeroMosaic, HeroDialogue, HomeBlinds, HomeMobile... (28)
+│   ├── layout/          # 布局组件：Navbar(含灵动岛音乐面), Footer(DoodleCrewFooter.svelte), SideBar, HomeHero(参考站版), HeroMosaic, HeroDialogue, HomeBlinds, HomeMobile... + doodle-crew-footer/ (29)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
 │   ├── moments/         # 动态卡片与评论弹窗
 │   ├── pages/           # 页面级组件：bangumi, books（Bookshelf/BookCard：3D 书本卡片 + 影视页同款胶囊筛选（分类+读过/在读/想读）+ ClientPagination 分页 8/6 本每页，SSR 隐藏非首页防闪烁）, interview（面经列表/详情）, movies-games, music (11)
@@ -183,6 +183,14 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 - `Layout.astro`：负责 `<head>`、主题初始化（内联 `<script is:inline>`）、全局组件挂载（PageLoader, MusicManager, FancyboxManager, SearchModal, SakuraEffect）
 - `MainGridLayout.astro`：负责导航栏、侧栏网格系统、Footer、SpineModel、Live2DWidget
 - 页面组件：继承 `MainGridLayout`，通过 `<slot>` 注入内容
+
+- **站尾（Doodle Crew，2026-11-25）**：`Footer.astro` 只是壳，把 `footerConfig` 灌进
+  `src/components/layout/DoodleCrewFooter.svelte`（`client:visible`）。内容改
+  `src/config/footerConfig.ts`（巨型字 / 四列链接 / 角色 / 涂鸦 / 按钮），样式在
+  `src/styles/components/doodle-crew-footer.css`，纯计算在 `doodle-crew-footer/engine.ts`。
+  Footer 必须放在 `#main-grid` 与 `max-w-(--page-width)` **容器外**才是整屏宽（内容由 `.dcf`
+  自己居中）；`data-site-footer` 是右侧目录面板的钳制参考线，别删。旧的
+  `FooterConfig.html` 注入方式已下线，`socialLinks` 仍供灵动岛铭牌页使用。
 
 ### 3.2 Swup 页面过渡
 

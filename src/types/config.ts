@@ -260,8 +260,73 @@ export type NavBarSearchConfig = {
 	method: NavBarSearchMethod;
 };
 
+export type PersonalSite = {
+	name: string;
+	url: string;
+	icon?: string;
+};
+
+export type FooterSocialLink = {
+	label: string;
+	href: string;
+	icon: string;
+};
+
+// ===== 页脚（Doodle Crew）=====
+// 手绘站尾的角色、涂鸦与链接结构；移植自 dumplingandcakeblog 的 Svelte 版页脚。
+export type Seat = "front" | "top" | "behind";
+
+export type CrewKind = "yeti" | "kid" | "bird" | "cat" | "ghost" | "mushroom";
+
+export type DoodleKind =
+	| "flame"
+	| "sandwich"
+	| "star"
+	| "heart"
+	| "bolt"
+	| "sparkle"
+	| "spiral"
+	| "plane";
+
+export type FooterLink = {
+	label: string;
+	href?: string;
+	external?: boolean;
+	rel?: string;
+	/** 非 HTML 资源（如 /rss.xml）加 data-no-swup，避免被 Swup 当页面接管 */
+	noSwup?: boolean;
+};
+
+export type FooterColumn = {
+	title: string;
+	links: FooterLink[];
+};
+
+export type FooterAction = {
+	label: string;
+	href: string;
+	icon?: DoodleKind;
+	variant?: "solid" | "outline";
+	external?: boolean;
+	noSwup?: boolean;
+};
+
+export type CrewMember = {
+	kind: CrewKind;
+	/** 巨型字里的字母下标 */
+	letter: number;
+	seat?: Seat;
+	/** 沿字母左右滑动，单位是字母宽度 */
+	offset?: number;
+	scale?: number;
+	flip?: boolean;
+	name?: string;
+	says?: string;
+};
+
 export type NavBarConfig = {
 	links: (NavBarLink | LinkPreset)[];
+	personalSites?: PersonalSite[];
 };
 
 export type HomePortfolioShutterPanel = {
@@ -729,8 +794,30 @@ export type FontConfig = {
 };
 
 export type FooterConfig = {
-	enable: boolean; // 是否启用Footer HTML注入功能
-	customHtml?: string; // 自定义HTML内容，用于添加备案号等信息
+	// 旧字段保留：enable / customHtml 供历史配置兼容，socialLinks 供灵动岛铭牌页复用
+	enable: boolean;
+	socialLinks?: FooterSocialLink[];
+	customHtml?: string;
+
+	// Doodle Crew 手绘页脚
+	/** 巨型字，短、大写、4–9 个字母最好看 */
+	wordmark: string;
+	brand: string;
+	blurb?: string;
+	tagline: string;
+	columns: FooterColumn[];
+	actions: FooterAction[];
+	copyright: string;
+	legal: FooterLink[];
+	socials: FooterLink[];
+	crew: CrewMember[];
+	doodles: DoodleKind[];
+	doodleCount: number;
+	palette?: { background?: string; ink?: string; accent?: string };
+	fontFamily?: string;
+	serifFamily?: string;
+	tracking?: number;
+	interactive?: boolean;
 };
 
 export type CoverImageConfig = {
