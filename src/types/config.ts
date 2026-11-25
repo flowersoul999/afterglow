@@ -20,6 +20,12 @@ export type SiteConfig = {
 		hue: number;
 		fixed: boolean;
 		defaultMode?: LIGHT_DARK_MODE; // 默认模式：浅色、深色或跟随系统
+		/**
+		 * 页面背景风格的默认值（2026-11-24）：
+		 * `"warm"` 暖纸米白 + 淡柔光，`"classic"` 原来的纯白/纯黑极简。
+		 * 访问者可以在悬浮坞的「背景」按钮里来回切换，选择存 localStorage。
+		 */
+		backdrop?: "warm" | "classic";
 	};
 
 	// 页面整体宽度（单位：rem）

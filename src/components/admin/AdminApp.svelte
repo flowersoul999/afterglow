@@ -22,6 +22,7 @@ import { onMount } from "svelte";
 import AdminBatchQueue from "@/components/admin/AdminBatchQueue.svelte";
 import AdminEditor from "@/components/admin/AdminEditor.svelte";
 import AdminList from "@/components/admin/AdminList.svelte";
+import AdminStatusBoard from "@/components/admin/AdminStatusBoard.svelte";
 import { adminCollections, findCollection } from "@/config/admin-collections";
 import {
 	BATCH_QUEUE_STORAGE_KEY,
@@ -54,6 +55,8 @@ import "@/styles/pages/admin.css";
 
 let collectionId = $state(adminCollections[0].id);
 const collection = $derived(findCollection(collectionId));
+/** 私有集合（目前只有「状态」）走自己的面板，不读 src/content */
+const isPrivateBoard = $derived(collection.privateBoard === true);
 
 let entries = $state<AdminEntry[]>([]);
 let listLoading = $state(false);
@@ -116,6 +119,9 @@ function persistQueue(next: QueuedDraft[]): void {
 
 async function refreshList(force = false): Promise<void> {
 	if (!$editor.isEditor) return;
+	// 「状态」的数据在私有仓库里，列表由 AdminStatusBoard 自己拉 ——
+	// 走这条公开仓库的列目录通道只会拿到 403。
+	if (collection.privateBoard) return;
 	const requestSeq = ++listRequestSeq;
 	const targetCollection = collection;
 	listLoading = true;
@@ -517,6 +523,7 @@ $effect(() => {
 		<div
 			class="admin__body"
 			class:admin__body--editing={!mobileListMode}
+			class:admin__body--board={isPrivateBoard}
 		>
 			<aside class="admin__collections">
 				<div class="admin__group-label">内容</div>
@@ -533,59 +540,66 @@ $effect(() => {
 				{/each}
 			</aside>
 
-			<AdminList
-				{collection}
-				entries={filtered}
-				loading={listLoading}
-				error={listError}
-				selectedPath={selectedPath}
-				bind:query
-				onSelect={openEntry}
-				onCreate={startCreate}
-				onRetry={() => refreshList(true)}
-			/>
-
-			{#if docLoading}
-				<main class="admin__editor admin__editor--state">
-					<span class="admin__state"><Loader2 size={16} class="spin" /> 正在读取…</span>
-				</main>
-			{:else if doc}
-				<AdminEditor
-					{collection}
-					{doc}
-					{isNew}
-					path={selectedPath}
-					error={docError}
-					saving={saving}
-					bind:category={draftCategory}
-					onSave={handleSave}
-					onQueue={handleQueue}
-					onDelete={handleDelete}
-					onClose={closeEditor}
-					onMobileBack={() => (mobileListMode = true)}
-				/>
+			{#if isPrivateBoard}
+				<!-- 状态：横跨列表与编辑两栏，自己管时间轴、上传与对比 -->
+				<AdminStatusBoard onNotify={notify} />
 			{:else}
-				<main class="admin__editor admin__editor--state">
-					{#if docError}
-						<button
-							type="button"
-							class="admin-editor__mobile-back"
-							onclick={() => (mobileListMode = true)}
-							aria-label="返回内容列表"
+				<AdminList
+					{collection}
+					entries={filtered}
+					loading={listLoading}
+					error={listError}
+					selectedPath={selectedPath}
+					bind:query
+					onSelect={openEntry}
+					onCreate={startCreate}
+					onRetry={() => refreshList(true)}
+				/>
+
+				{#if docLoading}
+					<main class="admin__editor admin__editor--state">
+						<span class="admin__state"
+							><Loader2 size={16} class="spin" /> 正在读取…</span
 						>
-							<ArrowLeft size={16} aria-hidden="true" />
-						</button>
-					{/if}
-					{#if docError}
-						<span class="admin__state is-error">{docError}</span>
-					{:else}
-						<div class="admin__empty">
-							<span class="admin__empty-mark">✦</span>
-							<p>左边选一条，或者新建一篇</p>
-							<code>{collection.dir}</code>
-						</div>
-					{/if}
-				</main>
+					</main>
+				{:else if doc}
+					<AdminEditor
+						{collection}
+						{doc}
+						{isNew}
+						path={selectedPath}
+						error={docError}
+						saving={saving}
+						bind:category={draftCategory}
+						onSave={handleSave}
+						onQueue={handleQueue}
+						onDelete={handleDelete}
+						onClose={closeEditor}
+						onMobileBack={() => (mobileListMode = true)}
+					/>
+				{:else}
+					<main class="admin__editor admin__editor--state">
+						{#if docError}
+							<button
+								type="button"
+								class="admin-editor__mobile-back"
+								onclick={() => (mobileListMode = true)}
+								aria-label="返回内容列表"
+							>
+								<ArrowLeft size={16} aria-hidden="true" />
+							</button>
+						{/if}
+						{#if docError}
+							<span class="admin__state is-error">{docError}</span>
+						{:else}
+							<div class="admin__empty">
+								<span class="admin__empty-mark">✦</span>
+								<p>左边选一条，或者新建一篇</p>
+								<code>{collection.dir}</code>
+							</div>
+						{/if}
+					</main>
+				{/if}
 			{/if}
 		</div>
 	{/if}

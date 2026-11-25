@@ -56,7 +56,7 @@
 src/
 ├── assets/images/       # 头像、封面等构建时图片
 ├── components/          # 按功能域组织的组件（161 个文件）
-│   ├── admin/           # 站内后台 /admin（2026-11-04，11-07 补混合内容批量提交）：AdminApp 三栏骨架 / AdminList 条目列表 / AdminEditor 表单+Markdown 编辑+预览 / AdminBatchQueue 待提交队列 (4)
+│   ├── admin/           # 站内后台 /admin（2026-11-04，11-07 补混合内容批量提交，11-24 补「状态」面板）：AdminApp 三栏骨架 / AdminList 条目列表 / AdminEditor 表单+Markdown 编辑+预览 / AdminBatchQueue 待提交队列 / AdminStatusBoard 我的状态（私有仓库时间轴+两日对比，横跨中右两栏） (5)
 │   ├── analytics/       # GA, Clarity, Umami (3)
 │   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
@@ -110,7 +110,7 @@ src/
 ├── types/               # TypeScript 类型：config.ts, bangumi.ts, guestbook-chat.ts
 └── utils/               # 工具函数（75 个文件，含 local-album 本地相册扫描 / changelog / tag-graph / tts-text / music-player-controller 等）
     ├── 8 个控制器模块   # 见第 10 节
-    ├── editor/          # 站长编辑（2026-11-03，11-04 后台化）：github-client.ts（会话 + Contents 读写删 + 列目录，全走 /api 代理）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化，抽屉专用）、content-serializer.ts（**通用 frontmatter，保序保留**，后台用）、content-repo.ts（列集合/生成路径/撞名重试）
+    ├── editor/          # 站长编辑（2026-11-03，11-04 后台化）：github-client.ts（会话 + Contents 读写删 + 列目录，全走 /api 代理）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化，抽屉专用）、content-serializer.ts（**通用 frontmatter，保序保留**，后台用）、content-repo.ts（列集合/生成路径/撞名重试）、private-client.ts（**私有仓库通道**，`/api/private/*`，「状态」专用）、status-serializer.ts（状态 json ↔ 记录，photos 存相对路径）
     └── 33 个业务工具    # content-utils, category-tree（文件夹即分类，多级 `a/b` 推导 + CategoryNode 树）, date-utils, image-utils, url-utils, tts-text（朗读正文提取）...
 
 # 根目录其他重要文件
@@ -240,7 +240,7 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
 
 > **分类系统（2026-08-20 文件夹即分类）**：`posts` 的 `category` 已从 `src/content.config.ts` 的 Zod schema 移除，分类 100% 由 `src/utils/category-tree.ts#getCategoryFromId(entry.id)` 的文件夹路径推导（`编程学习/Java学习` → `CategoryNode{fullPath, count, directCount, children}`），URL 分段编码 `src/utils/url-utils.ts#getCategoryUrl` + 路由 `src/pages/categories/[...category].astro`（catch-all，子树聚合 `startsWith(parent+"/")`），卡片 `src/components/widget/CategoryFolders.astro` 递归树（有子展开看子树/无子整卡跳转，已删右侧跳转按钮），`.pages.yml` 已删 `category` 字段，`scripts/新建文章/index.js` 不再写 `category`，Obsidian 插件 `plug-in/Obsidian/obsidian-category-autofill` 已废弃写入（`logic.ts#getTargetCategory` 恒返回 null，模板移除 `category`）。**禁止再写 `frontmatter.category`，分类只靠建文件夹**。
 
-> **导航站分类（2026-09-21 文件夹即分类）**：`daohang` 同样移除了 `category`（schema 与 `.pages.yml` 都已删），改为按 `src/content/daohang/<分类>/xxx.md` 的**文件夹**归类，分类名 = 文件夹名。读取逻辑在 `src/pages/projects.astro`：`getFolderCategory(entry.id)` 取目录段，`getCategoryMeta()` 查 `CATEGORY_META` 表得到显示名/排序/图标/标语。**Astro 生成 entry id 时会把大写转小写、空格转连字符**（文件夹 `AI 工具` → id `ai-工具`），所以查表统一走 `normalizeCatKey`（小写 + 空格转连字符）归一化——新增分类时在 `CATEGORY_META` 里按正常写法（`"AI 工具": {...}`）补一条即可，未登记的文件夹会原样显示并排在末尾。**导航条目字段为 `name` / `url` / `icon` / `description`，外加可选的 `tags`**（2026-09-30 为导航页标题行的子标签加回；`color`/`featured`/`order`/`image` 仍是删除状态，分类内按 `name` 拼音排序）。
+> **导航站分类（2026-09-21 文件夹即分类）**：`daohang` 同样移除了 `category`（schema 与 `.pages.yml` 都已删），改为按 `src/content/导航/<分类>/xxx.md` 的**文件夹**归类，分类名 = 文件夹名。读取逻辑在 `src/pages/projects.astro`：`getFolderCategory(entry.id)` 取目录段，`getCategoryMeta()` 查 `CATEGORY_META` 表得到显示名/排序/图标/标语。**Astro 生成 entry id 时会把大写转小写、空格转连字符**（文件夹 `AI 工具` → id `ai-工具`），所以查表统一走 `normalizeCatKey`（小写 + 空格转连字符）归一化——新增分类时在 `CATEGORY_META` 里按正常写法（`"AI 工具": {...}`）补一条即可，未登记的文件夹会原样显示并排在末尾。**导航条目字段为 `name` / `url` / `icon` / `description`，外加可选的 `tags`**（2026-09-30 为导航页标题行的子标签加回；`color`/`featured`/`order`/`image` 仍是删除状态，分类内按 `name` 拼音排序）。**`icon` 只有两种合法写法**：Iconify 名（`simple-icons:github`、`material-symbols:map`，前缀必须落在 `astro.config.mjs:87` 的 `icon({ include })` 名单内）或 `https://` 绝对地址；**不要写 `/favicon/xxx.png` 这类本地相对路径**——`projects.astro:621` 的正则虽写了「`/` 开头当图片」，实测该值会掉进 `<Icon>` 分支、因不含冒号被归到 `local` 图标集，`pnpm build` 直接抛 `Unable to load the "local" icon set!`（2026-11-25 填充导航数据时踩到，已用 `https://jojocode.cn/favicon/...` 绕过）。
 
 ### 3.6 文章排序规则（2026-09-21 统一）
 
@@ -378,20 +378,24 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 | `--line-divider` | 分割线 |
 | `--float-panel-bg` | 浮动面板背景 |
 | `--border` | 边框色 |
-| `--ambient-warm` / `--ambient-mint` / `--ambient-violet` | 页面环境光（仅亮色使用，见下） |
+| `--intro-surface-bg` | 文章开头信息面板底色 |
+| `--ambient-warm` / `--ambient-mint` / `--ambient-violet` | 页面环境光（仅 warm 主题使用，见下） |
 
-> **亮色主题 = 暖纸（2026-11-24 起）**
-> 站长反馈「除主页外背景全是死白」，所以亮色整条灰阶都往 hue 65~82（黄橙）偏了一点点：
-> `--page-bg` 是奶油米白 `oklch(0.979 0.011 82)`，`--deep-text` 是深褐黑 `oklch(0.145 0.014 65)`，
-> 其余令牌的色度统一控在 `0.010~0.016`。**新增颜色令牌时不要再用 `oklch(x 0 0)` 这种零色度灰** ——
-> 纯中性灰压在米色底上会因同时对比读作「冷灰」，文字和卡片会显脏。
+> **亮色主题有两套，用 `<html data-backdrop>` 切换（2026-11-24 起）**
+> `classic` = 原来的纯白 + 零色度灰阶（`tokens/colors.css` 的 `:root`）；
+> `warm` = 暖纸奶油米白 + 三团淡柔光 + 深褐黑字（同文件的 `:root[data-backdrop="warm"]:not(.dark)`）。
+> 默认值 `siteConfig.themeColor.backdrop`，访问者选择存 `localStorage.backdropStyle`；
+> 入口是桌面悬浮坞的「背景」按钮和手机菜单抽屉底部的「背景风格」一行。
 >
-> 环境光在 `styles/base/ambient-backdrop.css`（`body::before` 铺三层 `radial-gradient`，
-> 圆心全在视口外、`position: fixed` + `z-index: -1`）。首页（`body[class~="lg:is-home"]`）
-> 与暗色主题（`:root.dark`）都 `content: none` 不生成。**调光晕只改上面那三个 `--ambient-*`
-> 变量的透明度/色相，别去改 CSS 里的渐变本身**；`--page-bg` 的 chroma 不要超过 `0.02`，否则变脏黄。
->
-> 暗色主题**保持纯黑灰阶不动**（站长明确要求），改亮色时别顺手把 `:root.dark` 一起改了。
+> - ⚠️ **暗色两套共用 `:root.dark`**，切 warm 在暗色下没有变化 —— 站长明确要求暗色保持纯黑。
+> - ⚠️ warm 块必须带 `:not(.dark)`：`:root.dark` 与它的特异性都是 `0,2,0`，否则暗色会被覆盖。
+> - ⚠️ **新增颜色令牌两套都要给**，漏一套时切到 classic 那个变量会落空。
+> - ⚠️ 不要再写 `oklch(x 0 0)` 这种零色度灰进 warm 块：纯中性灰压在米色底上会因同时对比读作「冷灰」。
+> - 环境光在 `styles/base/ambient-backdrop.css`，生成条件全写在一条选择器里
+>   （`data-backdrop="warm"` + `:not(.dark)` + 非首页）；**调光晕只改那三个 `--ambient-*`
+>   变量的透明度/色相**，别去改梯度本身。`--page-bg` 的 chroma 不要超过 `0.02`，过线变脏黄。
+> - 首帧不闪靠两步：`<html>` 的默认值由 Astro 服务端渲染，`Layout.astro` 的 head 内联脚本
+>   再按 localStorage 覆盖，都在首次绘制前完成。
 
 ---
 
@@ -1134,9 +1138,11 @@ return controller;
 | 把 API Key / Token / 密码硬编码进任何被 git 跟踪的文件（scripts/、注释、markdown 都算），或轻信注释里"会被 .gitignore 保护"的声明而不实测 | 公开仓库全历史可读，GitGuardian 告警、密钥被扫描器批量收割滥用（2026-08-30 GitGuardian 事故：DashScope Key 硬编码在 `scripts/生成摘要/index.ts` 长期公开，声明受 .gitignore 保护但实际从未生效） | 密钥一律放 `.env`（已 gitignore）+ `process.env.XXX` 读取，脚本调用带 `--env-file=.env`，`.env.example` 只留空模板；新增任何疑似含密钥的文件，提交前必须实测 `git check-ignore <path>` 与 `git ls-files <path>` 确认未被跟踪；一旦泄露：**先去对应控制台吊销重发（唯一根治）**，再从代码清除，git 历史清理通常不必要且代价大 |
 | 用文件 mtime 做集合排序/展示的兜底依据 | CI（EdgeOne/GitHub Actions）每次全新 clone，所有文件 mtime 都等于构建时刻、比任何业务日期都新——缺字段的旧条目会永远霸占"最新"区块（2026-09 友链页"新朋友"事故） | 排序只认 frontmatter 业务字段（如 friends 的 `added`）；字段缺失时构建期 `console.warn` 并让条目落到最后 |
 | 拿 Astro content 集合的 `item.id` 拼磁盘路径 / 匹配 public 静态文件 | id 是 github-slugger 规则（小写 + 移除标点、空格转连字符），与磁盘文件名不一致（`39-胡超，作品集.md` → id `39-胡超作品集`、`33-RAGNote.md` → `33-ragnote`），Linux CI 大小写敏感必失配 | 文件名 ↔ id 换算必须走同一 slug 规则（截图脚本 `scripts/友链截图/index.mjs` 已内置 github-slugger）；新增含大写/标点文件名的友链后核对 `public/assets/friends-shots/` 截图命名 |
+| 导航条目 `icon` 写 `/favicon/xxx.png` 这类本地相对路径 | `Icon` 组件把它当图标名解析（不含冒号 → `local` 图标集），`pnpm build` 抛 `Unable to load the "local" icon set!` 中断全站构建；`projects.astro:621` 的 `^(https?:\|/)` 判断并未真正接住 | 只写 Iconify 名或 `https://` 绝对地址（2026-11-25 填充导航数据时踩到，见 §3.5） |
 | dev server 开着同时跑 `pnpm build` | 两者抢 `node_modules/.astro/data-store.json` 锁，报 `EPERM ... data-store.json.tmp -> data-store.json`，易被误判为代码错误 | 先关 dev（或杀掉残留 node/astro 进程）再构建，见 §18.1 |
 | 在组件 `<style>`（scoped）里用 `:root.xxx` / `html.xxx` 当**祖先选择器**（如 `:root.is-editor .foo{}`） | Astro 的作用域处理会把前缀连同作用域一起吃掉，编译后只剩 `.foo[data-astro-cid]`，条件样式变成无条件生效（2026-11-03 说说编辑按钮「登录前后都显示」事故，产物里 `:root.is-editor` 直接消失） | 跨作用域的祖先一律包 `:global()`：`:global(html.is-editor) .foo{}`，编译后前缀原样保留 |
 | 在纯静态站（无 adapter）里做「密码登录」 | 没有服务端就没有可信的校验点，密码只能在前端比对，读源码即可绕过，等于没有密码 | 要么上服务端（Edge Function / Worker，令牌放服务端、前端只拿 HttpOnly Cookie），要么直接让用户填能真正决定权限的凭证（见 §24） |
+| 全局 `keydown` 拦截只对「首次按下」`preventDefault`，把 `e.repeat` 分支直接 `return` | 按住键不放时浏览器会持续派发 auto-repeat `keydown`，**每一次都是一次完整的默认动作**（Tab 移焦点、方向键滚动），于是轮盘/面板还开着，焦点继续在背后页面里跳（2026-11-25 Tab 轮盘事故：长按 Tab 焦点一路跳到导航按钮） | 用「键是否物理按下」的状态位（如 `TabRadialMenu.svelte` 的 `tabDown`）在 capture 阶段吞掉所有后续事件，并在 `window blur` / `astro:page-load` 重置（keyup 丢失会永久吞键）；`preventDefault` 必须排在所有 `return` 之前 |
 
 ---
 
@@ -1412,10 +1418,12 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/image-upload.ts` | 图片上传：canvas 缩到长边 1920 转 webp（gif/svg 直传），走 `PUT /api/github/blob`。说说落 `动态/assets/diary/`，相册落 `public/assets/images/albums/<localFolder>/` |
 | `src/utils/editor/content-serializer.ts` | **通用 frontmatter**：拆成有序 entry，没改过的原样写回（改一个字段只产生一行 diff）。支持内联数组 `[a, b]` 与块数组两种写法，`gap` 记录 `---` 与正文之间的空行 |
 | `src/utils/editor/content-repo.ts` | 集合列目录（递归 + 20s 缓存）、路径模板展开、撞名 `-2` 重试 |
+| `src/utils/editor/private-client.ts` | **私有仓库通道**（`/api/private/*`）：list/read/write/writeBlob/delete + `statusPhotoUrl`。只给「我的状态」用，读写的是独立私有仓库，不是博客主仓 |
+| `src/utils/editor/status-serializer.ts` | 状态 json ↔ 记录：`dayKey`（**本地时区**，不能用 `toISOString`）、`thumbOf`（缩略图按 `-thumb` 命名约定推导）、`parseStatus`/`serializeStatus`；未知键进 `extra` 原样保留 |
 | `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
 | `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
 | `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部站长入口；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
-| `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉） |
+| `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉）、AdminStatusBoard（我的状态：时间轴 + 上传 + 两日对比，选中 `privateBoard` 集合时替换「列表 + 编辑」两栏） |
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
 | `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
 | `src/styles/pages/admin.css` | 后台样式，只由 AdminApp import |
@@ -1474,7 +1482,7 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 
 ### 本地怎么测
 
-`node .workbuddy/preview/test-worker.mjs` —— 24 项断言，覆盖路由防呆、501/401/403/400、state 加解密互通、路径逃逸、登出清 Cookie。**不依赖外网**，改完 Worker 先跑它。
+`node .workbuddy/preview/test-worker.mjs` —— 33 项断言，覆盖路由防呆、501/401/403/400、state 加解密互通、路径逃逸、登出清 Cookie，以及私有通道的三道门（Cookie → 站长身份 → PAT）和 `statusx` 这种前缀撞脸的路径。**不依赖外网**，改完 Worker 先跑它。
 
 ### 后台 /admin 的四条约定
 
@@ -1505,6 +1513,50 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 | 提示「不是站长」 | 登录的 GitHub 账号不是 `flowersoul999`（判定在服务端，前端改不了） |
 
 完整操作步骤见 `docs/deploy-github-pages.md` 第七节。
+
+### 私有通道：「我的状态」（2026-11-24）
+
+`/admin` 左侧的「状态」每天记一组照片，**数据不在博客仓库里**，而在独立的私有仓库
+（默认 `flowersoul999/afterglow-private`）。原因很直接：主仓 `afterglow` 是公开的，
+照片 commit 进去就等于公开；站点不渲染只是「藏起来」，不是「藏得住」。
+
+```
+AdminStatusBoard.svelte
+  ├─ GET  /api/private/tree?path=status      列日期（一天一个 json）
+  ├─ GET  /api/private/file?path=status/x.json
+  ├─ PUT  /api/private/file                  写记录
+  ├─ PUT  /api/private/blob                  传照片（原图 1600 + 缩略图 480）
+  └─ GET  /api/private/raw?path=...          <img src> 直接吃，同源 Cookie 鉴权
+        ↓ Worker 用 PRIVATE_TOKEN（fine-grained PAT）访问私有仓库
+status/<YYYY-MM-DD>.json  { "date": "...", "photos": ["assets/2026-11/xxx.webp"] }
+```
+
+**为什么不用现有 OAuth token**：scope 是 `public_repo`，碰不到私有仓库；提到 `repo`
+等于把账号下**所有**私有仓库的读写权塞进一个 Cookie。所以单独一枚只授权这一个仓库
+Contents 读写的 fine-grained PAT，放 Worker Secret，登录链路一个字都不用改。
+
+**部署（三步，都需手动）**：
+1. GitHub 建私有仓库 `afterglow-private`（空仓库即可，目录会自己建）；
+2. Settings → Developer settings → Fine-grained tokens：Repository access 只勾这一个仓库，
+   Permissions → Contents = Read and write，生成后复制 `github_pat_...`；
+3. Cloudflare Worker → Settings → Variables and Secrets 加 Secret `PRIVATE_TOKEN`；
+   Settings → Triggers → Routes **再加一条** `jojocode.cn/api/private/*`（少了它整块面板 404）；
+   然后把新的 `cloudflare-worker/index.js` 全文重新粘一遍并 Deploy。
+   可选变量：`PRIVATE_REPO_OWNER` / `PRIVATE_REPO_NAME` / `PRIVATE_BRANCH`（换仓库不用改代码）。
+
+**四个坑**：
+- **上传必须串行。** GitHub 不支持对同一分支并发提交，第二张起必然 422。`addPhotos` 是
+  `for...of` 里 `await`，别改成 `Promise.all`。每传完一张写一次 json，中途失败只丢后面的。
+- **`dayKey()` 必须用本地时区。** `toISOString().slice(0,10)` 是 UTC，中国时区晚上 8 点后
+  会算成第二天，睡前拍的照片就记到明天去了。
+- **`/raw` 要给 `immutable` 长缓存。** 私有图片每次过 Worker 转发，没缓存的话时间轴一天八张
+  图就是八次跨洋请求。文件名带时间戳 + 随机串、内容不变，缓存是安全的。
+- **不注册 content collection。** 状态没有公开页面，`src/content.config.ts` 里没有 `status`，
+  `.gitignore` 也不用加白名单 —— 它压根不经过 `src/content/`。
+
+**排障**：提示「私有仓库还没配 PRIVATE_TOKEN」= 第 3 步没做；面板报 404 = Route 少一条；
+报 403「只有站长能访问私有内容」= 登录的 GitHub 账号不是站长；图片全是裂图 = PAT 少了
+Contents 权限，或者 `PRIVATE_TOKEN` 过期（fine-grained PAT 有有效期）。
 
 ---
 

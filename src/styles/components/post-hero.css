@@ -146,18 +146,13 @@
    结构见 src/pages/posts/[...slug].astro 的 Layer 2。
    ============================================ */
 .post-intro-card {
-  /* 浅灰面板底色 —— 本项目的 --card-bg 是 transparent（极简风），这里单独给一套。
-     2026-11-24 暖纸化：原来是无色相的 oklch(0.965 0 0)，压在暖米底上会读作「冷灰」
-     （同时对比效应），所以往 hue 78 偏一点点，和 --page-bg 同一族。 */
-  --intro-surface-bg: oklch(0.958 0.014 78);
+  /* 浅灰面板底色由 tokens/colors.css 的 --intro-surface-bg 统一给：
+     classic 是零色相浅灰、warm 是暖灰、暗色是深灰。这里只留结构，
+     别在组件里再定义一份，否则站内换背景风格时这张卡不会跟着变。 */
   border: 1px solid color-mix(in oklab, var(--line-divider) 60%, transparent);
   border-radius: 0.75rem;
   background: var(--intro-surface-bg);
   overflow: hidden;
-}
-
-:root.dark .post-intro-card {
-  --intro-surface-bg: oklch(0.14 0 0);
 }
 
 /* ===== 折叠行（AI 摘要 / 封面图）===== */

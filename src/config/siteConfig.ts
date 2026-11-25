@@ -52,6 +52,9 @@ export const siteConfig: SiteConfig = {
 		fixed: false,
 		// 默认模式："light" 亮色，"dark" 暗色，"system" 跟随系统
 		defaultMode: "system",
+		// 默认背景风格："warm" 暖纸米白 + 淡柔光，"classic" 纯白/纯黑极简
+		// 只影响亮色主题；暗色两套都是纯黑。访问者可用悬浮坞的「背景」按钮切换
+		backdrop: "warm",
 	},
 
 	// 页面整体宽度（单位：rem）

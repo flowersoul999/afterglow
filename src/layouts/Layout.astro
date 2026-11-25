@@ -98,7 +98,7 @@ const siteLang = lang.replace("_", "-");
 ---
 
 <!doctype html>
-<html lang={siteLang} class="bg-(--page-bg) text-[14px] md:text-[16px]" style="overflow-x: hidden;">
+<html lang={siteLang} class="bg-(--page-bg) text-[14px] md:text-[16px]" style="overflow-x: hidden;" data-backdrop={siteConfig.themeColor.backdrop ?? "warm"}>
   <head>
     <meta charset="UTF-8" />
     <style is:inline>
@@ -213,6 +213,7 @@ const siteLang = lang.replace("_", "-");
         PAGE_WIDTH,
         configHue,
         defaultMode: siteConfig.themeColor.defaultMode ?? "light",
+        backdropDefault: siteConfig.themeColor.backdrop ?? "warm",
         darkTheme: expressiveCodeConfig.darkTheme,
         lightTheme: expressiveCodeConfig.lightTheme,
         baseUrl: import.meta.env.BASE_URL,
@@ -314,6 +315,21 @@ const siteLang = lang.replace("_", "-");
         }
       })();
 
+      // 初始化页面背景风格（warm 暖纸 / classic 黑白）
+      // 必须在首帧前写到 <html> 上，否则会先按 HTML 里的默认值渲染一帧再跳色
+      // 默认值来自 siteConfig.themeColor.backdrop（见 define:vars 的 backdropDefault）
+      (function applyBackdropStyle() {
+        try {
+          var stored = localStorage.getItem("backdropStyle");
+          document.documentElement.setAttribute(
+            "data-backdrop",
+            stored === "warm" || stored === "classic" ? stored : backdropDefault
+          );
+        } catch (_) {
+          document.documentElement.setAttribute("data-backdrop", backdropDefault);
+        }
+      })();
+
       // 文章列表首屏视图：提前写入 data-article-view，避免 Svelte 水合前闪单列
       (function applyArticleListView() {
         try {
@@ -360,14 +376,12 @@ const siteLang = lang.replace("_", "-");
               }, 100);
             }
 
-            if (!document.querySelector('link[href*="waline"]')) {
-              var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'https://unpkg.com/@waline/client@v3/dist/waline.css'; document.head.appendChild(link);
-            }
-
+            // 样式与脚本都由下面的 __loadWaline 按需加载（本地依赖），
+            // 不再往 head 插 unpkg 的 <link>：unpkg 国内直连返回 000。
             if (state.walineInit) {
               initWaline(state.walineInit);
-            } else {
-              import('https://unpkg.com/@waline/client@v3/dist/waline.js').then(function(mod) {
+            } else if (typeof window.__loadWaline === 'function') {
+              window.__loadWaline().then(function(mod) {
                 state.walineInit = mod.init;
                 initWaline(state.walineInit);
               }).catch(function(err) {
@@ -377,6 +391,8 @@ const siteLang = lang.replace("_", "-");
                 walineContainer.style.opacity = '1';
                 walineContainer.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--content-meta);font-size:0.8125rem;">评论加载失败</div>';
               });
+            } else {
+              console.error('[Waline] 本地模块未就绪，无法初始化评论');
             }
           }
 
@@ -569,6 +585,18 @@ const siteLang = lang.replace("_", "-");
   import { initThemeListener } from "@/utils/setting-utils";
   import { initIconLoader } from "@/utils/icon-loader";
   import { initPageLoader } from "@/utils/page-loader-controller.js";
+
+  // 说说页评论区懒加载用：脚本与样式都从本地依赖拉，只在用户真正点开评论时才下载。
+  // 以前这里 import 的是 https://unpkg.com/@waline/client，国内直连不可达（HTTP 000）。
+  type WalineModule = typeof import("@waline/client/full");
+  (window as unknown as { __loadWaline?: () => Promise<WalineModule> }).__loadWaline = () =>
+    import("@waline/client/full").then((mod) => {
+      // 样式与脚本同批按需加载，忽略 CSS 模块的返回值。
+      // 这个子路径只导出 css，没有类型声明，tsc 会报 2307，用 expect-error 压掉。
+      // @ts-expect-error -- @waline/client/style 是纯 css 导出，无 d.ts
+      void import("@waline/client/style");
+      return mod;
+    });
 
   // Immediate initialization (before DOMContentLoaded)
   initPanelCloseHandlers();

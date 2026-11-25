@@ -1,4 +1,7 @@
 ---
+// 完整样式与脚本都走本地依赖（@waline/client 已在 package.json 中）。
+// 早前从 unpkg.com 拉取，国内直连返回 000，评论区和留言板会整体失效。
+import "@waline/client/style";
 import "@/styles/vendor/waline.css";
 import { commentConfig } from "@/config";
 
@@ -18,10 +21,14 @@ const config = {
 ---
 <!-- Waline -->
 <div class="relative w-full">
-  <div id="waline"></div>
-  <link rel="stylesheet" href="https://unpkg.com/@waline/client@v3/dist/waline.css" />
-  <script type="module" is:inline define:vars={{ config }}>
-    import { init } from 'https://unpkg.com/@waline/client@v3/dist/waline.js';
-    init(config);
+  <div id="waline" data-waline-config={JSON.stringify(config)}></div>
+  <script>
+    import { init } from "@waline/client/full";
+
+    const container = document.getElementById("waline");
+    const rawConfig = container?.dataset.walineConfig;
+    if (container && rawConfig) {
+      init(JSON.parse(rawConfig));
+    }
   </script>
 </div>

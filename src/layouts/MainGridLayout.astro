@@ -305,14 +305,22 @@ const navLinks = await resolveNavLinks(navBarConfig.links);
     </div>
 </div>
 
-{commentConfig.type === 'waline' && commentConfig.waline?.visitorCount && <script type="module" is:inline define:vars={{ serverURL: commentConfig.waline.serverURL }}>
-  import { pageviewCount } from 'https://unpkg.com/@waline/client@v3/dist/waline.js';
-
-  pageviewCount({
-    serverURL,
-    path: "/",
-    update: true,
-  });
+{commentConfig.type === 'waline' && commentConfig.waline?.visitorCount && (
+  <span id="waline-pageview-config" data-server-url={commentConfig.waline.serverURL} hidden />
+)}
+{commentConfig.type === 'waline' && commentConfig.waline?.visitorCount && <script>
+  // 浏览量统计走本地依赖按需加载；以前从 unpkg 拉，国内直连返回 000，首页统计一直是空的。
+  const pageviewConfig = document.getElementById("waline-pageview-config");
+  const serverURL = pageviewConfig?.dataset.serverUrl;
+  if (serverURL) {
+    import("@waline/client/full")
+      .then(({ pageviewCount }) => {
+        pageviewCount({ serverURL, path: "/", update: true });
+      })
+      .catch((err) => {
+        console.warn("[Waline] 浏览量统计加载失败:", err);
+      });
+  }
 </script>}
 
 

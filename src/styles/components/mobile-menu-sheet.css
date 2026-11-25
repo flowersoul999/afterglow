@@ -28,7 +28,8 @@
   max-height: min(72vh, 560px);
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  background: #ffffff;
+  /* 亮色跟随背景风格（classic 纯白 / warm 暖白）；暗色由下面的 :root.dark 覆盖 */
+  background: var(--float-panel-bg);
   border-radius: 20px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.06);
   transform: translateY(12px) scale(0.98);
@@ -109,6 +110,25 @@
   padding: 0.5rem 0.75rem 0.75rem;
   display: flex;
   flex-direction: column;
+}
+
+/* 外观设置区（背景风格）—— 和导航行同一节奏，但单独一块，上面不再重复分隔线 */
+.menu-sheet__appearance {
+  padding: 0 0.75rem 0.75rem;
+}
+
+.menu-sheet__appearance .menu-sheet__row {
+  border-bottom: none;
+  border-radius: 10px;
+}
+
+/* 右侧当前值，例如「暖纸 / 黑白」 */
+.menu-sheet__row-value {
+  margin-left: auto;
+  font-size: 0.75rem;
+  line-height: 1;
+  color: var(--content-meta);
+  letter-spacing: 0.02em;
 }
 
 .menu-sheet__row,

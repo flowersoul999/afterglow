@@ -30,6 +30,18 @@
  *   PUT    /api/github/file     → 写 / 新建文件
  *   DELETE /api/github/file     → 删文件
  *   POST   /api/github/batch    → 多文件合成一个原子提交
+ *
+ * 私有通道（「我的状态」专用，见 src/utils/editor/private-client.ts）：
+ *   GET    /api/private/tree    → 列一层目录
+ *   GET    /api/private/file    → 读文件（不存在时 file: null）
+ *   PUT    /api/private/file    → 写 / 新建文件
+ *   DELETE /api/private/file    → 删文件
+ *   PUT    /api/private/blob    → 写二进制（图片）
+ *   GET    /api/private/raw     → 直接返回图片字节（给 <img src> 用）
+ *
+ * 私有通道走独立的**私有仓库**，用 PRIVATE_TOKEN（fine-grained PAT）读写，
+ * 不复用 OAuth token —— 因为 `public_repo` scope 碰不到私有仓库，
+ * 而把 scope 提到 `repo` 等于把账号下所有私有仓库的读写权都交出去。
  */
 
 /* ------------------------------------------------------------------ 常量 */
@@ -42,6 +54,18 @@ const COOKIE_STATE = "jojo_oauth_state";
 const REPO_OWNER = "flowersoul999";
 const REPO_NAME = "afterglow";
 const DEFAULT_BRANCH = "main";
+
+/**
+ * 私有仓库坐标：「我的状态」的照片和数据都在这里，不进公开仓库。
+ * 三项都能用同名环境变量覆盖，换仓库时不必改代码。
+ */
+const DEFAULT_PRIVATE_OWNER = "flowersoul999";
+const DEFAULT_PRIVATE_REPO = "afterglow-private";
+/**
+ * 私有通道的根目录。路径护栏按它卡死 —— 这个仓库将来若放别的东西
+ * （比如日记），也不能让状态接口越界去读。
+ */
+const PRIVATE_PREFIX = "status/";
 
 /** 只有这个人能登录；想换人改这里，或者给 Worker 加一个 OWNER_LOGIN 变量 */
 const DEFAULT_OWNER_LOGIN = "flowersoul999";
@@ -70,11 +94,13 @@ export default {
 		// /api/calendar.json 之类静态端点 —— 被吞掉的话首页统计和日历会静默变空，
 		// 很难查。所以这里明确拒掉，并直接告诉对方该改成哪两条 Route。
 		const owned =
-			path.startsWith("/api/auth/") || path.startsWith("/api/github/");
+			path.startsWith("/api/auth/") ||
+			path.startsWith("/api/github/") ||
+			path.startsWith("/api/private/");
 		if (!owned) {
 			return new Response(
-				`这个 Worker 只接管 /api/auth/* 和 /api/github/*，收到的是 ${path}\n` +
-					"请检查 Cloudflare 的 Route：应该是 jojocode.cn/api/auth/* 和 jojocode.cn/api/github/*；\n" +
+				`这个 Worker 只接管 /api/auth/*、/api/github/* 和 /api/private/*，收到的是 ${path}\n` +
+					"请检查 Cloudflare 的 Route：应该是 jojocode.cn/api/auth/*、jojocode.cn/api/github/* 和 jojocode.cn/api/private/*；\n" +
 					"不要用 jojocode.cn/api/*（会吞掉站点自己的 /api/*.json），更不要用 jojocode.cn/*",
 				{
 					status: 404,
@@ -129,6 +155,39 @@ export default {
 			if (!session)
 				return json({ ok: false, message: "未登录或登录已过期" }, 401);
 			return listDir(request, session.token);
+		}
+
+		// 私有通道：读写私有仓库里的 status/ 目录（「我的状态」）。
+		if (path.startsWith("/api/private/")) {
+			const auth = await privateAuth(request, env);
+			if (auth.error) return auth.error;
+			const repo = privateRepo(env);
+
+			if (path === "/api/private/file") {
+				if (method === "GET") return privateReadFile(request, repo, auth.token);
+				if (method === "PUT") return privateWriteFile(request, repo, auth.token);
+				if (method === "DELETE")
+					return privateDeleteFile(request, repo, auth.token);
+				return json({ ok: false, message: "不支持的请求方法" }, 405);
+			}
+
+			if (path === "/api/private/blob") {
+				if (method === "PUT") return privateWriteBlob(request, repo, auth.token);
+				return json({ ok: false, message: "不支持的请求方法" }, 405);
+			}
+
+			if (path === "/api/private/tree") {
+				if (method === "GET") return privateListDir(request, repo, auth.token);
+				return json({ ok: false, message: "不支持的请求方法" }, 405);
+			}
+
+			// 图片直出：<img src="/api/private/raw?path=..."> 浏览器会自动带 Cookie
+			if (path === "/api/private/raw") {
+				if (method === "GET") return privateRaw(request, repo, auth.token);
+				return json({ ok: false, message: "不支持的请求方法" }, 405);
+			}
+
+			return json({ ok: false, message: "未知接口" }, 404);
 		}
 
 		return json({ ok: false, message: "未知接口" }, 404);
@@ -643,6 +702,278 @@ async function deleteFile(request, token) {
 	if (!response.ok) return upstreamError(response);
 
 	return json({ ok: true });
+}
+
+/* ------------------------------------------------- 私有仓库通道（我的状态） */
+
+/**
+ * 私有通道的鉴权：登录态 + 站长身份 + PAT 三关。
+ *
+ * 为什么不复用 OAuth token：`public_repo` scope 读不到私有仓库；把它提到
+ * `repo` 就等于把账号下全部私有仓库的读写权都塞进一个 Cookie。这里改用
+ * 单独一枚 fine-grained PAT（只授这一个仓库的 Contents 读写），放在 Worker
+ * Secret 里，泄漏面小得多，而且不影响现有登录链路。
+ */
+async function privateAuth(request, env) {
+	const session = await readSession(request, env);
+	if (!session)
+		return { error: json({ ok: false, message: "未登录或登录已过期" }, 401) };
+	if (!isOwner(session.login, env))
+		return { error: json({ ok: false, message: "只有站长能访问私有内容" }, 403) };
+	if (!env.PRIVATE_TOKEN)
+		return {
+			error: json(
+				{
+					ok: false,
+					message:
+						"私有仓库还没配 PRIVATE_TOKEN：请在 Worker 的 Variables and Secrets 里加这个 Secret",
+				},
+				501,
+			),
+		};
+	return { token: env.PRIVATE_TOKEN };
+}
+
+/** 私有仓库坐标，环境变量优先，未配则用默认值 */
+function privateRepo(env) {
+	const pick = (value, fallback) =>
+		typeof value === "string" && value.trim() ? value.trim() : fallback;
+	return {
+		owner: pick(env.PRIVATE_REPO_OWNER, DEFAULT_PRIVATE_OWNER),
+		name: pick(env.PRIVATE_REPO_NAME, DEFAULT_PRIVATE_REPO),
+		branch: pick(env.PRIVATE_BRANCH, DEFAULT_BRANCH),
+	};
+}
+
+/**
+ * 路径护栏：只放行 status/ 下的路径。
+ *
+ * 与公开通道的 assertPath 同理，但更严 —— 这个仓库以后可能放别的东西
+ * （日记、账单），状态接口不该有能力越界去读。`status` 本身要允许，
+ * 否则列不了根目录。
+ */
+function assertPrivatePath(path) {
+	if (!path) return json({ ok: false, message: "缺少 path 参数" }, 400);
+	if (path.includes("..")) return json({ ok: false, message: "path 不合法" }, 400);
+	const normalized = path.replace(/\/+$/, "");
+	if (normalized !== "status" && !normalized.startsWith(PRIVATE_PREFIX)) {
+		return json(
+			{ ok: false, message: `私有通道只能访问 ${PRIVATE_PREFIX} 下的文件` },
+			403,
+		);
+	}
+	return null;
+}
+
+function privateContentsUrl(repo, path) {
+	return `${GITHUB_API}/repos/${repo.owner}/${repo.name}/contents/${encodePath(path)}`;
+}
+
+async function privateReadFile(request, repo, token) {
+	const query = new URL(request.url).searchParams;
+	const path = query.get("path") ?? "";
+
+	const invalid = assertPrivatePath(path);
+	if (invalid) return invalid;
+
+	const response = await fetch(
+		`${privateContentsUrl(repo, path)}?ref=${encodeURIComponent(repo.branch)}`,
+		{ headers: githubHeaders(token) },
+	);
+
+	// 404 是正常情形：调用方据此区分「新建」和「改」
+	if (response.status === 404) return json({ ok: true, file: null });
+	if (!response.ok) return upstreamError(response);
+
+	const data = await response.json();
+	return json({
+		ok: true,
+		file: {
+			path,
+			sha: data.sha ?? "",
+			text:
+				data.encoding === "base64" && data.content
+					? base64ToText(data.content)
+					: "",
+		},
+	});
+}
+
+async function privateListDir(request, repo, token) {
+	const query = new URL(request.url).searchParams;
+	const path = query.get("path") ?? "";
+
+	const invalid = assertPrivatePath(path);
+	if (invalid) return invalid;
+
+	const response = await fetch(
+		`${privateContentsUrl(repo, path)}?ref=${encodeURIComponent(repo.branch)}`,
+		{ headers: githubHeaders(token) },
+	);
+
+	// 目录不存在 = 还没记录过任何一天，不是错误
+	if (response.status === 404) return json({ ok: true, entries: [] });
+	if (!response.ok) return upstreamError(response);
+
+	const data = await response.json();
+	if (!Array.isArray(data)) {
+		return json({ ok: false, message: `${path} 是文件，不是目录` }, 400);
+	}
+
+	return json({
+		ok: true,
+		entries: data.map((entry) => ({
+			name: entry.name,
+			path: entry.path,
+			type: entry.type === "dir" ? "dir" : "file",
+			sha: entry.sha ?? "",
+			size: entry.size ?? 0,
+		})),
+	});
+}
+
+async function privateWriteFile(request, repo, token) {
+	const body = await readJson(request);
+	if (!body) return json({ ok: false, message: "请求体不是合法 JSON" }, 400);
+
+	const path = typeof body.path === "string" ? body.path : "";
+	const invalid = assertPrivatePath(path);
+	if (invalid) return invalid;
+
+	const response = await fetch(privateContentsUrl(repo, path), {
+		method: "PUT",
+		headers: { ...githubHeaders(token), "Content-Type": "application/json" },
+		body: JSON.stringify({
+			message:
+				typeof body.message === "string" && body.message
+					? body.message
+					: "chore(status): 更新状态记录",
+			content: textToBase64(typeof body.text === "string" ? body.text : ""),
+			branch:
+				typeof body.branch === "string" && body.branch
+					? body.branch
+					: repo.branch,
+			// 更新已有文件必须带 sha，缺了会被当成「新建」而报 422
+			...(typeof body.sha === "string" && body.sha ? { sha: body.sha } : {}),
+		}),
+	});
+
+	if (!response.ok) return upstreamError(response);
+
+	const data = await response.json();
+	return json({ ok: true, sha: data.content?.sha ?? "" });
+}
+
+/** 写二进制，和公开通道同理：base64 原样透传，不做 UTF-8 重编码 */
+async function privateWriteBlob(request, repo, token) {
+	const body = await readJson(request);
+	if (!body) return json({ ok: false, message: "请求体不是合法 JSON" }, 400);
+
+	const path = typeof body.path === "string" ? body.path : "";
+	const invalid = assertPrivatePath(path);
+	if (invalid) return invalid;
+
+	const base64 =
+		typeof body.base64 === "string"
+			? body.base64.replace(/^data:[^,]*,/, "").replace(/\s/g, "")
+			: "";
+	if (!base64) return json({ ok: false, message: "缺少 base64 内容" }, 400);
+
+	if (Math.floor((base64.length * 3) / 4) > 8 * 1024 * 1024) {
+		return json({ ok: false, message: "图片超过 8MB，请先压缩" }, 413);
+	}
+
+	const response = await fetch(privateContentsUrl(repo, path), {
+		method: "PUT",
+		headers: { ...githubHeaders(token), "Content-Type": "application/json" },
+		body: JSON.stringify({
+			message:
+				typeof body.message === "string" && body.message
+					? body.message
+					: "chore(status): 上传照片",
+			content: base64,
+			branch:
+				typeof body.branch === "string" && body.branch
+					? body.branch
+					: repo.branch,
+		}),
+	});
+
+	if (!response.ok) return upstreamError(response);
+
+	const data = await response.json();
+	return json({ ok: true, sha: data.content?.sha ?? "" });
+}
+
+async function privateDeleteFile(request, repo, token) {
+	const body = await readJson(request);
+	if (!body) return json({ ok: false, message: "请求体不是合法 JSON" }, 400);
+
+	const path = typeof body.path === "string" ? body.path : "";
+	const invalid = assertPrivatePath(path);
+	if (invalid) return invalid;
+
+	if (typeof body.sha !== "string" || body.sha === "") {
+		return json({ ok: false, message: "删除文件必须带上 sha" }, 400);
+	}
+
+	const response = await fetch(privateContentsUrl(repo, path), {
+		method: "DELETE",
+		headers: { ...githubHeaders(token), "Content-Type": "application/json" },
+		body: JSON.stringify({
+			message:
+				typeof body.message === "string" && body.message
+					? body.message
+					: "chore(status): 删除记录",
+			sha: body.sha,
+			branch:
+				typeof body.branch === "string" && body.branch
+					? body.branch
+					: repo.branch,
+		}),
+	});
+
+	if (!response.ok) return upstreamError(response);
+
+	return json({ ok: true });
+}
+
+/**
+ * 图片直出。
+ *
+ * 私有仓库的图片不能直接甩 raw.githubusercontent.com 链接（那需要 token，
+ * 而且会把 PAT 暴露在 URL 里）。所以由 Worker 代取一次，把字节原样回给
+ * 浏览器 —— `<img src="/api/private/raw?path=...">` 是同源请求，Cookie 会
+ * 自动带上，鉴权链路和读接口完全一致。
+ *
+ * 文件名带时间戳 + 随机串，内容永不改变，所以敢用 `immutable` 长缓存：
+ * 一张图只在第一次进后台时过网，之后全走浏览器缓存。
+ */
+async function privateRaw(request, repo, token) {
+	const query = new URL(request.url).searchParams;
+	const path = query.get("path") ?? "";
+
+	const invalid = assertPrivatePath(path);
+	if (invalid) return invalid;
+
+	const response = await fetch(
+		`${privateContentsUrl(repo, path)}?ref=${encodeURIComponent(repo.branch)}`,
+		// GitHub 的原始字节要用 raw 媒体类型拿；contents API 默认返回 base64，
+		// 而且超过 1MB 的文件干脆不给 content。
+		{ headers: { ...githubHeaders(token), Accept: "application/vnd.github.raw" } },
+	);
+
+	if (response.status === 404) return json({ ok: false, message: "图片不存在" }, 404);
+	if (!response.ok) return upstreamError(response);
+
+	return new Response(response.body, {
+		status: 200,
+		headers: {
+			"Content-Type": response.headers.get("Content-Type") || "application/octet-stream",
+			"Cache-Control": "private, max-age=31536000, immutable",
+			"X-Content-Type-Options": "nosniff",
+		},
+	});
 }
 
 /* ------------------------------------------------------- GitHub 批量提交 */
