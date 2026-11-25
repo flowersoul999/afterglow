@@ -15,8 +15,6 @@
 import { ALBUM_ASSET_ROOT } from "./album-serializer";
 import { writeBlob } from "./github-client";
 import { MOMENT_DIR } from "./moment-serializer";
-import { STATUS_ROOT, writePrivateBlob } from "./private-client";
-import { dayKey, thumbOf } from "./status-serializer";
 
 /** 图片目录（相对仓库根），与 MOMENT_DIR 同源 */
 const ASSET_DIR: string = `${MOMENT_DIR}assets/`;
@@ -29,13 +27,6 @@ const MAX_EDGE = 1920;
 const QUALITY = 0.86;
 /** 与 Worker 的 8MB 上限对齐，提前拦一次省一个失败的请求 */
 const MAX_BYTES = 8 * 1024 * 1024;
-
-/** 状态照片：长边 1600 已足够看清体态变化，单张约 150~250KB */
-const STATUS_MAX_EDGE = 1600;
-const STATUS_QUALITY = 0.82;
-/** 时间轴缩略图：滚进视口才加载，单张 20~40KB，一天一组也就百来 KB */
-const THUMB_MAX_EDGE = 480;
-const THUMB_QUALITY = 0.72;
 
 function extensionOf(name: string, type: string): string {
 	const matched = name.match(/\.([a-z0-9]+)$/i);
@@ -50,18 +41,13 @@ function randomSuffix(): string {
 }
 
 /** 重绘成 webp；失败或不需要处理时退回原文件 */
-async function shrinkTo(
-	file: File,
-	maxEdge: number,
-	quality: number,
-): Promise<{ blob: Blob; ext: string }> {
+async function shrink(file: File): Promise<{ blob: Blob; ext: string }> {
 	const passthrough = { blob: file, ext: extensionOf(file.name, file.type) };
-	if (file.type === "image/gif" || file.type === "image/svg+xml")
-		return passthrough;
+	if (file.type === "image/gif" || file.type === "image/svg+xml") return passthrough;
 
 	try {
 		const bitmap = await createImageBitmap(file);
-		const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+		const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
 		const width = Math.max(1, Math.round(bitmap.width * scale));
 		const height = Math.max(1, Math.round(bitmap.height * scale));
 
@@ -74,7 +60,7 @@ async function shrinkTo(
 		bitmap.close();
 
 		const blob = await new Promise<Blob | null>((resolve) => {
-			canvas.toBlob(resolve, "image/webp", quality);
+			canvas.toBlob(resolve, "image/webp", QUALITY);
 		});
 		if (!blob) throw new Error("转换失败");
 		return { blob, ext: "webp" };
@@ -83,10 +69,6 @@ async function shrinkTo(
 		// 这时候宁可传原图也不要让上传整个失败
 		return passthrough;
 	}
-}
-
-async function shrink(file: File): Promise<{ blob: Blob; ext: string }> {
-	return shrinkTo(file, MAX_EDGE, QUALITY);
 }
 
 function toBase64(blob: Blob): Promise<string> {
@@ -164,72 +146,4 @@ export async function uploadAlbumImage(
 	});
 
 	return `${ALBUM_PUBLIC_PREFIX}${safeFolder}/${name}`;
-}
-
-/** 一天一组照片的上传结果 */
-export interface StatusUpload {
-	/** 相对 `status/` 的原图路径，写进 json 的 photos */
-	src: string;
-	/** 缩略图路径；gif/svg 没有缩略图，等于 src */
-	thumb: string;
-}
-
-/** 状态照片上传的月份目录：`assets/2026-11/` */
-function statusFolderOf(date: string): string {
-	const month = /^\d{4}-\d{2}/.test(date)
-		? date.slice(0, 7)
-		: dayKey().slice(0, 7);
-	return `assets/${month}/`;
-}
-
-/**
- * 上传一张状态照片，返回原图与缩略图两条相对路径。
- *
- * 跟说说、相册的图片相比，这里是**一次传两张**：
- * - 原图长边 1600，点开看细节用；
- * - 缩略图长边 480，时间轴上一天一列地铺，缩到 480 才滚得动。
- *
- * 两张都落私有仓库（`status/assets/月份/`），所以走 writePrivateBlob 而不是
- * writeBlob —— 后者写的是博客主仓。
- *
- * ⚠️ 调用方必须**串行**上传同一天的多张照片。GitHub Contents API 不支持对
- * 同一分支并发提交，第二张起会因非快进而报 422（§25 踩过同样的坑）。
- */
-export async function uploadStatusPhoto(
-	file: File,
-	date: string,
-): Promise<StatusUpload> {
-	if (!file.type.startsWith("image/")) {
-		throw new Error(`${file.name} 不是图片`);
-	}
-	if (file.size > MAX_BYTES) {
-		throw new Error(`${file.name} 超过 8MB，请先压缩`);
-	}
-
-	const folder = statusFolderOf(date);
-	const stamp = `${Date.now()}-${randomSuffix()}`;
-
-	const main = await shrinkTo(file, STATUS_MAX_EDGE, STATUS_QUALITY);
-	const name = `${stamp}.${main.ext}`;
-	await writePrivateBlob({
-		path: `${STATUS_ROOT}/${folder}${name}`,
-		base64: await toBase64(main.blob),
-		message: `chore(status): 上传照片 ${date} ${name}`,
-	});
-
-	const src = `${folder}${name}`;
-
-	// 没重绘成 webp 的情况只有两种：gif/svg 原样直传、或者浏览器画不动 canvas
-	// 退回了原图。这两种都别生成缩略图 —— 内容跟原图一样，白白多占一份仓库。
-	if (main.ext !== "webp" || thumbOf(src) === src) return { src, thumb: src };
-
-	const small = await shrinkTo(file, THUMB_MAX_EDGE, THUMB_QUALITY);
-	const thumbName = `${stamp}-thumb.${small.ext}`;
-	await writePrivateBlob({
-		path: `${STATUS_ROOT}/${folder}${thumbName}`,
-		base64: await toBase64(small.blob),
-		message: `chore(status): 上传缩略图 ${date} ${thumbName}`,
-	});
-
-	return { src, thumb: `${folder}${thumbName}` };
 }
