@@ -34,24 +34,9 @@ const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
     <span class="ud-tooltip">评论</span>
   </button>
 
-  <div class="ud-stack" id="ud-stack" data-expanded="false">
-    <button class="ud-btn ud-btn--theme" id="ud-backdrop-btn" type="button" aria-label="背景风格">
-      <span class="ud-backdrop-warm"><Icon name="material-symbols:palette-outline" is:inline /></span>
-      <span class="ud-backdrop-classic" style="display:none"><Icon name="material-symbols:contrast" is:inline /></span>
-      <span class="ud-tooltip">背景</span>
-    </button>
-    <button class="ud-btn ud-btn--theme" id="ud-theme-btn" type="button" aria-label="主题">
-      <span class="ud-theme-light"><Icon name="material-symbols:wb-sunny-outline-rounded" is:inline /></span>
-      <span class="ud-theme-dark" style="display:none"><Icon name="material-symbols:dark-mode-outline-rounded" is:inline /></span>
-      <span class="ud-tooltip">主题</span>
-    </button>
-  </div>
-
-  <button class="ud-btn ud-btn--toggle" id="ud-toggle-btn" type="button" aria-label="展开">
-    <Icon name="material-symbols:more-horiz" is:inline class="ud-icon-collapsed" />
-    <Icon name="material-symbols:close" is:inline class="ud-icon-expanded" style="display:none" />
-    <span class="ud-tooltip" id="ud-toggle-label">展开</span>
-  </button>
+  <!-- 主题（白天/黑夜）与背景风格（暖纸/毛玻璃/黑白）已于 2026-11-25
+       迁入右上角导航栏工具面板（Navbar.astro 的 #nav-tools-panel），
+       这里不再重复放置 —— 原先的 ud-stack / ud-toggle-btn 已一并移除。 -->
 
   <button class="ud-btn hide" id="ud-top-btn" type="button" aria-label="回顶部">
     <Icon name="material-symbols:keyboard-arrow-up-rounded" is:inline />
@@ -102,9 +87,6 @@ const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
     bottom: 0.75rem;
     display: none;
   }
-  .ud-btn--theme {
-    display: none;
-  }
 }
 
 @media (min-width: 769px) {
@@ -150,37 +132,7 @@ const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
 }
 
 /* 收起时整列按钮不占位，避免在悬浮坞里多留一道 0.75rem 间距 */
-.ud-stack:not([data-expanded="true"]) {
-  display: none;
-}
-
-.ud-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.75rem;
-}
-.ud-stack .ud-btn {
-  display: none;
-  opacity: 0;
-  transform: translateY(8px) scale(0.96);
-  pointer-events: none;
-  transition: opacity 0.28s cubic-bezier(0.22,1,0.36,1), transform 0.32s cubic-bezier(0.22,1,0.36,1);
-}
-.ud-stack[data-expanded="true"] .ud-btn {
-  display: inline-flex;
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-.ud-stack[data-expanded="true"] .ud-btn.hide {
-  display: none;
-}
-.ud-stack[data-expanded="true"] .ud-btn:nth-child(1) { transition-delay: 30ms; }
-.ud-stack[data-expanded="true"] .ud-btn:nth-child(2) { transition-delay: 60ms; }
-.ud-stack[data-expanded="true"] .ud-btn:nth-child(3) { transition-delay: 90ms; }
-.ud-stack[data-expanded="true"] .ud-btn:nth-child(4) { transition-delay: 120ms; }
-.ud-stack[data-expanded="true"] .ud-btn:nth-child(5) { transition-delay: 150ms; }
+/* （ud-stack 已随主题/背景按钮迁走于 2026-11-25 移除，规则一并清掉） */
 
 .ud-tooltip {
   position: absolute;
@@ -212,11 +164,6 @@ const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ud-stack .ud-btn {
-    transition: none;
-  }
-}
 </style>
 
 <script>
@@ -227,21 +174,8 @@ const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
     _udAbort = new AbortController();
     const signal = _udAbort.signal;
 
-    const stack = document.getElementById("ud-stack");
-    const toggleBtn = document.getElementById("ud-toggle-btn");
-    if (!stack || !toggleBtn) return;
-
-    const collapsedIcon = toggleBtn.querySelector(".ud-icon-collapsed") as HTMLElement | null;
-    const expandedIcon = toggleBtn.querySelector(".ud-icon-expanded") as HTMLElement | null;
-    const toggleLabel = document.getElementById("ud-toggle-label") as HTMLElement | null;
-
-    function setExpanded(expanded: boolean) {
-      stack!.setAttribute("data-expanded", String(expanded));
-      if (collapsedIcon) collapsedIcon.style.display = expanded ? "none" : "";
-      if (expandedIcon) expandedIcon.style.display = expanded ? "" : "none";
-      if (toggleLabel) toggleLabel.textContent = expanded ? "收起" : "展开";
-      toggleBtn?.setAttribute("aria-label", expanded ? "收起" : "展开");
-    }
+    const dock = document.getElementById("unified-dock");
+    if (!dock) return;
 
     function closeAllDrawers() {
       document.querySelectorAll(".dock-drawer").forEach((d) => d.classList.add("dock-drawer-closed"));
@@ -253,76 +187,8 @@ const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
       document.getElementById("dock-drawer-overlay")?.classList.add("active");
     }
 
-    toggleBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      setExpanded(stack.getAttribute("data-expanded") !== "true");
-    });
-
-    const udThemeBtn = document.getElementById("ud-theme-btn") as HTMLElement | null;
-    const udThemeLight = udThemeBtn?.querySelector(".ud-theme-light") as HTMLElement | null;
-    const udThemeDark = udThemeBtn?.querySelector(".ud-theme-dark") as HTMLElement | null;
-
-    function updateUnifiedThemeIcons() {
-      const isDark = document.documentElement.classList.contains("dark");
-      if (udThemeLight) udThemeLight.style.display = isDark ? "none" : "";
-      if (udThemeDark) udThemeDark.style.display = isDark ? "" : "none";
-    }
-
-    function toggleUnifiedTheme() {
-      const isDark = document.documentElement.classList.contains("dark");
-      const next = isDark ? "light" : "dark";
-      localStorage.setItem("theme", next);
-      if (next === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-      updateUnifiedThemeIcons();
-      window.dispatchEvent(new CustomEvent("theme-change"));
-    }
-
-    udThemeBtn?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleUnifiedTheme();
-    });
-
-    updateUnifiedThemeIcons();
-    window.addEventListener("theme-change", updateUnifiedThemeIcons, { signal });
-
-    // ===== 背景风格（warm 暖纸 / classic 黑白）=====
-    // 状态由 <html data-backdrop> 承载，首帧已由 Layout.astro 的 head 脚本写好，
-    // 这里只负责切换与换图标 —— 令牌都是 CSS 变量，改属性即生效，无需重新渲染。
-    // 注意只在亮色下看得出差别（暗色两套共用纯黑），所以图标只切不提示。
-    const udBackdropBtn = document.getElementById("ud-backdrop-btn");
-    const udBackdropWarm = udBackdropBtn?.querySelector(".ud-backdrop-warm") as HTMLElement | null;
-    const udBackdropClassic = udBackdropBtn?.querySelector(".ud-backdrop-classic") as HTMLElement | null;
-
-    function updateBackdropIcon() {
-      const isWarm = document.documentElement.getAttribute("data-backdrop") !== "classic";
-      if (udBackdropWarm) udBackdropWarm.style.display = isWarm ? "" : "none";
-      if (udBackdropClassic) udBackdropClassic.style.display = isWarm ? "none" : "";
-      udBackdropBtn?.setAttribute(
-        "aria-label",
-        isWarm ? "背景风格：暖纸，点击切换为黑白" : "背景风格：黑白，点击切换为暖纸",
-      );
-    }
-
-    udBackdropBtn?.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const next =
-        document.documentElement.getAttribute("data-backdrop") === "warm"
-          ? "classic"
-          : "warm";
-      try {
-        localStorage.setItem("backdropStyle", next);
-      } catch (_) {
-        // 隐私模式下写不进去也不影响本次切换，只是刷新后回到默认
-      }
-      document.documentElement.setAttribute("data-backdrop", next);
-      updateBackdropIcon();
-    });
-
-    updateBackdropIcon();
+    // 主题（白天/黑夜）与背景风格切换已迁入右上角导航栏工具面板
+    // （Navbar.astro + navbar-tools-panel.ts），这里不再处理。
 
     const drawerMap: Record<string, string> = {
       "ud-toc-btn": "dock-drawer-toc",
@@ -342,7 +208,6 @@ const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
 
     document.getElementById("dock-drawer-overlay")?.addEventListener("click", () => {
       closeAllDrawers();
-      setExpanded(false);
     });
 
     document.addEventListener("click", (e) => {
@@ -352,7 +217,6 @@ const isPostDetailPage = /^\/posts\/(?!\d+\/?$)[^/]+\//.test(
       const isInDock = document.getElementById("unified-dock")?.contains(target);
       if (!isInDrawer && !isInDock) {
         closeAllDrawers();
-        setExpanded(false);
       }
     }, { signal });
 

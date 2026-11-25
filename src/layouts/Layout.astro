@@ -5,6 +5,7 @@ import UmamiAnalytics from "@components/analytics/UmamiAnalytics.astro";
 import SearchModal from "@components/controls/SearchModal.svelte";
 import FancyboxManager from "@components/features/FancyboxManager.astro";
 import FontManager from "@components/features/FontManager.astro";
+import GlassBackdrop from "@components/features/GlassBackdrop.astro";
 import MusicManager from "@components/features/MusicManager.astro";
 import MusicPlayerWidget from "@components/features/MusicPlayerWidget.astro";
 import PageLoader from "@components/features/PageLoader.astro";
@@ -315,7 +316,7 @@ const siteLang = lang.replace("_", "-");
         }
       })();
 
-      // 初始化页面背景风格（warm 暖纸 / classic 黑白）
+      // 初始化页面背景风格（warm 暖纸 / glass 毛玻璃 / classic 黑白）
       // 必须在首帧前写到 <html> 上，否则会先按 HTML 里的默认值渲染一帧再跳色
       // 默认值来自 siteConfig.themeColor.backdrop（见 define:vars 的 backdropDefault）
       (function applyBackdropStyle() {
@@ -323,11 +324,43 @@ const siteLang = lang.replace("_", "-");
           var stored = localStorage.getItem("backdropStyle");
           document.documentElement.setAttribute(
             "data-backdrop",
-            stored === "warm" || stored === "classic" ? stored : backdropDefault
+            stored === "warm" || stored === "glass" || stored === "classic" ? stored : backdropDefault
           );
         } catch (_) {
           document.documentElement.setAttribute("data-backdrop", backdropDefault);
         }
+      })();
+
+      // 初始化配色预设（2026-11-25 从旧博客移植）
+      // 命名预设（spring 春暖 / autumn 秋实 / sky 晴空 / night 夜深）只写 data-palette，
+      // 由 tokens/colors.css 的令牌组命中；random 没有固定 CSS 块，要把存下来的
+      // 内联变量回放一遍。暗色下不铺内联变量（会盖掉纯黑令牌），
+      // 记号保留，切回亮色时 palette-controller 的 syncPaletteWithTheme 会补回来。
+      (function applyPaletteStyle() {
+        try {
+          var stored = localStorage.getItem("paletteStyle");
+          if (stored === "random") {
+            document.documentElement.setAttribute("data-palette", "random");
+            if (!isDark) {
+              var raw = localStorage.getItem("paletteRandomVars");
+              if (raw) {
+                var vars = JSON.parse(raw);
+                for (var key in vars) {
+                  if (Object.prototype.hasOwnProperty.call(vars, key)) {
+                    document.documentElement.style.setProperty(key, vars[key]);
+                  }
+                }
+              }
+            }
+          } else if (
+            stored === "spring" ||
+            stored === "autumn" ||
+            stored === "sky" ||
+            stored === "night"
+          ) {
+            document.documentElement.setAttribute("data-palette", stored);
+          }
+        } catch (_) {}
       })();
 
       // 文章列表首屏视图：提前写入 data-article-view，避免 Svelte 水合前闪单列
@@ -471,6 +504,10 @@ const siteLang = lang.replace("_", "-");
     <!-- Sakura Effect -->
     <SakuraEffect />
 
+    <!-- 毛玻璃背景层（glass 背景风格专属，从旧博客移植；
+         内部自带 MutationObserver，切换背景/明暗时即时启停） -->
+    <GlassBackdrop />
+
     <!-- Fancybox Manager -->
     <FancyboxManager />
 
@@ -583,6 +620,7 @@ const siteLang = lang.replace("_", "-");
   import { initTabTitleInteraction } from "@/utils/tab-title-controller";
   import { initSwupLifecycle } from "@/utils/swup-lifecycle-controller";
   import { initThemeListener } from "@/utils/setting-utils";
+  import { initPalette } from "@/utils/palette-controller";
   import { initIconLoader } from "@/utils/icon-loader";
   import { initPageLoader } from "@/utils/page-loader-controller.js";
 
@@ -626,6 +664,7 @@ const siteLang = lang.replace("_", "-");
     updateMainGridCols();
     updateSidebarComponentsVisibility();
     initThemeListener();
+    initPalette();
     initIconLoader();
     initPageLoader();
     applyHomeLayoutOnLoad();

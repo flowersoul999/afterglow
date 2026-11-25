@@ -1,0 +1,82 @@
+/* ==========================================================================
+   毛玻璃背景风格（2026-11-25 从旧博客 old-Jojo-blog 移植适配）
+
+   生效条件：html[data-backdrop="glass"] 且非暗色（:not(.dark)）。
+   颜色令牌在 tokens/colors.css 的 glass 块里（含质感分色 --glass-*，
+   配色预设 data-palette 会整组覆盖它们 —— 尤其「夜深」要把卡片压成深色）。
+
+   三个背景层的层叠关系（都在 z-index 负区 / 内容之下）：
+     ① body::before   —— 淡雅多色渐变底（本文件，静态）
+     ② #glass-backdrop —— 底部彩色泡泡 canvas（GlassBackdrop.astro，慢速漫游）
+     ③ 内容层          —— 卡片全部换毛玻璃，透过它能看到 ①②
+   ========================================================================== */
+
+/* ---------- ① 淡雅渐变底：全站所有页面都铺（含首页，旧博客就是这样） ---------- */
+html[data-backdrop="glass"]:not(.dark) body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(52vmax 44vmax at -6% -14%, var(--glass-wash-1), transparent 72%),
+    radial-gradient(46vmax 38vmax at 104% -10%, var(--glass-wash-2), transparent 74%),
+    radial-gradient(50vmax 42vmax at 106% 108%, var(--glass-wash-3), transparent 70%),
+    linear-gradient(168deg, var(--glass-base-1) 0%, var(--glass-base-2) 52%, var(--glass-base-3) 100%);
+}
+
+/* ---------- ② 卡片毛玻璃化 ----------
+   cards.css 里 .card-base 是 transparent !important 的极简风，
+   这里用 html[attr]:not(.dark) 提高特异性 + 同为 !important 把它压回去。
+   圆角参考旧博客的大圆角卡片，收敛到当前站的尺度。 */
+html[data-backdrop="glass"]:not(.dark) .card-base,
+html[data-backdrop="glass"]:not(.dark) .card-base-transparent {
+  background-color: var(--glass-card-bg) !important;
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid var(--glass-card-border) !important;
+  border-radius: 1.25rem !important;
+  box-shadow:
+    0 24px 48px -28px var(--glass-card-shadow),
+    inset 0 1px 0 var(--glass-card-inset) !important;
+}
+
+/* 暗色不铺任何毛玻璃：glass 令牌与质感规则都带 :not(.dark)，暗色自动走纯黑极简。 */
+
+/* 封面隐藏时的黑线框在毛玻璃上太重，换成白透描边 */
+html[data-backdrop="glass"]:not(.dark) [data-hide-covers="true"] .post-card-wrapper.card-base {
+  border: 1px solid var(--glass-card-border) !important;
+}
+
+/* ---------- ③ 悬浮面板（下拉菜单 / TOC 等）---------- */
+html[data-backdrop="glass"]:not(.dark) .float-panel {
+  backdrop-filter: blur(16px) saturate(1.35);
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+  border-color: var(--glass-card-border);
+  box-shadow: 0 24px 48px -28px var(--glass-card-shadow);
+}
+html[data-backdrop="glass"]:not(.dark) .float-panel::before {
+  border-color: var(--glass-card-border);
+}
+
+/* ---------- ④ 导航栏胶囊 ---------- */
+html[data-backdrop="glass"]:not(.dark) .navbar-seg {
+  backdrop-filter: blur(12px) saturate(1.35);
+  -webkit-backdrop-filter: blur(12px) saturate(1.35);
+  box-shadow: inset 0 1px 0 var(--glass-card-inset);
+}
+
+/* ---------- ⑤ 右下角悬浮坞 / 移动端 dock 按钮 ---------- */
+html[data-backdrop="glass"]:not(.dark) .ud-btn,
+html[data-backdrop="glass"]:not(.dark) .dock-btn {
+  background: var(--glass-card-bg);
+  backdrop-filter: blur(12px) saturate(1.35);
+  -webkit-backdrop-filter: blur(12px) saturate(1.35);
+  border-color: var(--glass-card-border);
+}
+
+/* ---------- ⑥ 代码块：毛玻璃卡片里的代码要保证可读，垫一层实底 ---------- */
+html[data-backdrop="glass"]:not(.dark) .card-base pre,
+html[data-backdrop="glass"]:not(.dark) .card-base .code-block {
+  background: var(--codeblock-bg);
+}

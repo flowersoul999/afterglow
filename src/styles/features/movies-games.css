@@ -666,13 +666,7 @@ html.dark .mg-card:hover {
 }
 
 /* ============================================================
-   本页手机档同样藏掉 FloatingDock 的「展开」按钮与它展开的那一列
-   （站长 2026-09-30：右下角那排筛选按钮就排在这一列上方，展开会叠在一起；
-   本页也用不到它展开后的那几个抽屉）。只藏「展开」与展开列，「回顶部」保留；
-   桌面档不动（那边没有那排筛选按钮、不会重叠）。 */
-@media (max-width: 768px) {
-  html:has(#content-wrapper[data-no-sidebar="movies-games"]) #ud-toggle-btn,
-  html:has(#content-wrapper[data-no-sidebar="movies-games"]) #ud-stack {
-    display: none !important;
-  }
-}
+   本页手机档原本要藏 FloatingDock 的「展开」按钮与它展开的那一列
+   （站长 2026-09-30）。2026-11-25 主题/背景按钮连同展开按钮已迁入
+   导航栏工具面板（ud-toggle-btn / ud-stack 不复存在），规则随之移除。
+   ============================================================ */

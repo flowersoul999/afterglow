@@ -198,6 +198,446 @@
   --ambient-mint: oklch(0.90 0.040 170 / 0.30);
 }
 
+/* ===== 毛玻璃主题（<html data-backdrop="glass">）=====
+   2026-11-25 从旧博客 old-Jojo-blog 移植：淡雅浅底 + 底部彩色泡泡模糊 canvas
+   （styles/base/glass-backdrop.css + GlassBackdrop.astro）+ 白色半透明卡片。
+   同 warm 的约定：只覆盖亮色令牌，暗色永远走 :root.dark 的纯黑；
+   :not(.dark) 提高特异性，避免和 :root.dark 打架（两者都是 0,2,0）。 */
+:root[data-backdrop="glass"]:not(.dark) {
+  --primary: oklch(0.30 0.012 255);
+  --page-bg: oklch(0.972 0.012 260);
+
+  --btn-content: oklch(0.27 0.012 255);
+  --btn-regular-bg-hover: oklch(0.93 0.022 260);
+  --btn-regular-bg-active: oklch(0.90 0.026 260);
+
+  --btn-plain-bg-hover: oklch(0.93 0.022 260);
+  --btn-plain-bg-active: oklch(0.90 0.026 260);
+
+  --btn-card-bg-hover: oklch(0.94 0.02 260);
+  --btn-card-bg-active: oklch(0.91 0.024 260);
+
+  --enter-btn-bg-hover: oklch(0.93 0.022 260);
+  --enter-btn-bg-active: oklch(0.90 0.026 260);
+
+  --deep-text: oklch(0.16 0.016 250);
+  --title-active: oklch(0.31 0.014 255);
+
+  --line-divider: oklch(0.88 0.014 260);
+  --line-color: oklch(0.88 0.014 260);
+  --border: oklch(0.82 0.018 260);
+  --meta-divider: oklch(0.77 0.016 258);
+  --content-meta: oklch(0.45 0.014 255);
+
+  --inline-code-bg: oklch(0.94 0.016 260);
+  --inline-code-color: oklch(0.24 0.016 255);
+  --selection-bg: oklch(0.89 0.034 260);
+  --codeblock-bg: oklch(0.962 0.01 260);
+  --codeblock-topbar-bg: oklch(0.93 0.014 260);
+
+  --license-block-bg: oklch(0.962 0.01 260);
+  --intro-surface-bg: oklch(0.958 0.014 260);
+
+  --link-underline: oklch(0.86 0.016 260);
+  --link-hover: oklch(0.50 0.014 255);
+  --link-active: oklch(0.31 0.014 255);
+
+  /* 悬浮面板 / 导航栏：白色半透明，配合 glass-backdrop.css 的 backdrop-blur
+     出毛玻璃质感；导航栏胶囊同底色 */
+  --float-panel-bg: rgba(255, 255, 255, 0.62);
+  --navbar-bg: rgba(255, 255, 255, 0.48);
+  --navbar-highlight-bg: oklch(0.20 0.016 255);
+  --navbar-highlight-text: oklch(0.98 0.006 260);
+  --music-surface: rgba(255, 255, 255, 0.75);
+
+  --admonitions-color-tip: oklch(0.55 0.014 255);
+  --admonitions-color-note: oklch(0.55 0.014 255);
+  --admonitions-color-important: oklch(0.55 0.014 255);
+  --admonitions-color-warning: oklch(0.55 0.016 255);
+  --admonitions-color-caution: oklch(0.40 0.016 255);
+
+  --toc-btn-hover: oklch(0.93 0.022 260);
+  --toc-btn-active: oklch(0.90 0.026 260);
+  --toc-item-active: oklch(0.20 0.016 255);
+  --color-selection-bar: linear-gradient(to right, oklch(0.20 0.016 255), oklch(0.50 0.016 257), oklch(0.80 0.016 259));
+
+  /* 移动端 dock / 图谱：毛玻璃底是半透明白，canvas 图谱用 hex 兜底 */
+  --mobile-dock-surface: rgba(255, 255, 255, 0.68);
+
+  /* 毛玻璃质感分色令牌（styles/base/glass-backdrop.css 消费）。
+     抽成变量是为了让下面的「配色预设」能整组换色（尤其夜深要把卡片压成深色） */
+  --glass-card-bg: rgba(255, 255, 255, 0.42);
+  --glass-card-border: rgba(255, 255, 255, 0.6);
+  --glass-card-shadow: rgba(42, 56, 96, 0.22);
+  --glass-card-inset: rgba(255, 255, 255, 0.45);
+  --glass-wash-1: rgba(252, 200, 65, 0.16);
+  --glass-wash-2: rgba(223, 239, 252, 0.55);
+  --glass-wash-3: rgba(254, 151, 80, 0.14);
+  --glass-base-1: oklch(0.975 0.012 260);
+  --glass-base-2: oklch(0.965 0.016 285);
+  --glass-base-3: oklch(0.968 0.014 90);
+
+  /* 底部泡泡 canvas 的色板（GlassBackdrop.astro 用 getComputedStyle 读取，
+     所以这里必须是浏览器能解析的颜色字面量） */
+  --glass-bubble-1: #fcc841;
+  --glass-bubble-2: #dfeffc;
+  --glass-bubble-3: #dede92;
+  --glass-bubble-4: #de4331;
+  --glass-bubble-5: #fe9750;
+  --glass-bubble-6: #fcc841;
+}
+
+:root[data-backdrop="glass"]:not(.dark) {
+  --tag-graph-surface: #f2f4fb;
+  --tag-graph-text: #1d2130;
+  --tag-graph-muted: #565d70;
+}
+
+/* ==========================================================================
+   配色预设（2026-11-25 从旧博客 old-Jojo-blog 的「色彩配置」移植）
+
+   站长要的「预设色板一键换全站颜色」：<html data-palette="spring|autumn|sky|night">
+   一次性覆盖全站的色彩身份 —— 底色、文字、边框、按钮、导航、代码块、
+   毛玻璃质感分色、环境光、底部泡泡色板。色值来源是旧博客 color-config.tsx
+   里站长亲手调的 春暖 / 秋实 / 晴空 / 夜深 四套。
+
+   约定：
+   ① 只作用于亮色（所有选择器都带 :not(.dark)）。暗色永远纯黑，切色板不生效。
+   ② 排在 backdrop 块（warm / glass）之后、:root.dark 之前：
+      与 backdrop 块同为 0,2,0 特异性，靠源码顺序让「色板」压过「背景风格」的
+      底色/文字等身份令牌；backdrop 独有的质感规则（卡片透明度等）不受影响。
+   ③ 新增一套色板 = 复制一块改值与注释，同时在 utils/palette-controller.ts
+      的 PALETTE_OPTIONS 里登记（面板色点与轮换都从那里读）。
+   ④ 夜深（night）是在「亮色模式」下呈现的深色皮肤：不碰 .dark 类，
+      所以访问者切到真正的暗色主题时仍是纯黑。
+   ========================================================================== */
+
+/* ---------- 春暖：薄荷绿 + 草木青，底子透一点黄绿 ---------- */
+:root[data-palette="spring"]:not(.dark) {
+  --primary: oklch(0.42 0.062 175);
+  --page-bg: oklch(0.974 0.016 168);
+
+  --btn-content: oklch(0.28 0.022 175);
+  --btn-regular-bg-hover: oklch(0.94 0.026 168);
+  --btn-regular-bg-active: oklch(0.905 0.03 168);
+  --btn-plain-bg-hover: oklch(0.94 0.026 168);
+  --btn-plain-bg-active: oklch(0.905 0.03 168);
+  --btn-card-bg-hover: oklch(0.95 0.024 168);
+  --btn-card-bg-active: oklch(0.92 0.028 168);
+  --enter-btn-bg-hover: oklch(0.94 0.026 168);
+  --enter-btn-bg-active: oklch(0.905 0.03 168);
+
+  --deep-text: oklch(0.21 0.022 175);
+  --title-active: oklch(0.33 0.045 175);
+
+  --line-divider: oklch(0.88 0.018 168);
+  --line-color: oklch(0.88 0.018 168);
+  --border: oklch(0.83 0.022 168);
+  --meta-divider: oklch(0.78 0.02 170);
+  --content-meta: oklch(0.46 0.022 175);
+
+  --inline-code-bg: oklch(0.945 0.022 168);
+  --inline-code-color: oklch(0.25 0.025 175);
+  --selection-bg: oklch(0.90 0.045 168);
+  --codeblock-bg: oklch(0.962 0.012 168);
+  --codeblock-topbar-bg: oklch(0.935 0.02 168);
+
+  --license-block-bg: oklch(0.962 0.014 168);
+  --intro-surface-bg: oklch(0.955 0.02 168);
+
+  --link-underline: oklch(0.86 0.02 170);
+  --link-hover: oklch(0.50 0.062 175);
+  --link-active: oklch(0.31 0.04 175);
+
+  --float-panel-bg: rgba(255, 255, 255, 0.62);
+  --navbar-bg: rgba(255, 255, 255, 0.46);
+  --navbar-highlight-bg: oklch(0.28 0.05 175);
+  --navbar-highlight-text: oklch(0.98 0.008 168);
+  --music-surface: rgba(255, 255, 255, 0.75);
+
+  --admonitions-color-tip: oklch(0.50 0.055 175);
+  --admonitions-color-note: oklch(0.50 0.055 175);
+  --admonitions-color-important: oklch(0.50 0.055 175);
+  --admonitions-color-warning: oklch(0.52 0.06 168);
+  --admonitions-color-caution: oklch(0.40 0.05 175);
+
+  --toc-btn-hover: oklch(0.94 0.026 168);
+  --toc-btn-active: oklch(0.905 0.03 168);
+  --toc-item-active: oklch(0.22 0.05 175);
+  --color-selection-bar: linear-gradient(to right, oklch(0.22 0.05 175), oklch(0.55 0.07 172), oklch(0.86 0.04 168));
+
+  --mobile-dock-surface: rgba(255, 255, 255, 0.68);
+  --tag-graph-surface: #eef7f3;
+  --tag-graph-text: #17241f;
+  --tag-graph-muted: #4f635c;
+
+  /* 暖纸背景下的三团柔光 */
+  --ambient-warm: oklch(0.85 0.07 160 / 0.5);
+  --ambient-violet: oklch(0.88 0.05 200 / 0.4);
+  --ambient-mint: oklch(0.90 0.05 140 / 0.3);
+
+  /* 毛玻璃质感 + 泡泡 */
+  --glass-card-bg: rgba(255, 255, 255, 0.44);
+  --glass-card-border: rgba(255, 255, 255, 0.62);
+  --glass-card-shadow: rgba(24, 72, 60, 0.2);
+  --glass-card-inset: rgba(255, 255, 255, 0.5);
+  --glass-wash-1: rgba(158, 231, 209, 0.35);
+  --glass-wash-2: rgba(237, 221, 98, 0.2);
+  --glass-wash-3: rgba(132, 214, 138, 0.25);
+  --glass-base-1: oklch(0.975 0.016 168);
+  --glass-base-2: oklch(0.968 0.02 190);
+  --glass-base-3: oklch(0.97 0.018 120);
+  --glass-bubble-1: #eddd62;
+  --glass-bubble-2: #9ee7d1;
+  --glass-bubble-3: #84d68a;
+  --glass-bubble-4: #eddd62;
+  --glass-bubble-5: #88e6e5;
+  --glass-bubble-6: #a7f3d0;
+}
+
+/* ---------- 秋实：柿红 + 银杏黄，底子暖米 ---------- */
+:root[data-palette="autumn"]:not(.dark) {
+  --primary: oklch(0.44 0.11 28);
+  --page-bg: oklch(0.974 0.016 78);
+
+  --btn-content: oklch(0.27 0.03 28);
+  --btn-regular-bg-hover: oklch(0.94 0.024 78);
+  --btn-regular-bg-active: oklch(0.905 0.028 78);
+  --btn-plain-bg-hover: oklch(0.94 0.024 78);
+  --btn-plain-bg-active: oklch(0.905 0.028 78);
+  --btn-card-bg-hover: oklch(0.95 0.022 78);
+  --btn-card-bg-active: oklch(0.92 0.026 78);
+  --enter-btn-bg-hover: oklch(0.94 0.024 78);
+  --enter-btn-bg-active: oklch(0.905 0.028 78);
+
+  --deep-text: oklch(0.20 0.024 25);
+  --title-active: oklch(0.33 0.07 28);
+
+  --line-divider: oklch(0.88 0.02 70);
+  --line-color: oklch(0.88 0.02 70);
+  --border: oklch(0.83 0.025 70);
+  --meta-divider: oklch(0.78 0.024 65);
+  --content-meta: oklch(0.46 0.024 40);
+
+  --inline-code-bg: oklch(0.945 0.022 75);
+  --inline-code-color: oklch(0.25 0.03 30);
+  --selection-bg: oklch(0.90 0.042 60);
+  --codeblock-bg: oklch(0.962 0.014 75);
+  --codeblock-topbar-bg: oklch(0.935 0.02 75);
+
+  --license-block-bg: oklch(0.962 0.014 75);
+  --intro-surface-bg: oklch(0.955 0.02 72);
+
+  --link-underline: oklch(0.86 0.024 60);
+  --link-hover: oklch(0.50 0.1 28);
+  --link-active: oklch(0.34 0.09 28);
+
+  --float-panel-bg: rgba(255, 255, 255, 0.62);
+  --navbar-bg: rgba(255, 255, 255, 0.46);
+  --navbar-highlight-bg: oklch(0.30 0.06 30);
+  --navbar-highlight-text: oklch(0.985 0.008 75);
+  --music-surface: rgba(255, 255, 255, 0.75);
+
+  --admonitions-color-tip: oklch(0.52 0.07 50);
+  --admonitions-color-note: oklch(0.52 0.07 50);
+  --admonitions-color-important: oklch(0.52 0.07 50);
+  --admonitions-color-warning: oklch(0.55 0.09 60);
+  --admonitions-color-caution: oklch(0.45 0.12 30);
+
+  --toc-btn-hover: oklch(0.94 0.024 78);
+  --toc-btn-active: oklch(0.905 0.028 78);
+  --toc-item-active: oklch(0.24 0.06 30);
+  --color-selection-bar: linear-gradient(to right, oklch(0.24 0.06 30), oklch(0.58 0.1 45), oklch(0.88 0.06 70));
+
+  --mobile-dock-surface: rgba(255, 255, 255, 0.68);
+  --tag-graph-surface: #fdf6ec;
+  --tag-graph-text: #241a12;
+  --tag-graph-muted: #6b5a49;
+
+  --ambient-warm: oklch(0.84 0.1 60 / 0.5);
+  --ambient-violet: oklch(0.90 0.04 20 / 0.3);
+  --ambient-mint: oklch(0.90 0.05 110 / 0.3);
+
+  --glass-card-bg: rgba(255, 255, 255, 0.44);
+  --glass-card-border: rgba(255, 255, 255, 0.6);
+  --glass-card-shadow: rgba(96, 52, 24, 0.2);
+  --glass-card-inset: rgba(255, 255, 255, 0.5);
+  --glass-wash-1: rgba(252, 200, 65, 0.22);
+  --glass-wash-2: rgba(254, 151, 80, 0.16);
+  --glass-wash-3: rgba(222, 67, 49, 0.1);
+  --glass-base-1: oklch(0.976 0.016 80);
+  --glass-base-2: oklch(0.968 0.02 55);
+  --glass-base-3: oklch(0.97 0.02 100);
+  --glass-bubble-1: #fcc841;
+  --glass-bubble-2: #dfeffc;
+  --glass-bubble-3: #dede92;
+  --glass-bubble-4: #de4331;
+  --glass-bubble-5: #fe9750;
+  --glass-bubble-6: #fcc841;
+}
+
+/* ---------- 晴空：天蓝 + 浅金，底子像晒过的天空 ---------- */
+:root[data-palette="sky"]:not(.dark) {
+  --primary: oklch(0.48 0.09 235);
+  --page-bg: oklch(0.958 0.022 235);
+
+  --btn-content: oklch(0.27 0.03 245);
+  --btn-regular-bg-hover: oklch(0.93 0.03 235);
+  --btn-regular-bg-active: oklch(0.895 0.034 235);
+  --btn-plain-bg-hover: oklch(0.93 0.03 235);
+  --btn-plain-bg-active: oklch(0.895 0.034 235);
+  --btn-card-bg-hover: oklch(0.94 0.028 235);
+  --btn-card-bg-active: oklch(0.91 0.032 235);
+  --enter-btn-bg-hover: oklch(0.93 0.03 235);
+  --enter-btn-bg-active: oklch(0.895 0.034 235);
+
+  --deep-text: oklch(0.24 0.035 250);
+  --title-active: oklch(0.34 0.07 238);
+
+  --line-divider: oklch(0.87 0.025 235);
+  --line-color: oklch(0.87 0.025 235);
+  --border: oklch(0.82 0.03 235);
+  --meta-divider: oklch(0.77 0.028 235);
+  --content-meta: oklch(0.45 0.03 245);
+
+  --inline-code-bg: oklch(0.94 0.026 235);
+  --inline-code-color: oklch(0.25 0.035 250);
+  --selection-bg: oklch(0.88 0.05 230);
+  --codeblock-bg: oklch(0.96 0.015 235);
+  --codeblock-topbar-bg: oklch(0.93 0.022 235);
+
+  --license-block-bg: oklch(0.96 0.015 235);
+  --intro-surface-bg: oklch(0.952 0.022 235);
+
+  --link-underline: oklch(0.85 0.03 235);
+  --link-hover: oklch(0.50 0.1 235);
+  --link-active: oklch(0.34 0.09 240);
+
+  --float-panel-bg: rgba(255, 255, 255, 0.66);
+  --navbar-bg: rgba(255, 255, 255, 0.5);
+  --navbar-highlight-bg: oklch(0.30 0.08 240);
+  --navbar-highlight-text: oklch(0.985 0.008 235);
+  --music-surface: rgba(255, 255, 255, 0.78);
+
+  --admonitions-color-tip: oklch(0.50 0.07 235);
+  --admonitions-color-note: oklch(0.50 0.07 235);
+  --admonitions-color-important: oklch(0.50 0.07 235);
+  --admonitions-color-warning: oklch(0.52 0.08 220);
+  --admonitions-color-caution: oklch(0.42 0.08 250);
+
+  --toc-btn-hover: oklch(0.93 0.03 235);
+  --toc-btn-active: oklch(0.895 0.034 235);
+  --toc-item-active: oklch(0.24 0.07 240);
+  --color-selection-bar: linear-gradient(to right, oklch(0.24 0.07 240), oklch(0.55 0.1 228), oklch(0.86 0.06 235));
+
+  --mobile-dock-surface: rgba(255, 255, 255, 0.7);
+  --tag-graph-surface: #eef6fb;
+  --tag-graph-text: #16222e;
+  --tag-graph-muted: #4d6478;
+
+  --ambient-warm: oklch(0.86 0.06 220 / 0.5);
+  --ambient-violet: oklch(0.88 0.05 260 / 0.4);
+  --ambient-mint: oklch(0.90 0.05 190 / 0.35);
+
+  --glass-card-bg: rgba(255, 255, 255, 0.5);
+  --glass-card-border: rgba(255, 255, 255, 0.7);
+  --glass-card-shadow: rgba(30, 70, 110, 0.18);
+  --glass-card-inset: rgba(255, 255, 255, 0.55);
+  --glass-wash-1: rgba(143, 219, 233, 0.35);
+  --glass-wash-2: rgba(247, 218, 57, 0.14);
+  --glass-wash-3: rgba(207, 234, 245, 0.6);
+  --glass-base-1: oklch(0.962 0.022 235);
+  --glass-base-2: oklch(0.955 0.028 220);
+  --glass-base-3: oklch(0.97 0.015 250);
+  --glass-bubble-1: #f7da39;
+  --glass-bubble-2: #8fdbe9;
+  --glass-bubble-3: #fffef8;
+  --glass-bubble-4: #a5d8f0;
+  --glass-bubble-5: #cfeaf5;
+  --glass-bubble-6: #8fdbe9;
+}
+
+/* ---------- 夜深：深靛夜空 + 蓝紫萤光（亮色档下的深色皮肤） ---------- */
+:root[data-palette="night"]:not(.dark) {
+  --primary: oklch(0.94 0.012 280);
+  --page-bg: oklch(0.15 0.045 285);
+
+  --btn-content: oklch(0.86 0.012 280);
+  --btn-regular-bg-hover: oklch(0.24 0.04 285);
+  --btn-regular-bg-active: oklch(0.28 0.045 285);
+  --btn-plain-bg-hover: oklch(0.24 0.04 285);
+  --btn-plain-bg-active: oklch(0.28 0.045 285);
+  --btn-card-bg-hover: oklch(0.22 0.035 285);
+  --btn-card-bg-active: oklch(0.26 0.04 285);
+  --enter-btn-bg-hover: oklch(0.24 0.04 285);
+  --enter-btn-bg-active: oklch(0.28 0.045 285);
+
+  --deep-text: oklch(0.93 0.012 280);
+  --title-active: oklch(0.85 0.02 285);
+
+  --line-divider: oklch(0.32 0.03 285);
+  --line-color: oklch(0.32 0.03 285);
+  --border: oklch(0.38 0.035 285);
+  --meta-divider: oklch(0.4 0.03 285);
+  --content-meta: oklch(0.72 0.02 280);
+
+  --inline-code-bg: oklch(0.24 0.04 285);
+  --inline-code-color: oklch(0.9 0.012 280);
+  --selection-bg: oklch(0.36 0.06 285);
+  --codeblock-bg: oklch(0.18 0.03 285);
+  --codeblock-topbar-bg: oklch(0.24 0.04 285);
+
+  --license-block-bg: oklch(0.18 0.03 285);
+  --intro-surface-bg: oklch(0.22 0.04 285);
+
+  --link-underline: oklch(0.38 0.03 285);
+  --link-hover: oklch(0.78 0.06 280);
+  --link-active: oklch(0.9 0.03 280);
+
+  --float-panel-bg: rgba(28, 22, 56, 0.85);
+  --navbar-bg: rgba(30, 24, 62, 0.7);
+  --navbar-highlight-bg: oklch(0.93 0.012 280);
+  --navbar-highlight-text: oklch(0.16 0.03 285);
+  --music-surface: rgba(40, 32, 80, 0.8);
+
+  --admonitions-color-tip: oklch(0.75 0.03 285);
+  --admonitions-color-note: oklch(0.75 0.03 285);
+  --admonitions-color-important: oklch(0.75 0.03 285);
+  --admonitions-color-warning: oklch(0.78 0.05 280);
+  --admonitions-color-caution: oklch(0.8 0.04 285);
+
+  --toc-btn-hover: oklch(0.24 0.04 285);
+  --toc-btn-active: oklch(0.28 0.045 285);
+  --toc-item-active: oklch(0.9 0.03 280);
+  --color-selection-bar: linear-gradient(to right, oklch(0.9 0.02 280), oklch(0.55 0.06 285), oklch(0.25 0.04 285));
+
+  --mobile-dock-surface: rgba(30, 24, 62, 0.8);
+  --tag-graph-surface: #14112e;
+  --tag-graph-text: #ece9fa;
+  --tag-graph-muted: #b8b3d0;
+
+  --ambient-warm: oklch(0.4 0.12 300 / 0.5);
+  --ambient-violet: oklch(0.5 0.12 265 / 0.45);
+  --ambient-mint: oklch(0.45 0.08 200 / 0.35);
+
+  --glass-card-bg: rgba(26, 20, 54, 0.55);
+  --glass-card-border: rgba(255, 255, 255, 0.1);
+  --glass-card-shadow: rgba(0, 0, 0, 0.55);
+  --glass-card-inset: rgba(255, 255, 255, 0.06);
+  --glass-wash-1: rgba(42, 72, 243, 0.35);
+  --glass-wash-2: rgba(81, 208, 185, 0.1);
+  --glass-wash-3: rgba(22, 0, 123, 0.6);
+  --glass-base-1: oklch(0.17 0.05 285);
+  --glass-base-2: oklch(0.15 0.06 270);
+  --glass-base-3: oklch(0.19 0.04 300);
+  --glass-bubble-1: #16007b;
+  --glass-bubble-2: #2a48f3;
+  --glass-bubble-3: #51d0b9;
+  --glass-bubble-4: #16007b;
+  --glass-bubble-5: #1b2a8a;
+  --glass-bubble-6: #51d0b9;
+}
+
 /* 暗色主题：纯黑底 + 白前景，所有色块去饱和 */
 :root.dark {
   --primary: oklch(0.98 0 0);

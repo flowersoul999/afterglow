@@ -36,6 +36,9 @@
 /* --- 页面环境光（亮色主题的暖纸柔光底，暗色不生成） --- */
 @import './base/ambient-backdrop.css';
 
+/* --- 毛玻璃背景风格（glass：淡雅渐变底 + 卡片 blur，从旧博客移植） --- */
+@import './base/glass-backdrop.css';
+
 /* --- 组件样式 --- */
 @import './components/theme-transition.css';
 @import './components/cards.css';

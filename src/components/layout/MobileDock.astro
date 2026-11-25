@@ -184,29 +184,37 @@ import { Icon } from "astro-icon/components";
 	updateAllThemeIcons();
 	window.addEventListener("theme-change", updateAllThemeIcons);
 
-	// ===== 背景风格（warm 暖纸 / classic 黑白）=====
+	// ===== 背景风格（warm 暖纸 / glass 毛玻璃 / classic 黑白 三态轮换）=====
 	// 移动底栏只有 5 个位（6 个会挤爆 375px 屏），所以入口放在菜单抽屉里，
 	// 就是 MobileMenuSheet 底部那一行「背景风格」。这里负责它的点击与文案。
 	// 状态与 UnifiedDock 的同名按钮共用 localStorage.backdropStyle + <html data-backdrop>。
+	var BACKDROP_ORDER = ["warm", "glass", "classic"];
+	var BACKDROP_LABELS = { warm: "暖纸", glass: "毛玻璃", classic: "黑白" };
 	var menuBackdropBtn = document.getElementById("menu-sheet-backdrop");
 	var menuBackdropValue = document.getElementById("menu-sheet-backdrop-value");
 
 	function updateBackdropRow() {
-		var isWarm = document.documentElement.getAttribute("data-backdrop") !== "classic";
-		if (menuBackdropValue) menuBackdropValue.textContent = isWarm ? "暖纸" : "黑白";
+		var current = document.documentElement.getAttribute("data-backdrop") || "warm";
+		var idx = BACKDROP_ORDER.indexOf(current);
+		var next = BACKDROP_ORDER[(idx + 1) % BACKDROP_ORDER.length] || "warm";
+		if (menuBackdropValue) menuBackdropValue.textContent = BACKDROP_LABELS[current] || "暖纸";
 		menuBackdropBtn?.setAttribute(
 			"aria-label",
-			isWarm ? "背景风格：暖纸，点击切换为黑白" : "背景风格：黑白，点击切换为暖纸",
+			"背景风格：" + (BACKDROP_LABELS[current] || "暖纸") + "，点击切换为" + (BACKDROP_LABELS[next] || "暖纸"),
 		);
 	}
 
 	menuBackdropBtn?.addEventListener("click", function(e) {
 		e.stopPropagation();
-		var next = document.documentElement.getAttribute("data-backdrop") === "warm" ? "classic" : "warm";
+		var current = document.documentElement.getAttribute("data-backdrop") || "warm";
+		var idx = BACKDROP_ORDER.indexOf(current);
+		var next = BACKDROP_ORDER[(idx + 1) % BACKDROP_ORDER.length] || "warm";
 		try {
 			localStorage.setItem("backdropStyle", next);
 		} catch (_) {}
 		document.documentElement.setAttribute("data-backdrop", next);
+		// 桌面端导航栏工具面板里有同款滑块，派发事件让它的选中态跟着走
+		window.dispatchEvent(new CustomEvent("backdrop-change", { detail: next }));
 		updateBackdropRow();
 	});
 

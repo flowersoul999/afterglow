@@ -9,14 +9,28 @@ export const DEFAULT_THEME = LIGHT_MODE; // 仅作为向后兼容的默认值，
  * 页面背景风格（2026-11-24）
  * - `classic`：本站沿用了很久的黑白极简 —— 亮色纯白、暗色纯黑，灰阶全部零色度
  * - `warm`：暖纸 —— 亮色奶油米白 + 三团淡柔光，暗色仍是纯黑（站长要求暗色不动）
+ * - `glass`：毛玻璃（2026-11-25 从旧博客 old-Jojo-blog 移植）——
+ *   亮色淡雅底 + 底部彩色泡泡模糊 canvas（simplex 流场驱动）+
+ *   全站卡片换白色半透明 + backdrop-blur，暗色仍是纯黑
  *
- * 两者通过 `<html data-backdrop="...">` 切换，只影响亮色主题的令牌；
- * 暗色的 `:root.dark` 两套共用，切到 warm 不会有任何变化。
+ * 三者通过 `<html data-backdrop="...">` 切换，只影响亮色主题的令牌；
+ * 暗色的 `:root.dark` 共用同一份纯黑令牌，切到 warm/glass 不会有任何变化。
  */
 export const BACKDROP_CLASSIC = "classic",
-	BACKDROP_WARM = "warm";
-export type BackdropStyle = typeof BACKDROP_CLASSIC | typeof BACKDROP_WARM;
+	BACKDROP_WARM = "warm",
+	BACKDROP_GLASS = "glass";
+export type BackdropStyle =
+	| typeof BACKDROP_CLASSIC
+	| typeof BACKDROP_WARM
+	| typeof BACKDROP_GLASS;
 export const DEFAULT_BACKDROP_STYLE: BackdropStyle = BACKDROP_WARM;
+
+/** 悬浮坞「背景」按钮的三态轮换顺序：暖纸 → 毛玻璃 → 黑白 → 暖纸… */
+export const BACKDROP_CYCLE: BackdropStyle[] = [
+	BACKDROP_WARM,
+	BACKDROP_GLASS,
+	BACKDROP_CLASSIC,
+];
 
 // Banner height unit: vh
 export const BANNER_HEIGHT = 35;

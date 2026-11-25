@@ -17,6 +17,11 @@
  */
 
 import { DARK_MODE, LIGHT_MODE, SYSTEM_MODE } from "@/constants/constants";
+import {
+	applyPalette,
+	type PaletteId,
+	syncPaletteSwatches,
+} from "@/utils/palette-controller";
 import { requestSearchModalToggle } from "@/utils/search-modal-controller";
 import { getStoredTheme, setTheme } from "@/utils/setting-utils";
 
@@ -245,23 +250,28 @@ export function initNavbarToolsPanel(): void {
 		if (isOpen()) close();
 	});
 
-	/* ───────────── 主题三段滑块 ───────────── */
+	/* ───────────── 三段滑块（主题 + 背景风格）───────────── */
 
-	const segments = panel.querySelector<HTMLElement>(".nav-tools-segments");
+	// 两组滑块结构相同：一组三格、滑块位移由 --nav-tools-seg-index 驱动。
+	//  - 主题行 [data-nav-tools-theme]：light / dark / system（setting-utils.setTheme）
+	//  - 背景行 [data-nav-tools-backdrop]：warm / glass / classic（<html data-backdrop>）
 	const themeButtons = Array.from(
 		panel.querySelectorAll<HTMLElement>("[data-nav-tools-theme]"),
 	);
+	const backdropButtons = Array.from(
+		panel.querySelectorAll<HTMLElement>("[data-nav-tools-backdrop]"),
+	);
 
-	if (segments && themeButtons.length > 0) {
-		const segmentRoot = segments;
-		const buttons = themeButtons;
+	// 主题滑块
+	if (themeButtons.length > 0) {
+		const segmentRoot = themeButtons[0].parentElement as HTMLElement;
 
 		function syncThemeSegments(): void {
 			const current = getStoredTheme();
-			const at = buttons.findIndex(
+			const at = themeButtons.findIndex(
 				(themeButton) => themeButton.dataset.navToolsTheme === current,
 			);
-			buttons.forEach((themeButton, index) => {
+			themeButtons.forEach((themeButton, index) => {
 				themeButton.setAttribute("aria-checked", String(index === at));
 			});
 			// 滑块位移只改一个自定义属性，实际移动交给 transform
@@ -292,6 +302,73 @@ export function initNavbarToolsPanel(): void {
 
 		syncThemeSegments();
 		window.addEventListener("theme-change", syncThemeSegments);
+	}
+
+	// 背景风格滑块（2026-11-25 从右下角悬浮坞迁入）
+	if (backdropButtons.length > 0) {
+		const segmentRoot = backdropButtons[0].parentElement as HTMLElement;
+		const VALID_BACKDROPS = ["warm", "glass", "classic"];
+
+		function syncBackdropSegments(): void {
+			const current =
+				document.documentElement.getAttribute("data-backdrop") ?? "warm";
+			const at = backdropButtons.findIndex(
+				(backdropButton) => backdropButton.dataset.navToolsBackdrop === current,
+			);
+			backdropButtons.forEach((backdropButton, index) => {
+				backdropButton.setAttribute("aria-checked", String(index === at));
+			});
+			segmentRoot.style.setProperty(
+				"--nav-tools-seg-index",
+				String(Math.max(0, at)),
+			);
+		}
+
+		segmentRoot.addEventListener("click", (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const backdropButton = target.closest<HTMLElement>(
+				"[data-nav-tools-backdrop]",
+			);
+			const value = backdropButton?.dataset.navToolsBackdrop;
+			if (!value || !VALID_BACKDROPS.includes(value)) return;
+			event.stopPropagation();
+			try {
+				localStorage.setItem("backdropStyle", value);
+			} catch (_) {
+				// 隐私模式下写不进去也不影响本次切换，只是刷新后回到默认
+			}
+			document.documentElement.setAttribute("data-backdrop", value);
+			// 通知其它入口（如移动端菜单）同步选中态；GlassBackdrop 靠 MutationObserver 自行启停
+			window.dispatchEvent(
+				new CustomEvent("backdrop-change", { detail: value }),
+			);
+			syncBackdropSegments();
+		});
+
+		syncBackdropSegments();
+		window.addEventListener("backdrop-change", syncBackdropSegments);
+	}
+
+	// 配色预设色点（2026-11-25 从旧博客「色彩配置」移植）
+	const paletteRoot = panel.querySelector<HTMLElement>(".nav-tools-swatches");
+	if (paletteRoot) {
+		paletteRoot.addEventListener("click", (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const paletteButton = target.closest<HTMLElement>(
+				"[data-nav-tools-palette]",
+			);
+			const value = paletteButton?.dataset.navToolsPalette;
+			if (!value) return;
+			event.stopPropagation();
+			// 骰子每次点都重新掷色，命名预设则切到该套令牌
+			applyPalette(value as PaletteId);
+			syncPaletteSwatches(panel);
+		});
+
+		syncPaletteSwatches(panel);
+		window.addEventListener("palette-change", () => syncPaletteSwatches(panel));
 	}
 
 	/* ───────────── 搜索行的快捷键提示 ───────────── */

@@ -52,9 +52,10 @@ export const siteConfig: SiteConfig = {
 		fixed: false,
 		// 默认模式："light" 亮色，"dark" 暗色，"system" 跟随系统
 		defaultMode: "system",
-		// 默认背景风格："warm" 暖纸米白 + 淡柔光，"classic" 纯白/纯黑极简
-		// 只影响亮色主题；暗色两套都是纯黑。访问者可用悬浮坞的「背景」按钮切换
-		backdrop: "warm",
+		// 默认背景风格："glass" 毛玻璃（淡雅渐变底 + 彩色泡泡 + 半透明卡片），
+		// "warm" 暖纸米白 + 淡柔光，"classic" 纯白/纯黑极简
+		// 只影响亮色主题；暗色都是纯黑。访问者可用悬浮坞的「背景」按钮切换
+		backdrop: "glass",
 	},
 
 	// 页面整体宽度（单位：rem）

@@ -1,0 +1,379 @@
+---
+// ==========================================================================
+// 毛玻璃背景层（2026-11-25 从旧博客 old-Jojo-blog 移植适配）
+//
+// 旧博客对应实现：src/layout/backgrounds/blurred-bubbles.tsx（React + motion），
+// 这里去掉框架依赖改成纯 Astro + 原生脚本，物理逻辑原样保留：
+//   - 色泡只出现在视口底部区域（bottomBandStart 以下），simplex 噪声流场驱动漫游
+//   - 占用网格（occupancy grid）让色泡往空旷处漂，避免挤成一团或留下大空洞
+//   - 整层再叠 filter: blur(50px)，就是旧博客首页那种朦胧彩色底
+//
+// 显示条件（缺一不可）：
+//   ① <html data-backdrop="glass"> —— 只在毛玻璃背景风格下渲染
+//   ② html 不带 .dark —— 暗色维持纯黑，站长明确要求
+// 用户用右上角工具面板切换背景/明暗/配色时，靠 MutationObserver 与
+// palette-change 事件即时启停、换色。
+// 挂在 #swup-container 之外：全局单例，跨导航不重建（CLAUDE.md §8-9）。
+// ==========================================================================
+
+// 兜底色板（旧博客 site-content.json 的秋实色）；
+// 实际颜色以 colors.css 的 --glass-bubble-1..6 为准 —— 配色预设（春暖/秋实/晴空/夜深/
+// 随机）会整组覆盖，脚本用 getComputedStyle 读取，切色板后重绘。
+const BUBBLE_COLORS = [
+	"#FCC841",
+	"#DFEFFC",
+	"#DEDE92",
+	"#DE4331",
+	"#FE9750",
+	"#FCC841",
+];
+---
+
+<div
+	id="glass-backdrop"
+	aria-hidden="true"
+	style="opacity: 0; transition: opacity 1s ease;"
+>
+	<canvas id="glass-backdrop-canvas"></canvas>
+</div>
+
+<style>
+	#glass-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: -1;
+		overflow: hidden;
+		pointer-events: none;
+		filter: blur(50px);
+	}
+	#glass-backdrop-canvas {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+	/* 暗色下整层隐藏，防止切主题时残影 */
+	:global(html.dark) #glass-backdrop {
+		display: none;
+	}
+</style>
+
+<script define:vars={{ BUBBLE_COLORS }}>
+	// ---- simplex noise（移植自旧博客 layout/backgrounds/utils.ts）----
+	function makeNoise2D() {
+		const p = new Uint8Array(256);
+		for (let i = 0; i < 256; i++) p[i] = (Math.random() * 256) | 0;
+		function grad2(hash, x, y) {
+			const h = hash & 7;
+			const u = h < 4 ? x : y;
+			const v = h < 4 ? y : x;
+			return (h & 1 ? -u : u) + (h & 2 ? -2 * v : 2 * v);
+		}
+		const G2 = (3.0 - Math.sqrt(3.0)) / 6.0;
+		const F2 = 0.5 * (Math.sqrt(3.0) - 1.0);
+		return function noise2D(xin, yin) {
+			let n0 = 0, n1 = 0, n2 = 0;
+			const s = (xin + yin) * F2;
+			const i = Math.floor(xin + s);
+			const j = Math.floor(yin + s);
+			const t = (i + j) * G2;
+			const X0 = i - t;
+			const Y0 = j - t;
+			const x0 = xin - X0;
+			const y0 = yin - Y0;
+			const i1 = x0 > y0 ? 1 : 0;
+			const j1 = x0 > y0 ? 0 : 1;
+			const x1 = x0 - i1 + G2;
+			const y1 = y0 - j1 + G2;
+			const x2 = x0 - 1 + 2 * G2;
+			const y2 = y0 - 1 + 2 * G2;
+			const ii = i & 255;
+			const jj = j & 255;
+			const t0 = 0.5 - x0 * x0 - y0 * y0;
+			if (t0 >= 0) {
+				const gi0 = p[ii + p[jj]];
+				n0 = Math.pow(t0, 4) * grad2(gi0, x0, y0);
+			}
+			const t1 = 0.5 - x1 * x1 - y1 * y1;
+			if (t1 >= 0) {
+				const gi1 = p[ii + i1 + p[jj + 1]];
+				n1 = Math.pow(t1, 4) * grad2(gi1, x1, y1);
+			}
+			const t2 = 0.5 - x2 * x2 - y2 * y2;
+			if (t2 >= 0) {
+				const gi2 = p[ii + 1 + p[jj + 1]];
+				n2 = Math.pow(t2, 4) * grad2(gi2, x2, y2);
+			}
+			return 40 * (n0 + n1 + n2);
+		};
+	}
+	function rand(a, b) {
+		return a + Math.random() * (b - a);
+	}
+
+	const layer = document.getElementById("glass-backdrop");
+	const canvas = document.getElementById("glass-backdrop-canvas");
+	if (layer && canvas) {
+		const noise = makeNoise2D();
+		const ctx = canvas.getContext("2d");
+
+		// 泡泡色从 CSS 变量读：colors.css 里每套配色预设（data-palette）都会覆盖
+		// --glass-bubble-1..6，随机配色则是内联变量，getComputedStyle 都能拿到
+		function readBubbleColors() {
+			const css = getComputedStyle(document.documentElement);
+			const read = [];
+			for (let i = 1; i <= 6; i++) {
+				const value = css.getPropertyValue("--glass-bubble-" + i).trim();
+				if (value) read.push(value);
+			}
+			return read.length > 0 ? read : BUBBLE_COLORS;
+		}
+
+		// 以下参数照抄旧博客 BlurredBubblesBackground 的默认值
+		const COUNT = 6;
+		const MIN_RADIUS = 250;
+		const MAX_RADIUS = 400;
+		const BOTTOM_BAND_START = 0.8;
+		const SPEED = 0.12;
+		const NOISE_SCALE = 0.0008;
+		const NOISE_TIME_SCALE = 0.00015;
+		const TARGET_FPS = 6;
+		const FRAME_INTERVAL = 1000 / TARGET_FPS;
+
+		let width = 0, height = 0;
+		let bubbles = [];
+		let gridCell = 80, gridCols = 0, gridRows = 0, grid = null;
+		let rafId = 0;
+		let lastTime = 0;
+		let accumulatedTime = 0;
+		let running = false;
+
+		function allocateGrid() {
+			gridCols = Math.max(1, Math.ceil(width / gridCell));
+			gridRows = Math.max(1, Math.ceil(height / gridCell));
+			grid = new Float32Array(gridCols * gridRows);
+		}
+		function stampOccupancy(x, y, r) {
+			const c0 = Math.floor((x - r) / gridCell);
+			const c1 = Math.floor((x + r) / gridCell);
+			const r0 = Math.floor((y - r) / gridCell);
+			const r1 = Math.floor((y + r) / gridCell);
+			for (let cy = r0; cy <= r1; cy++) {
+				for (let cx = c0; cx <= c1; cx++) {
+					if (cx < 0 || cy < 0 || cx >= gridCols || cy >= gridRows) continue;
+					grid[cy * gridCols + cx] += 0.5;
+				}
+			}
+		}
+		function lowestOccupancyTarget() {
+			const startRow = Math.floor(gridRows * BOTTOM_BAND_START);
+			let bestIdx = startRow * gridCols;
+			let bestVal = Infinity;
+			for (let cy = startRow; cy < gridRows; cy++) {
+				for (let cx = 0; cx < gridCols; cx++) {
+					const v = grid[cy * gridCols + cx];
+					if (v < bestVal) {
+						bestVal = v;
+						bestIdx = cy * gridCols + cx;
+					}
+				}
+			}
+			return {
+				ty: (Math.floor(bestIdx / gridCols) + 0.5) * gridCell,
+				tx: ((bestIdx % gridCols) + 0.5) * gridCell,
+			};
+		}
+
+		function setup() {
+			const dpr = Math.min(2, window.devicePixelRatio || 1);
+			width = canvas.clientWidth;
+			height = canvas.clientHeight;
+			canvas.width = Math.floor(width * dpr);
+			canvas.height = Math.floor(height * dpr);
+			ctx.setTransform(1, 0, 0, 1, 0, 0);
+			ctx.scale(dpr, dpr);
+			allocateGrid();
+
+			const palette = readBubbleColors();
+
+			// 泊松式初始摆放，避免色泡扎堆
+			bubbles = [];
+			const minDist = Math.max(MIN_RADIUS * 0.2, 80);
+			let tries = 0;
+			while (bubbles.length < COUNT && tries < 5000) {
+				tries++;
+				const r = rand(MIN_RADIUS, MAX_RADIUS);
+				const x = rand(-r / 2, width + r / 2);
+				const y = rand(height * BOTTOM_BAND_START, height * 1.2);
+				let ok = true;
+				for (const b of bubbles) {
+					if (
+						Math.hypot(b.x - x, b.y - y) < (b.r + r) * 0.6 ||
+						Math.hypot(b.x - x, b.y - y) < minDist
+					) {
+						ok = false;
+						break;
+					}
+				}
+				if (ok) {
+					bubbles.push({
+						x, y, r,
+						color: palette[bubbles.length % palette.length],
+						vx: rand(-0.2, 0.2),
+						vy: rand(-0.2, 0.2),
+						jitter: rand(0.6, 1.2),
+						blur: rand(200, 400),
+					});
+				}
+			}
+			draw();
+		}
+
+		function updatePhysics(t) {
+			const { tx, ty } = lowestOccupancyTarget();
+			for (let i = 0; i < bubbles.length; i++) {
+				const b = bubbles[i];
+				// 1) 流场漫游
+				const n = noise(b.x * NOISE_SCALE, b.y * NOISE_SCALE + t * NOISE_TIME_SCALE);
+				const angle = n * Math.PI * 2;
+				const fx = Math.cos(angle) * SPEED * b.jitter;
+				const fy = Math.sin(angle) * SPEED * b.jitter;
+				// 2) 分离力，避免挤团
+				let sx = 0, sy = 0;
+				for (let j = 0; j < bubbles.length; j++) {
+					if (j === i) continue;
+					const o = bubbles[j];
+					const dx = b.x - o.x, dy = b.y - o.y;
+					const d2 = dx * dx + dy * dy;
+					const minD = (b.r + o.r) * 0.4;
+					if (d2 < minD * minD && d2 > 0.001) {
+						const d = Math.sqrt(d2);
+						const push = (minD - d) / minD;
+						sx += (dx / d) * push * 0.8;
+						sy += (dy / d) * push * 0.8;
+					}
+				}
+				// 3) 往空旷处漂
+				const dxT = tx - b.x, dyT = ty - b.y;
+				const dT = Math.hypot(dxT, dyT) + 1e-3;
+				const cx = (dxT / dT) * 0.05;
+				const cy = (dyT / dT) * 0.05;
+				// 4) 限制在底部区域
+				const bandMin = height * BOTTOM_BAND_START;
+				const bandMax = height * 1.5;
+				let bx = 0, by = 0;
+				if (b.y < bandMin) by += (bandMin - b.y) * 0.01;
+				if (b.y > bandMax) by -= (b.y - bandMax) * 0.01;
+
+				b.vx += fx + sx + cx + bx;
+				b.vy += fy + sy + cy + by;
+				b.vx *= 0.95;
+				b.vy *= 0.95;
+				const vel = Math.hypot(b.vx, b.vy);
+				if (vel > 2) {
+					b.vx = (b.vx / vel) * 2;
+					b.vy = (b.vy / vel) * 2;
+				}
+				b.x += b.vx;
+				b.y += b.vy;
+				if (b.x < -b.r - b.blur / 3) b.x = width + b.r + b.blur / 3;
+				if (b.x > width + b.r + b.blur / 3) b.x = -b.r - b.blur / 3;
+				b.y = Math.min(Math.max(b.y, bandMin - b.r * 0.25), bandMax + b.r * 0.25);
+				stampOccupancy(b.x, b.y, b.r * 0.6);
+			}
+		}
+
+		function draw() {
+			if (!ctx) return;
+			ctx.clearRect(0, 0, width, height);
+			for (const b of bubbles) {
+				ctx.save();
+				ctx.filter = "blur(" + b.blur + "px)";
+				ctx.globalAlpha = 0.8;
+				ctx.beginPath();
+				ctx.fillStyle = b.color;
+				ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+				ctx.fill();
+				ctx.restore();
+			}
+		}
+
+		function frame(t) {
+			if (!running) return;
+			if (document.hidden) {
+				// 页面不可见时暂停，恢复可见后继续
+				const onVisible = () => {
+					if (!document.hidden && running) {
+						document.removeEventListener("visibilitychange", onVisible);
+						lastTime = 0;
+						rafId = requestAnimationFrame(frame);
+					}
+				};
+				document.addEventListener("visibilitychange", onVisible);
+				return;
+			}
+			const deltaTime = lastTime ? t - lastTime : 0;
+			lastTime = t;
+			accumulatedTime += deltaTime;
+			if (accumulatedTime < FRAME_INTERVAL) {
+				rafId = requestAnimationFrame(frame);
+				return;
+			}
+			accumulatedTime = 0;
+			updatePhysics(t);
+			draw();
+			rafId = requestAnimationFrame(frame);
+		}
+
+		function start() {
+			if (running) return;
+			running = true;
+			lastTime = 0;
+			accumulatedTime = 0;
+			setup();
+			rafId = requestAnimationFrame(frame);
+			layer.style.opacity = "1";
+		}
+		function stop() {
+			running = false;
+			cancelAnimationFrame(rafId);
+			layer.style.opacity = "0";
+		}
+
+		// resize 防抖 1s（照抄旧博客）
+		let resizeTimer = null;
+		window.addEventListener("resize", () => {
+			if (!running) return;
+			if (resizeTimer !== null) clearTimeout(resizeTimer);
+			resizeTimer = setTimeout(() => {
+				setup();
+				resizeTimer = null;
+			}, 1000);
+		});
+
+		// 是否满足显示条件：glass 背景 + 亮色
+		function isActive() {
+			return (
+				document.documentElement.getAttribute("data-backdrop") === "glass" &&
+				!document.documentElement.classList.contains("dark")
+			);
+		}
+		function sync() {
+			if (isActive()) start();
+			else stop();
+		}
+
+		// 悬浮坞切换背景 / 明暗主题时即时启停
+		const observer = new MutationObserver(sync);
+		observer.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["data-backdrop", "class"],
+		});
+
+		// 切配色预设时换泡泡色：重跑一次 setup 即可（色板来自 CSS 变量）
+		window.addEventListener("palette-change", () => {
+			if (running) setup();
+		});
+
+		sync();
+	}
+</script>

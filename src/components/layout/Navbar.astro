@@ -12,6 +12,7 @@ import { i18n } from "@/i18n/translation";
 import { LinkPreset, type NavBarLink } from "@/types/config";
 import { getFallbackFormat, getImageFormats } from "@/utils/image-utils";
 import { resolveNavLinks } from "@/utils/nav-categories";
+import { PALETTE_OPTIONS } from "@/utils/palette-controller";
 import { url } from "@/utils/url-utils";
 import DropdownMenu from "./DropdownMenu.astro";
 import NavbarProfileCard from "./NavbarProfileCard.astro";
@@ -66,6 +67,30 @@ const toolsThemeOptions = [
 		icon: "material-symbols:brightness-auto-outline-rounded",
 	},
 ];
+
+// 工具面板背景行的三段滑块（2026-11-25 从右下角悬浮坞迁入），
+// 值对应 constants.ts 的 BackdropStyle：warm 暖纸 / glass 毛玻璃 / classic 黑白
+const toolsBackdropOptions = [
+	{
+		value: "warm",
+		label: "暖纸",
+		icon: "material-symbols:palette-outline",
+	},
+	{
+		value: "glass",
+		label: "毛玻璃",
+		icon: "material-symbols:blur-on",
+	},
+	{
+		value: "classic",
+		label: "黑白",
+		icon: "material-symbols:contrast",
+	},
+];
+
+// 工具面板配色行的色点（2026-11-25 从旧博客「色彩配置」移植），
+// 选项与随机配色的生成逻辑统一在 utils/palette-controller.ts
+const toolsPaletteOptions = PALETTE_OPTIONS;
 
 const showAnnouncement = Boolean(announcementConfig.content);
 
@@ -262,6 +287,64 @@ if (isLocalSrcLogo) {
 								<Icon name={option.icon} class="nav-tools-segment__icon" />
 							</button>
 						))}
+					</div>
+				</div>
+
+				<!-- 背景风格行（2026-11-25 从右下角悬浮坞迁入）：暖纸 / 毛玻璃 / 黑白 -->
+				<div class="nav-tools-item nav-tools-item--group" data-nav-tools-stop="group">
+					<Icon name="material-symbols:wallpaper-outline" class="nav-tools-item__icon" />
+					<span>背景</span>
+					<div class="nav-tools-segments" role="group" aria-label="背景风格">
+						<span class="nav-tools-thumb" aria-hidden="true"></span>
+						{toolsBackdropOptions.map((option) => (
+							<button
+								class="nav-tools-segment"
+								type="button"
+								role="menuitemradio"
+								aria-checked="false"
+								aria-label={option.label}
+								title={option.label}
+								data-nav-tools-backdrop={option.value}
+							>
+								<Icon name={option.icon} class="nav-tools-segment__icon" />
+							</button>
+						))}
+					</div>
+				</div>
+
+				<!-- 配色预设行（2026-11-25 从旧博客「色彩配置」移植）：默认/春暖/秋实/晴空/夜深 + 随机 -->
+				<div class="nav-tools-item nav-tools-item--group" data-nav-tools-stop="group">
+					<Icon name="material-symbols:colors" class="nav-tools-item__icon" />
+					<span>配色</span>
+					<div class="nav-tools-swatches" role="group" aria-label="配色预设">
+						{toolsPaletteOptions.map((option) => (
+							<button
+								class="nav-tools-swatch"
+								type="button"
+								role="menuitemradio"
+								aria-checked="false"
+								aria-label={option.label}
+								title={option.label}
+								data-nav-tools-palette={option.id}
+							>
+								<span
+									class="nav-tools-swatch__dot"
+									style={`--sw-1:${option.swatch[0]};--sw-2:${option.swatch[1]}`}
+									aria-hidden="true"
+								/>
+							</button>
+						))}
+						<button
+							class="nav-tools-swatch nav-tools-swatch--dice"
+							type="button"
+							role="menuitemradio"
+							aria-checked="false"
+							aria-label="随机配色"
+							title="随机配色"
+							data-nav-tools-palette="random"
+						>
+							<Icon name="material-symbols:casino-outline" class="nav-tools-swatch__icon" />
+						</button>
 					</div>
 				</div>
 			</div>

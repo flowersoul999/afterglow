@@ -1,5 +1,7 @@
 import {
 	BACKDROP_CLASSIC,
+	BACKDROP_CYCLE,
+	BACKDROP_GLASS,
 	BACKDROP_WARM,
 	type BackdropStyle,
 	DARK_MODE,
@@ -391,8 +393,12 @@ export function getStoredBackdropStyle(): BackdropStyle {
 		return getDefaultBackdropStyle();
 	}
 	const stored = localStorage.getItem("backdropStyle");
-	// 只认这两个值：localStorage 是用户可改的，脏数据要能自动落回默认
-	if (stored === BACKDROP_WARM || stored === BACKDROP_CLASSIC) {
+	// 只认这三个值：localStorage 是用户可改的，脏数据要能自动落回默认
+	if (
+		stored === BACKDROP_WARM ||
+		stored === BACKDROP_GLASS ||
+		stored === BACKDROP_CLASSIC
+	) {
 		return stored;
 	}
 	return getDefaultBackdropStyle();
@@ -416,12 +422,13 @@ export function setBackdropStyle(style: BackdropStyle): void {
 	applyBackdropStyleToDocument(style);
 }
 
-/** 在 classic / warm 之间来回切，返回切换后的值 */
+/** 按 BACKDROP_CYCLE 顺序轮换（暖纸 → 毛玻璃 → 黑白），返回切换后的值 */
 export function toggleBackdropStyle(): BackdropStyle {
+	const current = getStoredBackdropStyle();
+	const idx = BACKDROP_CYCLE.indexOf(current);
 	const next =
-		getStoredBackdropStyle() === BACKDROP_WARM
-			? BACKDROP_CLASSIC
-			: BACKDROP_WARM;
+		BACKDROP_CYCLE[(idx + 1 + BACKDROP_CYCLE.length) % BACKDROP_CYCLE.length] ??
+		DEFAULT_BACKDROP_STYLE;
 	setBackdropStyle(next);
 	return next;
 }

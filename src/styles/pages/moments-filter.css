@@ -162,16 +162,9 @@ html:has(#content-wrapper[data-no-sidebar="moments"]) #main-content-wrapper {
  * 动态页手机档：藏掉 FloatingDock 的「展开」按钮与它展开的那一列
  * ============================================================
  * 原因（站长 2026-09-30）：右下角那 3 个筛选按钮就排在这一列上方，浮坞一展开
- * 两者会叠在一起；这个页面本身也用不到它展开后的那几个抽屉（标签/分类/公告/
- * 音乐/主题 —— 标签、搜索、日历本页左栏都有了）。
- * 只藏「展开」与展开列，**「回顶部」保留**；桌面档不动（那边没有那 3 个按钮、
- * 不会重叠，浮坞还是本站唯一的主题/音乐入口）。 */
-@media (max-width: 768px) {
-	html:has(#content-wrapper[data-no-sidebar="moments"]) #ud-toggle-btn,
-	html:has(#content-wrapper[data-no-sidebar="moments"]) #ud-stack {
-		display: none !important;
-	}
-}
+ * 两者会叠在一起。2026-11-25 主题/背景按钮连同展开按钮（ud-toggle-btn /
+ * ud-stack）已迁入导航栏工具面板，这两条隐藏规则随之移除。
+ * ============================================================ */
 
 .wx-filter__block {
 	padding: 0.75rem;
