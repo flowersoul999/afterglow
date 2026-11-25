@@ -1,5 +1,5 @@
 ---
-version: "v6.28.0"
+version: "v6.30.0"
 date: 2026-11-25
 time: "22:30"
 type: feature
