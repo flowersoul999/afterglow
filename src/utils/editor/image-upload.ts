@@ -43,7 +43,8 @@ function randomSuffix(): string {
 /** 重绘成 webp；失败或不需要处理时退回原文件 */
 async function shrink(file: File): Promise<{ blob: Blob; ext: string }> {
 	const passthrough = { blob: file, ext: extensionOf(file.name, file.type) };
-	if (file.type === "image/gif" || file.type === "image/svg+xml") return passthrough;
+	if (file.type === "image/gif" || file.type === "image/svg+xml")
+		return passthrough;
 
 	try {
 		const bitmap = await createImageBitmap(file);
