@@ -81,8 +81,8 @@ export const homeConfig = {
 				author: "by 冰冰坚老师",
 			},
 			intro: {
-				direction: "站点专研方向：前端、Java 后端、Agent 与 Python",
-				hobby: "热衷于做些没人用的小组件，也收集好看的 AI 绘画",
+				direction: "这里记录技术、代码与生活里值得留下的东西",
+				hobby: "爱做些没人用的小组件，也收藏好看的 AI 绘画",
 				bio: primaryBio,
 			},
 		},

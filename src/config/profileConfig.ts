@@ -21,7 +21,7 @@ export const profileConfig: ProfileConfig = {
 	occupation: "[技术博主 / 生活记录者]",
 
 	// 个人签名（支持多条，会循环打字+删除效果）
-	bio: ["如果你喜欢，那么欢迎来到我的世界！"],
+	bio: ["愿你我在这里，都能抵达想去的地方"],
 
 	// 链接配置
 	// 已经预装的图标集：fa7-brands，fa7-regular，fa7-solid，material-symbols，simple-icons
