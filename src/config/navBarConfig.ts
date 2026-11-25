@@ -161,7 +161,9 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 	// 仅返回链接，其它导航搜索相关配置在模块顶层常量中独立导出。
 	// （个人资料面板的「其他站点」列表不在这里维护：构建时直接读 daohang 集合里
 	//  「我的网站」分类的条目，改 /projects/ 那边的站点即可，见 NavbarProfileCard.astro）
-	return { links } as NavBarConfig;
+	// 灵动岛铭牌页的「其他站点」：本站站点列表维护在 daohang 集合（见 NavbarProfileCard），
+	// 这里给空数组让灵动岛优雅降级，避免出现参考站的站点条目。
+	return { links, personalSites: [] } as NavBarConfig;
 };
 
 // 导航搜索配置

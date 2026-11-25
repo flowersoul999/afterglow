@@ -12,6 +12,7 @@ import PageLoader from "@components/features/PageLoader.astro";
 import SakuraEffect from "@components/features/SakuraEffect.astro";
 import TabRadialMenu from "@components/features/TabRadialMenu.svelte";
 import ConfigCarrier from "@components/layout/ConfigCarrier.astro";
+import DynamicIsland from "@components/layout/DynamicIsland.astro";
 
 import {
 	backgroundWallpaper,
@@ -493,6 +494,8 @@ const siteLang = lang.replace("_", "-");
     {shouldShowTopHighlight && <div class="top-gradient-highlight" />}
     <ConfigCarrier />
     <MusicManager />
+    <!-- 参考站灵动岛：替代桌面端导航栏，Swup 容器外持久存在 -->
+    <DynamicIsland />
     <slot />
 
     <!-- 左下角悬浮音乐播放器：挂 Swup 容器（#swup-container）外，

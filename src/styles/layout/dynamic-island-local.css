@@ -1,0 +1,173 @@
+/* ============================================================
+   灵动岛本站适配层
+   参考站源码保持原样，这里只放本站特有的两处调整：
+   1) 恢复本站原有的背景风格 / 配色预设入口
+   2) 把目录子菜单的 4:3 方块卡片换成更轻的列表式卡片
+   ============================================================ */
+
+/* ---------------------------------------------------------- 设置面板 */
+
+.dynamic-island .di-panel--settings {
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in oklab, var(--di-text) 22%, transparent) transparent;
+}
+
+.dynamic-island .di-settings__row {
+	padding: 6px 10px;
+}
+
+/* 背景风格：沿用主题行的三段滑块，滑块位置由根节点 data-di-backdrop-current 驱动 */
+.dynamic-island[data-di-backdrop-current="glass"] .di-settings__segment--backdrop .di-settings__segment-thumb {
+	--di-seg-index: 1;
+}
+.dynamic-island[data-di-backdrop-current="classic"] .di-settings__segment--backdrop .di-settings__segment-thumb {
+	--di-seg-index: 2;
+}
+.dynamic-island .di-settings__segment--backdrop .di-settings__segment-btn {
+	min-width: 32px;
+	padding: 0 8px;
+}
+
+/* 配色预设：双色圆点 + 随机骰子，选中用外圈高亮而不是方块 */
+.dynamic-island .di-settings__swatches {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	flex: 0 0 auto;
+}
+.dynamic-island .di-settings__swatch {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 0;
+	border-radius: 999px;
+	background: transparent;
+	color: var(--di-text-dim);
+	cursor: pointer;
+	transition: transform 0.18s ease, color 0.18s ease;
+}
+.dynamic-island .di-settings__swatch::after {
+	content: "";
+	position: absolute;
+	inset: -3px;
+	border: 1.5px solid transparent;
+	border-radius: 999px;
+	transition: border-color 0.18s ease;
+}
+.dynamic-island .di-settings__swatch.is-active::after {
+	border-color: var(--di-accent);
+}
+.dynamic-island .di-settings__swatch:is(:hover, :focus-visible) {
+	transform: translateY(-1px) scale(1.08);
+	color: var(--di-text);
+}
+.dynamic-island .di-settings__swatch-dot {
+	width: 18px;
+	height: 18px;
+	border-radius: 999px;
+	background: linear-gradient(135deg, var(--sw-1) 0 50%, var(--sw-2) 50% 100%);
+	box-shadow:
+		inset 0 0 0 1px color-mix(in oklab, var(--di-text) 16%, transparent),
+		0 1px 3px color-mix(in oklab, var(--di-shadow) 45%, transparent);
+}
+.dynamic-island .di-settings__swatch--dice {
+	background: color-mix(in oklab, var(--di-text) 8%, transparent);
+}
+.dynamic-island .di-settings__swatch--dice.is-active {
+	color: var(--di-accent);
+}
+.dynamic-island .di-settings__swatch-icon {
+	width: 14px;
+	height: 14px;
+}
+
+/* ---------------------------------------------------------- 目录子菜单卡片 */
+
+.dynamic-island .di-links__card-grid,
+.dynamic-island .di-menu-panel__group .di-links__card-grid {
+	grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+	gap: 8px;
+	padding: 4px 0 6px;
+	translate: none;
+	filter: none;
+}
+
+.dynamic-island .di-links__card {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	aspect-ratio: auto;
+	height: 48px;
+	padding: 0 12px;
+	border-radius: 14px;
+	background: color-mix(in oklab, var(--di-text) 5%, transparent);
+	box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--di-text) 10%, transparent);
+	color: var(--di-text);
+	text-decoration: none;
+	overflow: visible;
+	scale: 1;
+	transition:
+		background 0.18s ease,
+		box-shadow 0.18s ease,
+		transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dynamic-island .di-links__card:is(:hover, :focus-visible) {
+	background: color-mix(in oklab, var(--di-accent) 12%, transparent);
+	box-shadow:
+		inset 0 0 0 1px color-mix(in oklab, var(--di-accent) 45%, transparent),
+		0 6px 16px color-mix(in oklab, var(--di-shadow) 55%, transparent);
+	transform: translateY(-2px);
+	scale: 1;
+}
+
+.dynamic-island .di-links__card-icon {
+	position: static;
+	flex: 0 0 30px;
+	width: 30px;
+	height: 30px;
+	padding: 6px;
+	border-radius: 10px;
+	background: color-mix(in oklab, var(--di-accent) 16%, transparent);
+	color: var(--di-accent);
+	opacity: 1;
+	transform: none;
+	pointer-events: none;
+}
+
+.dynamic-island .di-links__card-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	max-width: none;
+	font-size: 13px;
+	font-weight: 650;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	translate: none;
+}
+.dynamic-island .di-links__card:is(:hover, :focus-visible) .di-links__card-name {
+	translate: none;
+}
+
+.dynamic-island .di-links__card-arrow {
+	position: static;
+	flex: 0 0 12px;
+	width: 12px;
+	height: 12px;
+	margin-left: auto;
+	color: var(--di-text-dim);
+	opacity: 0.45;
+	transform: none;
+	transition:
+		opacity 0.18s ease,
+		transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dynamic-island .di-links__card:is(:hover, :focus-visible) .di-links__card-arrow {
+	opacity: 1;
+	transform: translateX(2px);
+}

@@ -617,6 +617,28 @@ enum I18nKey {
 	viewAll = "viewAll",
 	viewsBrowseLabel = "viewsBrowseLabel",
 	viewsLabel = "viewsLabel",
+	// ===== 参考站灵动岛文案 =====
+	islandBackdrop = "islandBackdrop",
+	islandBackdropClassic = "islandBackdropClassic",
+	islandBackdropGlass = "islandBackdropGlass",
+	islandBackdropWarm = "islandBackdropWarm",
+	islandExpandMode = "islandExpandMode",
+	islandModeClick = "islandModeClick",
+	islandModeHover = "islandModeHover",
+	islandMusicBox = "islandMusicBox",
+	islandOff = "islandOff",
+	islandOn = "islandOn",
+	islandPalette = "islandPalette",
+	islandPaletteRandom = "islandPaletteRandom",
+	islandProfile = "islandProfile",
+	islandResetEdge = "islandResetEdge",
+	islandSettings = "islandSettings",
+	navLinks = "navLinks",
+	navPosts = "navPosts",
+	pinnedBadge = "pinnedBadge",
+	profileHeatBack = "profileHeatBack",
+	profileHeatmap = "profileHeatmap",
+	profilePostCount = "profilePostCount",
 }
 
 export default I18nKey;

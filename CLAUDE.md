@@ -63,7 +63,7 @@ src/
 │   ├── controls/        # 交互控件：搜索、归档三视图树（ArchivePanel/ArchiveTree）、主题、Dock (8)
 │   ├── editor/          # 站长在线编辑（2026-11-03，11-04 改 GitHub OAuth，11-07 补手机菜单入口）：EditorNavButton 桌面资料卡入口 / EditorMobileMenuEntry 手机导航菜单末项 / EditorLoginModal OAuth 登录 / MomentDrawer 说说抽屉 / EditorRoot 常驻外壳（唯一 import editor.css 的地方） (5)
 │   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器)
-│   ├── layout/          # 布局组件：Navbar(含灵动岛音乐面), Footer(DoodleCrewFooter.svelte), SideBar, HomeHero(参考站版), HeroMosaic, HeroDialogue, HomeBlinds, HomeMobile... + doodle-crew-footer/ (29)
+│   ├── layout/          # 布局组件：Navbar, DynamicIsland(参考站源码 + 本站设置适配), ProfileCardSiteAvatar, Footer(DoodleCrewFooter.svelte), SideBar, HomeHero(参考站版), HeroMosaic, HeroDialogue, HomeBlinds, HomeMobile... + doodle-crew-footer/ (33)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
 │   ├── moments/         # 动态卡片与评论弹窗
 │   ├── pages/           # 页面级组件：bangumi, books（Bookshelf/BookCard：3D 书本卡片 + 影视页同款胶囊筛选（分类+读过/在读/想读）+ ClientPagination 分页 8/6 本每页，SSR 隐藏非首页防闪烁）, interview（面经列表/详情）, movies-games, music (11)
@@ -87,7 +87,7 @@ src/
 ├── layouts/             # Layout.astro (591行), MainGridLayout.astro (305行)
 ├── content/notes/       # Obsidian 笔记（不发布；2026-10-08 从 src/notes 并入，Obsidian 库根 = src/content）
 ├── pages/               # 路由（44 个文件；admin.astro = 站长后台，2026-11-04 重建，整页进入不参与 Swup）
-│   ├── api/             # JSON API (2)：calendar.json.ts, home-stats.json.ts
+│   ├── api/             # JSON API (4)：allPostMeta.json.ts, calendar.json.ts, home-stats.json.ts, knowledge-graph.json.ts
 │   ├── album/ bangumi/ books/ categories/ interview/ life/ moments/ posts/ // moments/[slug] 已删除
 │   ├── **技能图七页**（2026-10-29 迁入，均为扁平单层路由）：
 │   │   cs(计算机基础) / skills(前端) / backend / agent / music / english / finance
@@ -98,7 +98,7 @@ src/
 │       guestbook, movies-games/, projects, search,
 │       sponsor, rss, robots.txt, og
 ├── plugins/             # 自定义 remark/rehype 插件 (10)
-├── styles/              # CSS 样式（85 个文件，含 about 技术栈/时间线/更新日志图谱）
+├── styles/              # CSS 样式（94 个文件，含 dynamic-island.css 参考站原版 + dynamic-island-local.css 本站适配层）
 │   ├── tokens/          # 设计令牌：colors, breakpoints, animation, z-index
 │   ├── base/            # reset, utilities
 │   ├── components/      # 组件样式
@@ -108,7 +108,7 @@ src/
 │   ├── transitions/     # Swup 过渡动画
 │   └── vendor/          # 第三方覆盖
 ├── types/               # TypeScript 类型：config.ts, bangumi.ts, guestbook-chat.ts
-└── utils/               # 工具函数（88 个文件，含 local-album 本地相册扫描 / changelog / tag-graph / tts-text / music-player-controller / home-hero-* / home-blinds-* / navbar-dynamic-island / swup-lifecycle 等）
+└── utils/               # 工具函数（102 个文件，含 local-album 本地相册扫描 / changelog / tag-graph / tts-text / music-player-controller / home-hero-* / home-blinds-* / dynamic-island-controller / island-physics / island-pet / swup-lifecycle 等；旧 navbar-dynamic-island 已删除）
     ├── 8 个控制器模块   # 见第 10 节
     ├── editor/          # 站长编辑（2026-11-03，11-04 后台化）：github-client.ts（会话 + Contents 读写删 + 列目录，全走 /api 代理）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化，抽屉专用）、content-serializer.ts（**通用 frontmatter，保序保留**，后台用）、content-repo.ts（列集合/生成路径/撞名重试）、private-client.ts（**私有仓库通道**，`/api/private/*`，「状态」专用）、status-serializer.ts（状态 json ↔ 记录，photos 存相对路径）
     └── 33 个业务工具    # content-utils, category-tree（文件夹即分类，多级 `a/b` 推导 + CategoryNode 树）, date-utils, image-utils, url-utils, tts-text（朗读正文提取）...
@@ -191,6 +191,15 @@ Layout.astro          ← HTML 骨架：<html>, <head>, <body>, 全局组件, �
   Footer 必须放在 `#main-grid` 与 `max-w-(--page-width)` **容器外**才是整屏宽（内容由 `.dcf`
   自己居中）；`data-site-footer` 是右侧目录面板的钳制参考线，别删。旧的
   `FooterConfig.html` 注入方式已下线，`socialLinks` 仍供灵动岛铭牌页使用。
+
+- **桌面端灵动岛（2026-11-25 改为整套搬运参考站源码）**：`Layout.astro` 在 Swup 容器外挂
+  `DynamicIsland.astro`，控制器 `dynamic-island-controller.ts` + 几何 `island-physics.ts` +
+  宠物帧 `island-pet.ts` 全部与参考站保持一致；`dynamic-island.css` 是参考站原版，桌面端靠
+  `body:has(.dynamic-island)` 隐藏旧 `#navbar` 三段。本站特有改动只放
+  `dynamic-island-local.css`（背景 / 配色入口、目录卡片重做）与 `DynamicIsland.astro` 的
+  接口适配块，别再往参考站源码里手搓面板。设置面板里的「背景」「配色」复用
+  `setBackdropStyle()` / `applyPalette()`，与移动端菜单同步；根节点状态用
+  `data-di-backdrop-current` 避免和按钮的 `data-di-backdrop` 撞选择器。
 
 ### 3.2 Swup 页面过渡
 
@@ -531,7 +540,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 | 共享下拉面板 | `utils/navbar-dropdown-controller.ts` | 整条导航**只有一只**面板，悬停哪项就滑到哪项下方；定位、宽高过渡、指针滑动、键盘钉住、悬停药丸 |
 | 激活态动效 | `utils/navbar-active-motion.ts` | 最长命中判定激活项、高亮块滑动、浮动图标 FLIP |
 | 滚动收缩布局 | `utils/navbar-scroll-layout.ts` | 滚过 80px 左右两段收成球、贴到中段两侧（px 由 JS 实测） |
-| 右段工具面板 | `utils/navbar-tools-panel.ts` | 搜索 / 公告 / 主题三段滑块，缩放浮出 + 行错峰 |
+| 右段工具面板 | `utils/navbar-tools-panel.ts` | 搜索 / 公告 / 明暗主题 / 背景风格 / 配色预设（移动端与旧顶栏），缩放浮出 + 行错峰；桌面端入口在灵动岛设置面板 |
 
 - **面板结构**：`DropdownMenu.astro` **只输出触发器**（`data-dropdown-index` 与项序号配对），内容页由 `Navbar.astro` 集中渲染在 `.navbar-dropdown-panel` 里，靠 `data-dropdown-page` 配对、`is-active` 交叉淡换。加导航项不用改控制器，序号自动跟上。
 - ⚠️ **触发器类名是 `is-dropdown-open`**（控制器写），不是旧的 `dropdown-open`。`navbar-new.css` 里那几条「展开态不反色」的规则已同步改成新类名，改回去会让展开时白字压浅底消失。
