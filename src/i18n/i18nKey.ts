@@ -583,6 +583,40 @@ enum I18nKey {
 	gbVoiceFailed = "gbVoiceFailed",
 	gbMoreTools = "gbMoreTools",
 	gbCollapseInput = "gbCollapseInput",
+	musicNowPlaying = "musicNowPlaying",
+
+	// ===== 参考站歌词模式文案 =====
+	musicLyricsBoth = "musicLyricsBoth",
+	musicLyricsTranslationOnly = "musicLyricsTranslationOnly",
+	musicLyricsOriginalOnly = "musicLyricsOriginalOnly",
+
+	// ===== 参考站首页视觉文案 =====
+	blogPosts = "blogPosts",
+	blogPostsSubtitle = "blogPostsSubtitle",
+	browseAllTags = "browseAllTags",
+	categoryCountPrompt = "categoryCountPrompt",
+	categoryIndex = "categoryIndex",
+	categoryUnit = "categoryUnit",
+	characterDialogue = "characterDialogue",
+	contactMethods = "contactMethods",
+	contentIndex = "contentIndex",
+	contentIndexSubtitle = "contentIndexSubtitle",
+	dialogueNext = "dialogueNext",
+	latestUpdates = "latestUpdates",
+	mapGuide = "mapGuide",
+	noPinnedContent = "noPinnedContent",
+	pinnedPosts = "pinnedPosts",
+	siteData = "siteData",
+	siteDataSubtitle = "siteDataSubtitle",
+	siteStatsVisitors = "siteStatsVisitors",
+	subscribeContact = "subscribeContact",
+	subscribeContactSubtitle = "subscribeContactSubtitle",
+	tagIndex = "tagIndex",
+	tagUnit = "tagUnit",
+	techBlogSuffix = "techBlogSuffix",
+	viewAll = "viewAll",
+	viewsBrowseLabel = "viewsBrowseLabel",
+	viewsLabel = "viewsLabel",
 }
 
 export default I18nKey;

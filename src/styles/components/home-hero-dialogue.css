@@ -1,309 +1,170 @@
-/* ============================================
-   首页 Hero — galgame 对话框
-   写死暗黑主题（不随站点亮/暗切换），黑白极简风。
-   放大版对话框：底部居中，逐句打字机 + 两级话题导航。
-   说明：Hero 区域整体采用硬编码色值（背景常驻黑色遮罩），
-   本文件遵循同一约定，对话框固定为暗色以适配偏暗的首页。
-   ============================================ */
+/* ==========================================================================
+   左下角角色 + 想法气泡（贴纸漫画式的思考泡泡）
+   外层 sticky 贴视口底边、自身零高度：正常流位置在第二层底部，
+   所以从首屏一路浮到第二层，最后停在第二层左下角，随第二层一起滚走。
+   气泡是贴纸质感，白纸黑墨不随主题切换。
+   ========================================================================== */
 
 .home-hero__dialogue {
+	--home-dialogue-size: clamp(12rem, 13vw, 16rem);
+	--home-dialogue-ink: oklch(0.22 0.01 300);
+	--home-dialogue-paper: oklch(1 0 0);
+	--home-dialogue-stroke: 0.2rem;
+	/* 玩偶回弹：优先用能过冲再收住的 linear() 弹簧，不支持时退回带过冲的三次贝塞尔 */
+	--home-dialogue-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+	position: sticky;
+	bottom: 0;
+	z-index: 3;
+	width: 100vw;
+	height: 0;
+	margin-inline: calc(50% - 50vw);
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+	.home-hero__dialogue {
+		--home-dialogue-spring: linear(
+			0,
+			0.36 12%,
+			0.86 26%,
+			1.12 36%,
+			0.98 46%,
+			1.02 58%,
+			0.995 74%,
+			1
+		);
+	}
+}
+
+/* 角色本体的盒子，底边压在视口底边上、左缘贴住视口左缘（图本身有透明留白，
+   看着就是卡在角上）。JS 接管前保持隐藏，由 hero 时间线把它从底边推出来 */
+.home-hero__dialogue-anchor {
 	position: absolute;
-	left: 50%;
-	bottom: clamp(3.5rem, 8vh, 6.5rem);
-	transform: translateX(-50%);
-	z-index: 32;
-	width: min(64rem, 92%);
-	pointer-events: none;
-}
-
-/* ---------- 对话框主体 ---------- */
-.home-hero__dialogue-box {
-	position: relative;
-	pointer-events: auto;
-	min-height: clamp(9rem, 18vh, 12.5rem);
-	padding: clamp(1.6rem, 2.4vw, 2.3rem) clamp(1.8rem, 2.8vw, 2.6rem)
-		clamp(1.5rem, 2vw, 2rem);
-	border: 2px solid oklch(0 0 0);
-	border-radius: 14px;
-	background:
-		linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)),
-		rgba(10, 12, 16, 0.72);
-	backdrop-filter: blur(22px) saturate(140%);
-	-webkit-backdrop-filter: blur(22px) saturate(140%);
-	box-shadow:
-		0 3px 0 oklch(0 0 0),
-		0 26px 60px rgba(0, 0, 0, 0.42);
-	color: rgba(255, 255, 255, 0.92);
-	transform-origin: 50% 100%;
-	transition: opacity 0.35s ease, transform 0.35s ease;
-}
-
-/* ---------- 左上角名牌（随说话者切换，凸出于对话框上沿） ---------- */
-.home-hero__dialogue-nameplate {
-	position: absolute;
-	top: 0;
-	left: clamp(1.4rem, 2.4vw, 2.2rem);
-	transform: translateY(-52%);
-	display: inline-flex;
-	align-items: center;
-	gap: 0.5rem;
-	padding: 0.42rem 1.1rem;
-	border: 2px solid oklch(0 0 0);
-	border-radius: 10px;
-	background: rgba(20, 22, 28, 0.96);
-	color: oklch(1 0 0);
-	font-size: clamp(0.95rem, 1.25vw, 1.2rem);
-	font-weight: 900;
-	letter-spacing: 0.06em;
-	line-height: 1;
-	white-space: nowrap;
-	box-shadow: 0 3px 0 oklch(0 0 0);
-}
-
-/* 访客说话时名牌反相，强化"两个人在对话"的辨识度 */
-.home-hero__dialogue-box[data-speaker="visitor"] .home-hero__dialogue-nameplate {
-	background: rgba(240, 240, 245, 0.96);
-	color: #14161c;
-	border-color: oklch(0 0 0);
-}
-
-.home-hero__dialogue-spark {
-	font-size: 0.85em;
-	opacity: 0.9;
-}
-
-.home-hero__dialogue-box[data-speaker="visitor"] .home-hero__dialogue-spark {
-	filter: grayscale(1);
-}
-
-/* ---------- 右上角控制按钮 ---------- */
-.home-hero__dialogue-controls {
-	position: absolute;
-	top: clamp(-0.9rem, -1vw, -0.7rem);
-	right: clamp(1rem, 1.8vw, 1.6rem);
-	display: flex;
-	gap: 0.4rem;
-}
-
-.home-hero__dialogue-btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.32rem;
-	padding: 0.34rem 0.72rem;
-	border: 2px solid oklch(0 0 0);
-	border-radius: 999px;
-	background: rgba(20, 22, 28, 0.9);
-	color: rgba(255, 255, 255, 0.82);
-	font-size: clamp(0.7rem, 0.85vw, 0.82rem);
-	font-weight: 700;
-	letter-spacing: 0.04em;
-	line-height: 1;
-	cursor: pointer;
-	transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.home-hero__dialogue-btn:hover {
-	background: oklch(1 0 0);
-	color: #14161c;
-	border-color: oklch(0 0 0);
-}
-
-.home-hero__dialogue-btn-icon {
-	font-size: 0.9em;
-	line-height: 1;
-}
-
-/* Auto 激活态 */
-.home-hero__dialogue-btn[data-dialogue-action="auto"][aria-pressed="true"] {
-	background: oklch(1 0 0);
-	color: #14161c;
-	border-color: oklch(0 0 0);
-}
-
-/* ---------- 正文（台词 + 话题菜单，点击推进） ---------- */
-.home-hero__dialogue-body {
-	position: relative;
-	z-index: 1;
-	cursor: pointer;
-	min-height: clamp(4.5rem, 9vh, 6.5rem);
-}
-
-.home-hero__dialogue-text {
-	margin: 0;
-	color: rgba(255, 255, 255, 0.94);
-	font-size: clamp(1.15rem, 1.55vw, 1.6rem);
-	font-weight: 700;
-	letter-spacing: 0.04em;
-	line-height: 1.5;
-	min-height: 1.5em;
-}
-
-/* 打字机光标（打字进行中显示） */
-.home-hero__dialogue-box[data-typing="true"] .home-hero__dialogue-text::after {
-	content: "";
-	display: inline-block;
-	width: 0.5em;
-	height: 1.05em;
-	margin-left: 0.12em;
-	vertical-align: text-bottom;
-	background: rgba(255, 255, 255, 0.85);
-	animation: dialogue-caret 0.9s steps(1) infinite;
-}
-
-@keyframes dialogue-caret {
-	0%, 50% { opacity: 1; }
-	50.01%, 100% { opacity: 0; }
-}
-
-/* ---------- 话题菜单 ---------- */
-.home-hero__dialogue-menu {
-	list-style: none;
-	margin: 0.9rem 0 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-}
-
-.home-hero__dialogue-menu[hidden] {
-	display: none;
-}
-
-.home-hero__dialogue-menu-item {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.6rem;
-	width: fit-content;
-	max-width: 100%;
-	padding: 0.5rem 1.1rem 0.5rem 1.4rem;
-	border: 2px solid rgba(255, 255, 255, 0.22);
-	border-radius: 10px;
-	background: rgba(255, 255, 255, 0.04);
-	color: rgba(255, 255, 255, 0.88);
-	font-size: clamp(0.95rem, 1.15vw, 1.15rem);
-	font-weight: 700;
-	letter-spacing: 0.03em;
-	line-height: 1.2;
-	text-align: left;
-	cursor: pointer;
-	transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-}
-
-.home-hero__dialogue-menu-item::before {
-	content: "▸";
-	color: var(--primary, oklch(1 0 0));
-	font-size: 0.9em;
-}
-
-.home-hero__dialogue-menu-item:hover {
-	background: oklch(1 0 0);
-	color: #14161c;
-	border-color: oklch(1 0 0);
-	transform: translateX(4px);
-}
-
-.home-hero__dialogue-menu-item:hover::before {
-	color: #14161c;
-}
-
-/* ---------- 底部推进指示 ---------- */
-.home-hero__dialogue-footer {
-	position: absolute;
-	right: clamp(1.2rem, 2vw, 1.8rem);
-	bottom: clamp(0.8rem, 1.4vw, 1.2rem);
-	z-index: 2;
-}
-
-/* 打字中隐藏推进指示，避免"点了没反应"的错觉 */
-.home-hero__dialogue-box[data-typing="true"] .home-hero__dialogue-footer {
-	opacity: 0;
-	pointer-events: none;
-}
-
-.home-hero__dialogue-advance {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.35rem;
-	padding: 0.3rem 0.7rem;
-	border: 0;
-	background: transparent;
-	color: rgba(255, 255, 255, 0.72);
-	font-size: clamp(0.78rem, 0.95vw, 0.9rem);
-	font-weight: 700;
-	letter-spacing: 0.06em;
-	cursor: pointer;
-	transition: color 0.15s ease;
-}
-
-.home-hero__dialogue-advance:hover {
-	color: oklch(1 0 0);
-}
-
-.home-hero__dialogue-advance-caret {
-	display: inline-block;
-	animation: dialogue-advance-bounce 1.1s ease-in-out infinite;
-}
-
-@keyframes dialogue-advance-bounce {
-	0%, 100% { transform: translateY(0); opacity: 0.6; }
-	50% { transform: translateY(3px); opacity: 1; }
-}
-
-/* ---------- 隐藏态 ---------- */
-.home-hero__dialogue[data-hidden="true"] .home-hero__dialogue-box {
+	bottom: 0;
+	left: 0;
+	width: var(--home-dialogue-size);
+	aspect-ratio: 1;
 	opacity: 0;
 	visibility: hidden;
-	transform: translateY(24px) scale(0.98);
-	pointer-events: none;
+	will-change: transform, opacity;
 }
 
-/* 对话框收起后，整个 .home-hero__dialogue 容器不拦截交互，
-   由上方名牌（B站徽章）承担唤出职责 */
-.home-hero__dialogue[data-hidden="true"] {
-	pointer-events: none;
+.home-hero__sticker {
+	position: absolute;
+	inset: 0;
+	margin: 0;
+	line-height: 0;
+	filter: drop-shadow(0 0.5rem 0.8rem rgb(0 0 0 / 26%));
+	/* 支点在底边：压下去时头顶动、脚不动，才像按在桌上的一团棉花 */
+	transform-origin: 50% 100%;
+	transition: translate 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ---------- 收起后：名牌变为可点击的唤出触发器 ---------- */
-.home-hero__name-badge--dialogue-trigger {
+/* 按下是「按下去」的挤压，不是跳一下：变扁同时变宽，体积感留住。
+   scale 过渡只写在按住这一侧 —— 松手时立刻交还给 WAAPI 的连弹，
+   两边各弹一次会在同一个 transform 上打架 */
+.home-hero__sticker[data-pressed="true"] {
+	scale: 1.07 0.9;
+	transition: scale 220ms var(--home-dialogue-spring);
+}
+
+.home-hero__dialogue-trigger {
+	position: absolute;
+	inset: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50% 50% 0 0;
+	background: transparent;
 	cursor: pointer;
-	pointer-events: auto;
 }
 
-.home-hero__name-badge--dialogue-trigger::after {
-	content: "▾ 对话";
-	margin-left: 0.6em;
-	font-size: 0.82em;
-	letter-spacing: 0.1em;
-	opacity: 0.75;
+.home-hero__dialogue-trigger:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
 }
 
-.home-hero__name-badge--dialogue-trigger:hover {
-	filter: brightness(1.08);
+/* 想法气泡：粗描边白椭圆，挂在角色头顶右上方，从左下角（小圆点那一侧）冒出来。
+   text-wrap: balance 让两行等长，文字角点才不会戳出椭圆边 */
+.home-hero__dialogue-bubble {
+	position: absolute;
+	bottom: 92%;
+	left: 52%;
+	z-index: 1;
+	width: max-content;
+	max-width: min(16rem, 42vw);
+	margin: 0;
+	padding: 0.95rem 1.75rem;
+	border: var(--home-dialogue-stroke) solid var(--home-dialogue-ink);
+	border-radius: 50%;
+	background: var(--home-dialogue-paper);
+	color: var(--home-dialogue-ink);
+	font-size: clamp(0.88rem, 0.95vw, 1rem);
+	font-weight: 800;
+	line-height: 1.45;
+	text-align: center;
+	text-wrap: balance;
+	transform-origin: 0% 100%;
+	cursor: pointer;
+	opacity: 0;
+	visibility: hidden;
+	transition:
+		opacity 180ms ease,
+		visibility 0s linear 180ms;
 }
 
-/* ============================================
-   移动端适配
-   ============================================ */
+.home-hero__dialogue-bubble[data-open="true"] {
+	opacity: 1;
+	visibility: visible;
+	transition: none;
+}
+
+/* 思考泡泡的两颗小圆点，从气泡左下角一路落向角色头顶 */
+.home-hero__dialogue-bubble::before,
+.home-hero__dialogue-bubble::after {
+	content: "";
+	position: absolute;
+	border: var(--home-dialogue-stroke) solid var(--home-dialogue-ink);
+	border-radius: 50%;
+	background: var(--home-dialogue-paper);
+}
+
+.home-hero__dialogue-bubble::before {
+	top: calc(100% + 0.2rem);
+	left: 0.9rem;
+	width: 1rem;
+	height: 0.85rem;
+}
+
+.home-hero__dialogue-bubble::after {
+	top: calc(100% + 1.25rem);
+	left: 0.1rem;
+	width: 0.62rem;
+	height: 0.52rem;
+}
+
+.home-hero__sticker-image {
+	display: block;
+	width: 100%;
+	height: auto;
+	object-fit: contain;
+}
+
+/* 移动端首页由 HomeMobile 承担，桌面 hero 不挂载，角色一并隐藏 */
 @media (max-width: 768px) {
 	.home-hero__dialogue {
-		width: min(100%, 34rem);
-		bottom: clamp(5.5rem, 13vh, 7rem);
-	}
-
-	.home-hero__dialogue-box {
-		min-height: auto;
-		padding: 1.4rem 1.2rem 1.2rem;
-	}
-
-	.home-hero__dialogue-text {
-		font-size: clamp(0.98rem, 3.8vw, 1.2rem);
-	}
-
-	.home-hero__dialogue-btn span:not(.home-hero__dialogue-btn-icon) {
 		display: none;
 	}
+}
 
-	.home-hero__dialogue-btn {
-		padding: 0.4rem;
+@media (prefers-reduced-motion: reduce) {
+	.home-hero__dialogue-anchor {
+		opacity: 1;
+		visibility: visible;
+	}
+
+	.home-hero__sticker,
+	.home-hero__sticker[data-pressed="true"],
+	.home-hero__dialogue-bubble {
+		transition: none;
 	}
 }

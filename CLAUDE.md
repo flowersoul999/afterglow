@@ -63,7 +63,7 @@ src/
 │   ├── controls/        # 交互控件：搜索、归档三视图树（ArchivePanel/ArchiveTree）、主题、Dock (8)
 │   ├── editor/          # 站长在线编辑（2026-11-03，11-04 改 GitHub OAuth，11-07 补手机菜单入口）：EditorNavButton 桌面资料卡入口 / EditorMobileMenuEntry 手机导航菜单末项 / EditorLoginModal OAuth 登录 / MomentDrawer 说说抽屉 / EditorRoot 常驻外壳（唯一 import editor.css 的地方） (5)
 │   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器)
-│   ├── layout/          # 布局组件：Navbar, Footer, SideBar, HomeHero... (19)
+│   ├── layout/          # 布局组件：Navbar(含灵动岛音乐面), Footer, SideBar, HomeHero(参考站版), HeroMosaic, HeroDialogue, HomeBlinds, HomeMobile... (28)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
 │   ├── moments/         # 动态卡片与评论弹窗
 │   ├── pages/           # 页面级组件：bangumi, books（Bookshelf/BookCard：3D 书本卡片 + 影视页同款胶囊筛选（分类+读过/在读/想读）+ ClientPagination 分页 8/6 本每页，SSR 隐藏非首页防闪烁）, interview（面经列表/详情）, movies-games, music (11)
@@ -108,7 +108,7 @@ src/
 │   ├── transitions/     # Swup 过渡动画
 │   └── vendor/          # 第三方覆盖
 ├── types/               # TypeScript 类型：config.ts, bangumi.ts, guestbook-chat.ts
-└── utils/               # 工具函数（75 个文件，含 local-album 本地相册扫描 / changelog / tag-graph / tts-text / music-player-controller 等）
+└── utils/               # 工具函数（88 个文件，含 local-album 本地相册扫描 / changelog / tag-graph / tts-text / music-player-controller / home-hero-* / home-blinds-* / navbar-dynamic-island / swup-lifecycle 等）
     ├── 8 个控制器模块   # 见第 10 节
     ├── editor/          # 站长编辑（2026-11-03，11-04 后台化）：github-client.ts（会话 + Contents 读写删 + 列目录，全走 /api 代理）、editor-store.ts（登录态，store 契约）、editor-ui.ts（弹窗开合）、moment-serializer.ts（说说 md 解析/序列化，抽屉专用）、content-serializer.ts（**通用 frontmatter，保序保留**，后台用）、content-repo.ts（列集合/生成路径/撞名重试）、private-client.ts（**私有仓库通道**，`/api/private/*`，「状态」专用）、status-serializer.ts（状态 json ↔ 记录，photos 存相对路径）
     └── 33 个业务工具    # content-utils, category-tree（文件夹即分类，多级 `a/b` 推导 + CategoryNode 树）, date-utils, image-utils, url-utils, tts-text（朗读正文提取）...
@@ -125,6 +125,8 @@ cloudflare-worker/        # ⚠️ 站长登录用的 Cloudflare Worker（2026-1
                           # 接口：/api/auth/{login,callback,me,logout} + /api/github/{file,blob,tree,batch}。
                           # 站点本身仍是 GitHub Pages 托管，两者互不干扰。说明见第 24 节
 ```
+
+**首页演出链路（2026-11-25 参考站移植）**：首页路由 `[...page].astro` 渲染 `HomeHero → HomeDataLayer → HeroDialogue → HomeBlinds → HomeMobile`；原 `HomeTicker` / `HomeDisplayLayer` 仍保留但不再渲染。视觉参数在 `homeConfig.hero.mosaic/photo/sticker/contact` 与 `homeBlinds`，动画工具在 `utils/home-hero-*` / `utils/home-blinds-*`，生命周期统一走 `utils/home-lifecycle.ts`（依赖新增的 `utils/swup-lifecycle.ts` 与 `types/swup.ts`）。顶部胶囊音乐面样式在 `styles/layout/navbar-dynamic-island.css`：音乐面与导航菜单必须互斥，`#navbar[data-di-face="music"]` 时导航 `position: absolute` 让位，否则歌名会和菜单文字叠在一起。左下角播放器 UI / 引擎 / 控制器 / 样式分别对应 `features/MusicPlayerWidget.astro`、`features/MusicManager.astro`、`utils/music-player-controller.ts`、`styles/features/music-player.css`，**替换组件时必须同时保留样式 import**（曾因漏掉导致播放器无样式）。
 
 **禁止在 `components/` 根目录平铺组件文件，必须放入对应功能域子目录。**
 **注意：`src/pages/admin/`、`src/utils/admin/`、`src/components/album|daily/` 等 admin/废弃目录已删除，勿再创建自研后台（后台用 PagesCMS）。**

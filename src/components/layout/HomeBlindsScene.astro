@@ -1,0 +1,156 @@
+---
+import dayjs from "dayjs";
+import type { HomeBlindsSceneItem } from "@/types/config";
+
+interface Props {
+	index: number;
+	item: HomeBlindsSceneItem;
+	/** 首幕由上一层背景合成，图片与固定舞台共用同一张 */
+	composite?: boolean;
+}
+
+const { index, item, composite = false } = Astro.props;
+
+// 五幕统一为明信片版式：双数幕挂高（垂直中心落在视口 42% 处），
+// 单数幕垂直居中，左右两张错落排布
+const isRaised = index % 2 === 1;
+
+const sceneDate = item.date
+	? dayjs(item.date.replace(/\s+/gu, "")).format("YYYY/MM/DD")
+	: null;
+---
+
+<article
+	class:list={[
+		"home-blinds-scene",
+		{ "home-blinds-scene--raised": isRaised },
+		{ "home-blinds-scene--composite": composite },
+	]}
+	data-home-blinds-scene
+	data-scene-index={index}
+	aria-label={item.title}
+>
+	<div class="home-blinds-scene__swing" data-scene-swing>
+		<!-- 木夹分前后两层：后木臂被纸面遮住，前夹口压在照片上，双线随卡身一起摆动 -->
+		{
+			["left", "right"].map((side) => (
+				<div
+					class={`home-blinds-scene__hanger home-blinds-scene__hanger--${side}`}
+					aria-hidden="true"
+				>
+					<span class="home-blinds-scene__string" />
+					<svg
+						class="home-blinds-scene__clip home-blinds-scene__clip--back"
+						viewBox="0 0 84 182"
+						fill="none"
+					>
+						<g transform="translate(0 182) rotate(-90)">
+							<path
+								class="home-blinds-scene__clip-back"
+								d="M21 69L173 30Q179 28 177 34L75 70L25 78Q19 79 21 69Z"
+							/>
+							<path
+								class="home-blinds-scene__clip-bevel"
+								d="M25 74L75 66L175 31L177 34L75 70L25 78Z"
+							/>
+							<path
+								class="home-blinds-scene__clip-grain"
+								d="M84 62L158 36M42 70L68 66"
+							/>
+						</g>
+					</svg>
+					<svg
+						class="home-blinds-scene__clip home-blinds-scene__clip--front"
+						viewBox="0 0 84 182"
+						fill="none"
+					>
+						<g transform="translate(0 182) rotate(-90)">
+							<!-- 与木臂同形的短偏移阴影贴住纸面，夹口留出真实凹槽 -->
+							<path
+								class="home-blinds-scene__clip-shadow"
+								d="M10 43L163 7Q168 6 166 11L120 40L111 39Q105 38 105 43L59 58C62 51 60 43 53 41C45 39 39 45 40 53C41 61 47 63 53 61L23 72L7 50Q4 46 10 43Z"
+								transform="translate(-2 3)"
+							/>
+							<path
+								class="home-blinds-scene__clip-wood"
+								d="M10 43L163 7Q168 6 166 11L120 40L111 39Q105 38 105 43L59 58C62 51 60 43 53 41C45 39 39 45 40 53C41 61 47 63 53 61L23 72L7 50Q4 46 10 43Z"
+							/>
+							<path
+								class="home-blinds-scene__clip-bevel"
+								d="M7 50L23 72L53 61L48 61L24 67L9 47ZM60 54L105 40V43L59 58Z"
+							/>
+							<path
+								class="home-blinds-scene__clip-highlight"
+								d="M13 45L157 11M25 65L35 61"
+							/>
+							<path
+								class="home-blinds-scene__clip-grain"
+								d="M68 36L141 16M83 39L128 24M18 49L34 45M24 55L34 52M64 45L88 38"
+							/>
+							<path
+								class="home-blinds-scene__clip-wire-shadow"
+								d="M115 43L80 63L57 61M113 31L102 26"
+							/>
+							<path
+								class="home-blinds-scene__clip-wire"
+								d="M115 43L80 63L57 61M113 31L102 26"
+							/>
+							<circle class="home-blinds-scene__clip-coil-base" cx="119" cy="36" r="8" />
+							<circle class="home-blinds-scene__clip-coil" cx="119" cy="36" r="6" />
+						</g>
+					</svg>
+				</div>
+			))
+		}
+
+		<div class="home-blinds-scene__card">
+			<!-- 纸面背景单独成层：首幕接收缩门时图片原地不动，由这层纸面渐入 -->
+			<span class="home-blinds-scene__paper" aria-hidden="true"></span>
+			<!-- 明信片描边：一支笔从上沿起顺时针绕一圈，画满后就是卡片边框本身 -->
+			<span
+				class="home-blinds-scene__outline"
+				aria-hidden="true"
+				data-scene-card-outline
+			>
+				<i class="home-blinds-scene__outline-edge" data-outline-edge="top"></i>
+				<i class="home-blinds-scene__outline-edge" data-outline-edge="right"></i>
+				<i class="home-blinds-scene__outline-edge" data-outline-edge="bottom"></i>
+				<i class="home-blinds-scene__outline-edge" data-outline-edge="left"></i>
+			</span>
+			<div class="home-blinds-scene__frame" data-scene-frame>
+				<img
+					class="home-blinds-scene__image"
+					src={index === 0 ? undefined : item.image}
+					data-home-blinds-src={index === 0 ? item.image : undefined}
+					alt={item.alt}
+					loading={index === 0 ? undefined : "lazy"}
+					decoding="async"
+				/>
+			</div>
+
+			<!-- 标题与完整日期各占一层，保留独立节点供入场动效错峰显示 -->
+			<div class="home-blinds-scene__band">
+				<div class="home-blinds-scene__band-id">
+					<p class="home-blinds-scene__band-title" data-scene-title>
+						{item.title}
+					</p>
+					{
+						sceneDate && (
+							<p class="home-blinds-scene__band-date" data-scene-date>
+								{sceneDate}
+							</p>
+						)
+					}
+				</div>
+				<span
+					class="home-blinds-scene__band-divider"
+					data-scene-band-divider
+					aria-hidden="true"
+				></span>
+				<p class="home-blinds-scene__band-note" data-scene-note>
+					{item.description}
+				</p>
+			</div>
+		</div>
+	</div>
+</article>

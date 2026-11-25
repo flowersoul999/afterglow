@@ -1,28 +1,36 @@
 ---
+import HeroDialogue from "@components/layout/HeroDialogue.astro";
+import HomeBlinds from "@components/layout/HomeBlinds.astro";
 import HomeDataLayer from "@components/layout/HomeDataLayer.astro";
-import HomeDisplayLayer from "@components/layout/HomeDisplayLayer.astro";
 import HomeHero from "@components/layout/HomeHero.astro";
-import HomeTicker from "@components/layout/HomeTicker.astro";
+import HomeMobile from "@components/layout/HomeMobile.astro";
 import type { GetStaticPaths } from "astro";
+import SiteStructuredData from "@/components/seo/SiteStructuredData.astro";
+import { siteConfig } from "@/config";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import { getSortedPosts } from "@/utils/content-utils";
+import "@/styles/components/home-data-layer.css";
+import "@/styles/components/home-hero-dialogue.css";
+import "@/styles/components/home-hero.css";
+import "@/styles/components/home-section.css";
+import "@/styles/components/home-mobile.css";
+import "@/styles/components/home-blinds.css";
 
 export const getStaticPaths = (async ({ paginate }) => {
 	const allBlogPosts = await getSortedPosts();
 	return paginate(allBlogPosts, { pageSize: allBlogPosts.length });
 }) satisfies GetStaticPaths;
-
-const { page } = Astro.props;
 ---
 
-<MainGridLayout>
+<MainGridLayout title="Java 后端与 AI 工程实践" description={siteConfig.description}>
+	<SiteStructuredData slot="head" />
 	<div class="home-page home-page--motion-pending">
-		{/* 首页 = 首屏 Hero + 公告跑马灯 + 地图指南数据层
-		    + 全屏滚动展示层（HomeDisplayLayer：柱子展开 + 百叶窗 + 结尾大图/视频）。
-		    页脚由 MainGridLayout 提供，未动。 */}
+		{/* 参考站首页演出：波浪网格首屏 + 飘浮照片 + 数据层 + 角色气泡 + 影像叙事 */}
 		<HomeHero />
-		<HomeTicker />
 		<HomeDataLayer />
-		<HomeDisplayLayer />
+		{/* 左下角角色是 sticky 的，必须排在数据层之后，才会一路停到该层底部 */}
+		<HeroDialogue />
+		<HomeBlinds />
+		<HomeMobile />
 	</div>
 </MainGridLayout>

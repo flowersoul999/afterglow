@@ -1,0 +1,187 @@
+/* ============================================
+   顶部导航胶囊 — 灵动岛音乐面（参考站 DynamicIsland 收起态）
+   页面面 / 音乐面 3D 翻转，液态玻璃质感，波形柱与歌名跑马灯
+   ============================================ */
+
+/* 中段胶囊：液态玻璃 + 弹簧感过渡（选择器加权，不覆盖其它段） */
+.navbar-segments .navbar-seg--center {
+  display: grid;
+  place-items: center;
+  perspective: 700px;
+  background: color-mix(in oklch, var(--navbar-bg) 82%, transparent);
+  backdrop-filter: blur(24px) saturate(1.6);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid color-mix(in oklch, var(--deep-text) 9%, transparent);
+  transition:
+    padding 0.62s cubic-bezier(0.32, 1.28, 0.45, 1),
+    width 0.62s cubic-bezier(0.32, 1.28, 0.45, 1),
+    max-width 0.62s cubic-bezier(0.32, 1.28, 0.45, 1),
+    transform 0.62s cubic-bezier(0.32, 1.28, 0.45, 1);
+}
+
+:root.dark .navbar-segments .navbar-seg--center {
+  background: color-mix(in oklch, var(--float-panel-bg) 78%, transparent);
+  border-color: color-mix(in oklch, white 12%, transparent);
+}
+
+/* 音乐面容器：与导航按钮同格叠放，只有音乐面可交互 */
+.navbar-di {
+  grid-area: 1 / 1;
+  position: relative;
+  display: grid;
+  place-items: center;
+  z-index: 30;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* 两个面共用同一格：页面面显示时导航可见，音乐面显示时整条导航让位，
+   胶囊宽度随当前面收缩，避免歌名与菜单文字叠在一起 */
+.navbar-seg--center > .navbar-nav {
+  grid-area: 1 / 1;
+}
+
+#navbar[data-di-face="music"] .navbar-seg--center > .navbar-nav {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.navbar-di__face {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 13px;
+  border-radius: 9999px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-origin: center;
+  transition:
+    transform 0.55s cubic-bezier(0.32, 0.72, 0.29, 1),
+    opacity 0.3s ease;
+}
+
+.navbar-di__face--page {
+  transform: rotateX(0deg);
+  opacity: 0;
+}
+
+.navbar-di__face--music {
+  transform: rotateX(-180deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#navbar[data-di-face="music"] .navbar-di__face--page {
+  transform: rotateX(180deg);
+  opacity: 0;
+}
+
+#navbar[data-di-face="music"] .navbar-di__face--music {
+  transform: rotateX(0deg);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 唱片封面：无图时回退为音符 */
+.navbar-di__cover {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 1px 6px color-mix(in oklch, var(--deep-text) 18%, transparent);
+}
+
+.navbar-di__cover.is-empty {
+  background: color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+/* 歌名：放不下时整条内层左滑，把后半段带出来 */
+.navbar-di__lyric {
+  display: inline-block;
+  max-width: 9.5rem;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--deep-text);
+  vertical-align: middle;
+}
+
+.navbar-di__lyric-inner {
+  display: inline-block;
+  animation: navbar-di-marquee var(--di-marquee-duration, 8s) linear infinite;
+}
+
+@keyframes navbar-di-marquee {
+  0%,
+  12% {
+    transform: translateX(0);
+  }
+  88%,
+  100% {
+    transform: translateX(min(0px, calc(9.5rem - 100%)));
+  }
+}
+
+/* 波形柱：同时是播放 / 暂停按钮 */
+.navbar-di__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 20px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--deep-text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.navbar-di__bar {
+  display: block;
+  width: 3px;
+  height: 5px;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: bottom center;
+  transition: height 0.2s ease;
+}
+
+#navbar[data-di-face="music"][data-playing="true"] .navbar-di__bar {
+  animation: navbar-di-wave 0.9s ease-in-out infinite alternate;
+}
+
+#navbar[data-di-face="music"][data-playing="true"] .navbar-di__bar:nth-child(2) {
+  animation-delay: 0.18s;
+}
+#navbar[data-di-face="music"][data-playing="true"] .navbar-di__bar:nth-child(3) {
+  animation-delay: 0.36s;
+}
+#navbar[data-di-face="music"][data-playing="true"] .navbar-di__bar:nth-child(4) {
+  animation-delay: 0.54s;
+}
+
+@keyframes navbar-di-wave {
+  from {
+    height: 4px;
+  }
+  to {
+    height: 15px;
+  }
+}
+
+/* 尊重减弱动画 */
+@media (prefers-reduced-motion: reduce) {
+  .navbar-di__face,
+  .navbar-segments .navbar-seg--center {
+    transition: none;
+  }
+  .navbar-di__lyric-inner,
+  #navbar[data-di-face="music"][data-playing="true"] .navbar-di__bar {
+    animation: none;
+  }
+}

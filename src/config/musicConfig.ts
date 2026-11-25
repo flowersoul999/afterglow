@@ -4,18 +4,23 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// 左下角悬浮播放器（MusicPlayerWidget）的总开关：
 	// false = 整个组件不渲染，桌面端也不出现
 	showInNavbar: true,
-	mode: "local",
+	// 参考站同款网易云歌单，含《雨爱》及逐字 LRC 歌词
+	mode: "meting",
 	volume: 0.7,
 	playMode: "list",
 	showLyrics: true,
 
 	meting: {
-		api: "",
+		// qijieya / moeyao 经实测全链路可用（歌单、音频、封面、歌词均带 CORS 头）
+		api: "https://api.qijieya.cn/meting/?server=:server&type=:type&id=:id",
 		server: "netease",
-		type: "song",
-		id: "30254265974",
+		type: "playlist",
+		id: "17955431099",
 		auth: "",
-		fallbackApis: [],
+		fallbackApis: [
+			"https://api.moeyao.cn/meting/?server=:server&type=:type&id=:id",
+			"https://api.i-meto.com/meting/api?server=:server&type=:type&id=:id&r=:r",
+		],
 	},
 
 	// 本地播放列表为空 — 音乐数据全部从 bangumi content collection 加载

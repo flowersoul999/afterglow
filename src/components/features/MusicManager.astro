@@ -6,10 +6,6 @@ import { url } from "@/utils/url-utils";
 
 const config = musicPlayerConfig;
 
-// 播放列表（bangumi 集合里的 music 条目）不再内联进页面：站长 2026-10-05 起改为
-// 静态 JSON（/music-playlist.json），由 init() 按需拉一次；构建逻辑见 utils/music-playlist.ts
-const musicPlaylistUrl = url("/music-playlist.json");
-const metingApiBase = config.meting?.api ? config.meting.api.split("?")[0] : "";
 const localPlaylist =
 	config.mode === "local" && config.local?.playlist
 		? config.local.playlist.map((song) => {
@@ -38,35 +34,19 @@ const managerConfigStr = JSON.stringify({
 	localPlaylist: localPlaylist,
 	volume: config.volume ?? 0.7,
 	playMode: config.playMode ?? "list",
-	showLyrics: config.showLyrics ?? true,
 	i18n: {
-		noPlaying: i18n(I18nKey.musicNoPlaying),
-		lyrics: i18n(I18nKey.musicLyrics),
-		volume: i18n(I18nKey.musicVolume),
-		playMode: i18n(I18nKey.musicPlayMode),
-		prev: i18n(I18nKey.musicPrev),
-		next: i18n(I18nKey.musicNext),
-		playlist: i18n(I18nKey.musicPlaylist),
-		noLyrics: i18n(I18nKey.musicNoLyrics),
-		loadingLyrics: i18n(I18nKey.musicLoadingLyrics),
-		failedLyrics: i18n(I18nKey.musicFailedLyrics),
 		noSongs: i18n(I18nKey.musicNoSongs),
 		error: i18n(I18nKey.musicError),
-		play: i18n(I18nKey.musicPlay),
-		pause: i18n(I18nKey.musicPause),
-		progress: i18n(I18nKey.musicProgress),
-		noCover: i18n(I18nKey.musicNoCover),
 	},
 });
 ---
 
-<script is:inline data-swup-ignore-script define:vars={{ managerConfigStr, playlistUrl: musicPlaylistUrl, metingApiBase }}>
+<script is:inline data-swup-ignore-script define:vars={{ managerConfigStr }}>
 (function () {
     // Singleton guard – only create once
     if (window.__fireflyMusic) return;
 
     var config = JSON.parse(managerConfigStr);
-    var _externalLoaded = false;
 
     // ── Helpers ──────────────────────────────────────────────
     function formatTime(seconds) {
@@ -76,25 +56,108 @@ const managerConfigStr = JSON.stringify({
         return min + ':' + (sec < 10 ? '0' : '') + sec;
     }
 
+    // 网易云/Meting 的歌词把译文并进行尾括号：`原文 (译文)`。
+    // 只在括号位于行尾、内容非空、且与正文文字体系不同时视为译文，
+    // 并排除 (Live) / (feat. xxx) / 和声等本来就属于歌词的括号标记。
+    var TRANSLATION_MARKER_RE = /\b(instrumental|interlude|acoustic|version|remix|live|feat|prod|inst|ver|edit|cover|demo|bonus|intro|outro|solo|short|long|tv\s*size)\b|和声|伴奏|纯音乐|间奏|合唱|念白/i;
+    var PAREN_TAIL_RE = /\s*([（(])([^（）()]+)([)）])\s*$/;
+
+    function scriptFamily(str) {
+        if (/[\u3040-\u30ff\u31f0-\u31ff]/.test(str)) return 'ja';
+        if (/[\uac00-\ud7af]/.test(str)) return 'ko';
+        if (/[\u3400-\u9fff]/.test(str)) return 'zh';
+        if (/[a-z]/i.test(str)) return 'latin';
+        return 'other';
+    }
+
+    // 日文歌里的英文和声（(Oh-oh)）不能当译文；反过来中英互译要能拆开
+    function isLikelyTranslation(main, inner) {
+        var outer = scriptFamily(main);
+        var innerFamily = scriptFamily(inner);
+        if (innerFamily === 'other' || innerFamily === outer) return false;
+        if (outer === 'ja') return innerFamily === 'zh';
+        if (outer === 'ko') return innerFamily === 'zh' || innerFamily === 'ja';
+        return true;
+    }
+
+    // 返回 { text, translation, raw }；raw 是带括号的原始片段，供逐词数据同步裁剪
+    function splitLyricTranslation(text) {
+        var match = text.match(PAREN_TAIL_RE);
+        if (!match) return { text: text, translation: null, raw: '' };
+        var inner = match[2].trim();
+        var main = text.slice(0, match.index).trim();
+        if (!main || !inner || TRANSLATION_MARKER_RE.test(inner)
+            || !isLikelyTranslation(main, inner)) {
+            return { text: text, translation: null, raw: '' };
+        }
+        return { text: main, translation: inner, raw: match[0].trim() };
+    }
+
+    // 逐词标签的译文落在最后一个词段；裁掉它才能让词时间和可见字符一致。
+    // 括号跨词段、无法安全裁剪时退回整行匀速揭示，不保留错位的词时间。
+    function stripTranslationFromWords(words, raw) {
+        if (!words || words.length === 0 || !raw) return words;
+        var last = words[words.length - 1];
+        if (last.text.slice(-raw.length) !== raw) return null;
+        last.text = last.text.slice(0, last.text.length - raw.length).trim();
+        if (!last.text) words.pop();
+        return words.length > 0 ? words : null;
+    }
+
+    // 增强型 LRC 的逐词时间标签 <mm:ss.xx> 与整行 [mm:ss.xx] 分开解析。
+    // 逐词标签只在单行时间戳时启用：同一行有多个时间戳的副本无法安全平移到词时间，
+    // 这类行退回整行时间，由展示层按行时长匀速逐字揭示。
     function parseLRC(lrc) {
         if (!lrc) return [];
         var lines = lrc.split('\n');
         var result = [];
         var timeReg = /\[(\d{2}):(\d{2})\.(\d{2,3})\]/g;
+        var wordReg = /<(\d{2}):(\d{2})\.(\d{2,3})>/g;
+
+        function toSeconds(match) {
+            return parseInt(match[1]) * 60 + parseInt(match[2])
+                + parseInt(match[3]) / (match[3].length === 3 ? 1000 : 100);
+        }
+
         lines.forEach(function (line) {
             var matches = Array.from(line.matchAll(timeReg));
-            if (matches.length > 0) {
-                var text = line.replace(timeReg, '').trim();
-                if (text) {
-                    matches.forEach(function (match) {
-                        var m = parseInt(match[1]);
-                        var s = parseInt(match[2]);
-                        var ms = parseInt(match[3]);
-                        var time = m * 60 + s + ms / (match[3].length === 3 ? 1000 : 100);
-                        result.push({ time: time, text: text });
+            if (matches.length === 0) return;
+
+            var body = line.replace(timeReg, '');
+            var plain = body.replace(wordReg, '').trim();
+            if (!plain) return;
+
+            var split = splitLyricTranslation(plain);
+            var text = split.text;
+
+            var words = null;
+            if (matches.length === 1) {
+                var wordMatches = Array.from(body.matchAll(wordReg));
+                if (wordMatches.length > 0) {
+                    words = [];
+                    var lead = body.slice(0, wordMatches[0].index).trim();
+                    if (lead) words.push({ time: toSeconds(matches[0]), text: lead });
+                    wordMatches.forEach(function (wordMatch, i) {
+                        var segStart = wordMatch.index + wordMatch[0].length;
+                        var segEnd = i + 1 < wordMatches.length
+                            ? wordMatches[i + 1].index
+                            : body.length;
+                        var seg = body.slice(segStart, segEnd).trim();
+                        if (seg) words.push({ time: toSeconds(wordMatch), text: seg });
                     });
+                    if (split.translation) {
+                        words = stripTranslationFromWords(words, split.raw);
+                    }
+                    if (!words || words.length === 0) words = null;
                 }
             }
+
+            matches.forEach(function (match) {
+                var item = { time: toSeconds(match), text: text };
+                if (split.translation) item.translation = split.translation;
+                if (words) item.words = words;
+                result.push(item);
+            });
         });
         return result.sort(function (a, b) { return a.time - b.time; });
     }
@@ -102,10 +165,51 @@ const managerConfigStr = JSON.stringify({
     // ── Audio element (persistent, attached to body) ────────
     var audio = document.getElementById('firefly-music-audio') || document.createElement('audio');
     audio.id = 'firefly-music-audio';
-    audio.crossOrigin = 'anonymous';
-    audio.preload = 'none';
     audio.style.display = 'none';
     if (!audio.parentNode) document.body.appendChild(audio);
+
+    // ── 频谱分析（惰性创建）────────────────────────────────
+    // 灵动岛收起态的波形形变与律动条复用同一份峰值数据。AudioContext 必须在
+    // 用户手势后创建/恢复，否则浏览器会自动挂起；跨域音源接 Analyser 会让
+    // MediaElementSource 静音，所以只在同源（local 模式）时接入，其余回落到
+    // 基于播放状态的合成波形（由控制器侧兜底）。
+    var audioCtx = null;
+    var analyser = null;
+    var freqData = null;
+    function ensureAnalyser() {
+        if (analyser || audioCtx) return;
+        var src = audio.currentSrc || audio.src || '';
+        if (src && /^https?:/.test(src)) {
+            try {
+                if (new URL(src, location.href).origin !== location.origin) return;
+            } catch (e) { return; }
+        }
+        var AudioCtor = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtor) return;
+        try {
+            audioCtx = new AC();
+            var source = audioCtx.createMediaElementSource(audio);
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.8;
+            source.connect(analyser);
+            analyser.connect(audioCtx.destination);
+            freqData = new Uint8Array(analyser.frequencyBinCount);
+        } catch (e) {
+            analyser = null;
+            audioCtx = null;
+            freqData = null;
+        }
+    }
+    function getPeak() {
+        if (!analyser || !freqData || state.isPlaying === false) return 0;
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(function () {});
+        analyser.getByteFrequencyData(freqData);
+        var sum = 0;
+        var n = Math.min(freqData.length, 48);
+        for (var i = 0; i < n; i++) sum += freqData[i];
+        return n ? Math.min(1, (sum / n) / 150) : 0;
+    }
 
     // ── State ────────────────────────────────────────────────
     var state = {
@@ -118,6 +222,7 @@ const managerConfigStr = JSON.stringify({
             : (config.volume || 0.7),
         isMuted: false,
         lyrics: [],
+        lyricsStatus: 'loading',
         currentLrcIndex: -1,
         initialized: false,
         initializing: false,
@@ -175,28 +280,13 @@ const managerConfigStr = JSON.stringify({
     }
 
     // ── Lyrics ───────────────────────────────────────────────
-        var lrcOffset = parseFloat(localStorage.getItem('music-lrc-offset') || '0') || 0;
-
-        function syncLrcIndex() {
-            if (state.lyrics.length === 0) return;
-            // offset: negative = lyrics delayed (more natural feel), positive = lyrics ahead
-            var ct = audio.currentTime + lrcOffset;
-            var idx = -1;
-            for (var i = 0; i < state.lyrics.length; i++) {
-                if (ct >= state.lyrics[i].time) idx = i;
-                else break;
-            }
-            if (idx !== state.currentLrcIndex) {
-                state.currentLrcIndex = idx;
-                emit('fm:lrc-index', { index: idx });
-            }
-        }
-
     function loadLyrics(track) {
         state.lyrics = [];
+        state.lyricsStatus = 'loading';
         state.currentLrcIndex = -1;
 
         if (!track.lrc) {
+            state.lyricsStatus = 'none';
             emit('fm:lyrics', { lyrics: [], status: 'none' });
             return;
         }
@@ -206,22 +296,24 @@ const managerConfigStr = JSON.stringify({
             || /\.(lrc|txt)(\?|#|$)/i.test(track.lrc);
 
         if (isLrcUrl) {
+            state.lyricsStatus = 'loading';
             emit('fm:lyrics', { lyrics: [], status: 'loading' });
             fetch(track.lrc)
                 .then(function (r) { return r.text(); })
                 .then(function (text) {
                     state.lyrics = parseLRC(text);
-                    emit('fm:lyrics', { lyrics: state.lyrics, status: 'loaded' });
-                    if (!audio.paused) syncLrcIndex();
+                    state.lyricsStatus = state.lyrics.length > 0 ? 'loaded' : 'none';
+                    emit('fm:lyrics', { lyrics: state.lyrics, status: state.lyricsStatus });
                 })
                 .catch(function () {
                     state.lyrics = [];
+                    state.lyricsStatus = 'failed';
                     emit('fm:lyrics', { lyrics: [], status: 'failed' });
                 });
         } else {
             state.lyrics = parseLRC(track.lrc);
-            emit('fm:lyrics', { lyrics: state.lyrics, status: state.lyrics.length > 0 ? 'loaded' : 'none' });
-            if (!audio.paused && state.lyrics.length > 0) syncLrcIndex();
+            state.lyricsStatus = state.lyrics.length > 0 ? 'loaded' : 'none';
+            emit('fm:lyrics', { lyrics: state.lyrics, status: state.lyricsStatus });
         }
     }
 
@@ -238,6 +330,7 @@ const managerConfigStr = JSON.stringify({
         emit('fm:track', { index: index, track: track, autoPlay: !!autoPlay });
 
         if (autoPlay) {
+            ensureAnalyser();
             audio.play().then(function () {
                 state.isPlaying = true;
                 emit('fm:play-state', { isPlaying: true });
@@ -253,6 +346,7 @@ const managerConfigStr = JSON.stringify({
     // ── Playback controls ────────────────────────────────────
     function togglePlay() {
         if (audio.paused) {
+            ensureAnalyser();
             audio.play().then(function () {
                 state.isPlaying = true;
                 emit('fm:play-state', { isPlaying: true });
@@ -348,7 +442,17 @@ const managerConfigStr = JSON.stringify({
         });
 
         // Lyrics sync
-        syncLrcIndex();
+        if (state.lyrics.length > 0) {
+            var idx = -1;
+            for (var i = 0; i < state.lyrics.length; i++) {
+                if (ct >= state.lyrics[i].time) idx = i;
+                else break;
+            }
+            if (idx !== state.currentLrcIndex) {
+                state.currentLrcIndex = idx;
+                emit('fm:lrc-index', { index: idx });
+            }
+        }
     });
 
     audio.addEventListener('ended', function () {
@@ -360,34 +464,6 @@ const managerConfigStr = JSON.stringify({
         emit('fm:error', { message: state.error });
     });
 
-    // ── Meting track resolution ─────────────────────────────
-    async function resolveMetingTracks(playlist) {
-        var base = (metingApiBase || '') + '?server=';
-        for (var i = 0; i < playlist.length; i++) {
-            var track = playlist[i];
-            if (track.metingServer && track.metingId && !track.url) {
-                try {
-                    var s = encodeURIComponent(track.metingServer);
-                    var id = encodeURIComponent(track.metingId);
-                    var res = await fetch(base + s + '&type=song&id=' + id);
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    var raw = await res.json();
-                    var data = Array.isArray(raw) ? raw[0] : raw;
-                    if (data) {
-                        if (data.url) track.url = data.url;
-                        if (data.pic && !track.pic) track.pic = data.pic;
-                        if (data.lrc && !track.lrc) track.lrc = data.lrc;
-                        track.artist = track.artist || data.author || data.artist || '';
-                        track.name = (track.name && track.name !== track.metingId) ? track.name : (data.title || track.name);
-                    }
-                } catch(e) {
-                    console.warn('[MusicManager] Meting resolve failed:', track.name, e);
-                }
-            }
-        }
-        return playlist;
-    }
-
     // ── Init (idempotent) ────────────────────────────────────
     async function init() {
         if (state.initialized || state.initializing) return;
@@ -398,20 +474,6 @@ const managerConfigStr = JSON.stringify({
                 await fetchMetingData();
             } else if (config.mode === 'local') {
                 state.playlist = config.localPlaylist || [];
-            }
-
-            // 播放列表：静态 JSON，按需拉一次（原先内联在每页 HTML 里）
-            var bangumi = [];
-            try {
-                var resp = await fetch(playlistUrl, { credentials: 'same-origin' });
-                if (resp.ok) bangumi = await resp.json();
-            } catch(e) {
-                console.warn('[MusicManager] playlist fetch failed:', e);
-            }
-            if (bangumi.length > 0 && !_externalLoaded) {
-                var resolved = await resolveMetingTracks(bangumi);
-                state.playlist = resolved;
-                _externalLoaded = true;
             }
 
             if (state.playlist.length > 0) {
@@ -459,28 +521,9 @@ const managerConfigStr = JSON.stringify({
     }
 
     // ── Public API ───────────────────────────────────────────
-    function loadExternalPlaylist(playlist) {
-        if (!playlist || playlist.length === 0) return;
-        _externalLoaded = true;
-        state.playlist = playlist;
-        state.currentIndex = 0;
-        if (!state.initialized) {
-            audio.volume = state.volume;
-            state.initialized = true;
-        }
-        emit('fm:init', {
-            playlist: state.playlist,
-            playMode: state.playMode,
-            volume: state.volume,
-            isMuted: state.isMuted
-        });
-        loadTrack(0, false);
-    }
-
     window.__fireflyMusic = {
-        get _externalLoaded() { return _externalLoaded; },
-        set _externalLoaded(v) { _externalLoaded = v; },
         init: init,
+        getPeak: getPeak,
         getState: function () {
             var track = state.playlist[state.currentIndex] || null;
             return {
@@ -497,13 +540,12 @@ const managerConfigStr = JSON.stringify({
                 currentTimeStr: formatTime(audio.currentTime),
                 durationStr: formatTime(audio.duration),
                 lyrics: state.lyrics,
+                lyricsStatus: state.lyricsStatus,
                 currentLrcIndex: state.currentLrcIndex,
                 initialized: state.initialized,
-                error: state.error,
-                config: config
+                error: state.error
             };
         },
-        loadExternalPlaylist: loadExternalPlaylist,
         togglePlay: togglePlay,
         playNext: function () { playNext(false); },
         playPrev: playPrev,
@@ -513,7 +555,30 @@ const managerConfigStr = JSON.stringify({
         seek: seek,
         seekToTime: seekToTime,
         playTrackByIndex: playTrackByIndex,
-        loadTrack: loadTrack
+        loadTrack: loadTrack,
+        // Re-sync all MusicPlayer widgets (called after Swup page transitions)
+        resync: function () {
+            if (!state.initialized) return;
+            var widgets = document.querySelectorAll('.music-player-widget');
+            widgets.forEach(function (w) {
+                if (typeof w.__musicSync === 'function') {
+                    try { w.__musicSync(); } catch (e) { /* noop */ }
+                }
+            });
+        }
     };
+
+    // ── Swup page transition hook: re-sync widgets after navigation ──
+    // Per CLAUDE.md 4.4, only listen to `astro:page-load` (bridged by
+    // @swup/astro). It fires once per navigation incl. first load — do NOT
+    // also subscribe to `swup:contentReplaced` / `page:view` /
+    // `content:replace`, which would trigger this 4× per navigation.
+    function scheduleResync() {
+        setTimeout(function () {
+            if (window.__fireflyMusic) window.__fireflyMusic.resync();
+        }, 100);
+    }
+
+    document.addEventListener('astro:page-load', scheduleResync);
 })();
 </script>

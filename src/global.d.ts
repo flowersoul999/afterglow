@@ -1,3 +1,5 @@
+import type { SwupRuntimeState } from "@/types/swup";
+
 declare global {
 	interface HTMLElementTagNameMap {
 		"table-of-contents": HTMLElement & {
@@ -14,6 +16,8 @@ declare global {
 		__navMenuListenersReady?: boolean;
 		/** 左下角悬浮音乐播放器（MusicPlayerWidget）的一次性初始化守卫 */
 		__musicPlayerWidgetReady?: boolean;
+		/** 参考站首页生命周期（swup-lifecycle）的运行时状态，只应由该模块读写 */
+		__fireflySwupRuntime?: SwupRuntimeState;
 		// biome-ignore lint/suspicious/noExplicitAny: External library
 		spinePlayerInstance?: any;
 		pagefind: {

@@ -14,6 +14,7 @@ import { getFallbackFormat, getImageFormats } from "@/utils/image-utils";
 import { resolveNavLinks } from "@/utils/nav-categories";
 import { PALETTE_OPTIONS } from "@/utils/palette-controller";
 import { url } from "@/utils/url-utils";
+import "@/styles/layout/navbar-dynamic-island.css";
 import DropdownMenu from "./DropdownMenu.astro";
 import NavbarProfileCard from "./NavbarProfileCard.astro";
 
@@ -162,6 +163,20 @@ if (isLocalSrcLogo) {
 
 		<!-- 中段：紧凑导航椭圆（滚动不变） -->
 		<div class="navbar-seg navbar-seg--center" data-navbar-nav>
+			{/* 灵动岛音乐面：页面面/音乐面 3D 翻转，波形柱兼播放暂停 */}
+			<div class="navbar-di" data-navbar-di data-now-playing={i18n(I18nKey.musicNowPlaying)}>
+				<div class="navbar-di__face navbar-di__face--music">
+					<img class="navbar-di__cover is-empty" data-di-cover alt="" />
+					<span class="navbar-di__lyric"><span class="navbar-di__lyric-inner" data-di-lyric-inner></span></span>
+					<button class="navbar-di__bars" data-di-play type="button" aria-label={i18n(I18nKey.musicPlay)}>
+						<span class="navbar-di__bar"></span>
+						<span class="navbar-di__bar"></span>
+						<span class="navbar-di__bar"></span>
+						<span class="navbar-di__bar"></span>
+					</button>
+				</div>
+			</div>
+
 			<div class="navbar-nav hidden lg:flex items-center gap-0.5 relative">
 				<div class="navbar-hover-highlight" data-hover-border></div>
 
@@ -232,6 +247,16 @@ if (isLocalSrcLogo) {
 
 		<!-- 右段：工具按钮（滚动收缩成球），移动端追加菜单按钮 -->
 		<div class="navbar-seg navbar-seg--right">
+			<button
+				id="nav-di-toggle"
+				type="button"
+				class="btn-plain h-9"
+				aria-label="切换音乐面"
+				aria-pressed="false"
+				title="切换音乐面"
+			>
+				<Icon name="material-symbols:music-note-rounded" is:inline class="text-[1.2rem]" />
+			</button>
 			<button
 				aria-label={i18n(I18nKey.tools)}
 				aria-haspopup="menu"
@@ -435,3 +460,10 @@ if (isLocalSrcLogo) {
 		</script>
 	)
 }
+
+<script>
+	import { initNavbarDynamicIsland } from "@/utils/navbar-dynamic-island";
+
+	// Navbar 在 Swup 容器外，脚本只执行一次；控制器内部带 window guard 防重复
+	initNavbarDynamicIsland();
+</script>

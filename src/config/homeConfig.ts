@@ -35,6 +35,57 @@ export const homeConfig = {
 	bio: profileConfig.bio,
 
 	hero: {
+		// 参考站首屏视觉：飘浮照片拼图 + 波浪网格 + 熔化艺术字
+		// 布局参数沿用参考站的动画节奏，文案与图片按本站内容适配
+		mosaic: {
+			rows: 4,
+			columns: 6,
+			idleVisible: 6,
+			seed: 20260814,
+			initialLayout: [
+				{ x: 0.14, y: 0.305, width: 0.104, height: 0.205 },
+				{ x: 0.435, y: 0.18, width: 0.068, height: 0.13, blur: 5.5 },
+				{ x: 0.642, y: 0.368, width: 0.047, height: 0.092, blur: 5 },
+				{ x: 0.863, y: 0.402, width: 0.097, height: 0.19 },
+				{ x: 0.337, y: 0.653, width: 0.159, height: 0.313 },
+				{ x: 0.639, y: 0.751, width: 0.116, height: 0.228 },
+			],
+			scrub: 0.45,
+			desktopScrollDistance: 3250,
+			mobileScrollDistance: 2300,
+			desktopDialogueTailDistance: 240,
+			mobileDialogueTailDistance: 180,
+			desktopMinViewports: 4.05,
+			mobileMinViewports: 3.05,
+			interactionHold: 0.06,
+		},
+		contact: {
+			platform: "B站",
+			handle: displayName,
+		},
+		sticker: {
+			image: "/assets/images/home/doll.avif",
+			alt: "黑猫角色贴纸",
+			sounds: {
+				press: "/assets/doll-press.mp3",
+				loosen: "/assets/doll-loosen.mp3",
+			},
+		},
+		photo: {
+			main: {
+				image: "/assets/images/home/home.avif",
+				author: "by 冰冰坚老师",
+			},
+			overlay: {
+				image: "/assets/images/home/home2.avif",
+				author: "by 冰冰坚老师",
+			},
+			intro: {
+				direction: "站点专研方向：前端、Java 后端、Agent 与 Python",
+				hobby: "热衷于做些没人用的小组件，也收集好看的 AI 绘画",
+				bio: primaryBio,
+			},
+		},
 		backgroundImage:
 			_deskImgs.length > 0 ? _deskImgs[0] : `${replicaRoot}/main/home.webp`,
 		backgroundImageMobile:
@@ -45,7 +96,15 @@ export const homeConfig = {
 		backgroundImageMobilePool: _mobImgs.length > 0 ? _mobImgs : [],
 		speechAccentImage: `${replicaRoot}/main/home2-1.webp`,
 		dialogue: {
-			enabled: true,
+			// 参考站版式：点击左下角角色逐句弹出的气泡台词
+			lines: [
+				"欸——来客人了喵～随便坐，别客气。",
+				`我是喵墩，${profileConfig.name} 在摸鱼，这儿归我管了喵～`,
+				"整站基本是 AI 搓出来的，他喵爪都没动几下，还搁那儿邀功喵。",
+				"角落里藏着不少彩蛋，站点还热乎着，刚出锅的，小心烫爪喵。",
+				"感兴趣可以加 QQ 群喵，放心，傻爸爸不咬人的。",
+			],
+			enabled: true as boolean,
 			speakers: {
 				host: "jojo",
 				visitor: "访客",
@@ -196,6 +255,108 @@ export const homeConfig = {
 				alt: "相册收录",
 			},
 		],
+	},
+
+	// 参考站桌面端影像叙事层
+	homeBlinds: {
+		enabled: true,
+		reveal: {
+			backgroundImage: "/assets/images/home-blinds/act1/1.webp",
+			headline: {
+				title: "祝愿各位",
+				messages: ["夜路有星光", "岁岁皆欢愉", "所念皆星河", "版本无回滚"],
+				enterDuration: 0.6,
+				messageHold: 2.6,
+				messageFlipDuration: 0.75,
+			},
+		},
+		scenes: {
+			scrollDistance: 3400,
+			marquee: {
+				tapes: [
+					{
+						text: "江城如画里，山晚望晴空，两水夹明镜，双桥落彩虹。人烟寒橘柚，秋色老梧桐。谁念北楼上，临风怀谢公。",
+						angle: -66,
+						top: 50,
+						centerX: 37.5,
+						thickness: 92,
+						speed: 120,
+					},
+					{
+						text: "雾景澄秋，一晚风吹尽朝来雨。夕阳烟树，万里山光暮",
+						angle: 37,
+						top: 50,
+						centerX: 62.5,
+						thickness: 74,
+						speed: 88,
+					},
+					{
+						text: "年年岁岁花相似，岁岁年年人不同",
+						angle: -8,
+						top: 87.5,
+						centerX: 50,
+						thickness: 88,
+						speed: 104,
+					},
+				],
+			},
+			bubbleMessages: [
+				{ text: "Token来", weight: 5 },
+				{ text: "年更型站长", weight: 4 },
+				{ text: "我来看看怎么个事", weight: 4 },
+				{ text: "主打一个随缘更新", weight: 3 },
+				{ text: "活人感拉满", weight: 3 },
+				{ text: "站长，博客开源吗", weight: 3 },
+				{ text: "爱你，站长", weight: 3 },
+				{ text: "别熬夜了", weight: 3 },
+				{ text: "刚出锅，趁热看", weight: 2 },
+				{ text: "已收藏，下次一定看", weight: 2 },
+			],
+			commentBubble: {
+				enabled: true,
+				weight: 4,
+			},
+			composite: {
+				title: "筑一间小屋",
+				description: "以代码为梁、热爱为瓦，荒原上筑起一间自己的小屋。",
+				alt: "第一幕插画",
+				date: "2026 / 05 / 07",
+			},
+			items: [
+				{
+					title: "小屋落户",
+					description: "一纸备案落定，小屋自此有门有牌，堂堂正正晒着太阳。",
+					image: "/assets/images/home-blinds/act2/1.webp",
+					alt: "第二幕插画",
+					date: "2026 / 06 / 10",
+				},
+				{
+					title: "尘满窗台",
+					description: "人往学海拾新，倦意悄悄落了窗，小屋静候，蒙上薄尘。",
+					image: "/assets/images/home-blinds/act2/2.webp",
+					alt: "第三幕插画",
+					date: "2026 / 06 / 21",
+				},
+				{
+					title: "重燃灯火",
+					description: "拂去薄尘，重燃灯火，一砖一瓦再把小屋细细打磨。",
+					image: "/assets/images/home-blinds/act2/3.webp",
+					alt: "第四幕插画",
+					date: "2026 / 08 / 18",
+				},
+				{
+					title: "抵达之前",
+					description: "笔墨暂歇，来日方长；下一程山水，且歌且行。",
+					image: "/assets/images/home-blinds/act2/4.webp",
+					alt: "第五幕插画",
+					date: "2026 / 09 / 01",
+				},
+			],
+			standImages: [
+				"/assets/images/home-blinds/act2-doll/1.gif",
+				"/assets/images/home-blinds/act2-doll/2.gif",
+			],
+		},
 	},
 
 	skills: skillsConfig.items,

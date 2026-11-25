@@ -338,24 +338,167 @@ export type HeroDialogueTopic = {
 	lines: HeroDialogueLine[];
 };
 
+export type HomeBlindsSceneItem = {
+	/** 明信片左下角的标题，显示在完整日期上方 */
+	title: string;
+	/** 明信片底部的介绍文案 */
+	description: string;
+	image: string;
+	alt: string;
+	/** 标题下方的完整日期，如 "2026 / 03 / 14"；留空则只显示标题 */
+	date?: string;
+};
+
+/**
+ * 揭示层（blinds 第一层）的入场标题。
+ * 节奏：两半长条自中心小方块边放大边滑向两侧，到竖线处停住，
+ * 露出「背面」的标题与圆心准星 → 长条原地缩放消失、中央刻度环放大转正、
+ * 中缝横线往两侧摊开 → 两侧竖线纵向长出 → 标题上移，第二层祝福语逐字翻入并循环。
+ */
+export type HomeBlindsHeadlineConfig = {
+	/** 标题文案，单行显示（参考版式为 4 字） */
+	title: string;
+	/** 标题上移后循环播放的祝福语，每条单行显示（参考版式为 5 字） */
+	messages: string[];
+	/** 长条揭示到刻度环就位的入场总时长（秒），默认 0.5 */
+	enterDuration?: number;
+	/** 单条祝福语的停留时长（秒），默认 2.6 */
+	messageHold?: number;
+	/** 祝福语换一条的总时长（秒，含逐字延迟的尾巴），默认 0.75 */
+	messageFlipDuration?: number;
+};
+
+/**
+ * 留言墙的一条气泡：每轮不放回，weight 越大越优先出场，缺省为 1。
+ * 气泡只出文字，不带图。
+ */
+export type HomeBlindsBubbleMessage = {
+	/** 气泡文字 */
+	text: string;
+	weight?: number;
+};
+
+/** 一条跑马灯胶带：斜着横贯影像层，文字沿着胶带循环滚动 */
+export type HomeBlindsMarqueeTape = {
+	/** 胶带上循环滚动的文字（会重复铺满整条胶带） */
+	text: string;
+	/** 倾斜角度（度，正值顺时针） */
+	angle: number;
+	/** 纵向落位（占影像层高度的百分比，指胶带中心线） */
+	top: number;
+	/** 横向落位（占影像层宽度的百分比，指胶带中心点） */
+	centerX: number;
+	/** 胶带厚度（px），文字大小随之等比缩放 */
+	thickness: number;
+	/** 基础滚动速度（px/s），恒定匀速，横滑时叠加加速 */
+	speed: number;
+};
+
+/** 背景跑马灯配置：胶带条数可自由增减 */
+export type HomeBlindsMarqueeConfig = {
+	tapes: HomeBlindsMarqueeTape[];
+};
+
+export type HomeBlindsConfig = {
+	/** 是否启用桌面端首页双层影像交互 */
+	enabled: boolean;
+	reveal: {
+		/** 背景图（首屏揭示层与首幕画面共用），揭示层内带视差位移 */
+		backgroundImage: string;
+		/** 长条横移揭示的入场标题与循环祝福语 */
+		headline: HomeBlindsHeadlineConfig;
+	};
+	scenes: {
+		/** 横向影像层固定滚动距离，越小则横移越快 */
+		scrollDistance: number;
+		/** 背景跑马灯胶带：三条斜带各自匀速跑，文字写在每条里 */
+		marquee: HomeBlindsMarqueeConfig;
+		/** 影像层身后留言墙的气泡文案，可自由增减条数 */
+		bubbleMessages: HomeBlindsBubbleMessage[];
+		/** 从评论区捞一条真实留言混进气泡池（目前只有 Waline 支持） */
+		commentBubble: {
+			/** 是否开启。评论系统没开、或开的不是 Waline 时一次请求都不会发 */
+			enabled: boolean;
+			/** 捞回来的那条的权重，与写死的那些一起参与加权随机 */
+			weight: number;
+		};
+		/** 由揭示层背景合成的首幕文案（序幕） */
+		composite: Omit<HomeBlindsSceneItem, "image" | "alt"> & { alt: string };
+		/** 后续画面，运行时最多读取前 4 张 */
+		items: HomeBlindsSceneItem[];
+		/** 底部图片列表：限制单张尺寸、底边对齐；每张独立往返与拖拽，显示全部图片 */
+		standImages: string[];
+	};
+};
+
+/** 首页左下角角色的想法气泡：点击角色逐句弹出，末句后从头循环 */
 export type HeroDialogueConfig = {
 	/** 是否启用对话框；关闭则 Hero 不渲染对话框 */
 	enabled?: boolean;
-	/** 说话者名称 */
-	speakers?: {
-		host?: string;
-		visitor?: string;
-	};
-	/** 默认展示的简介台词，逐句播放；末句后可打开话题菜单 */
-	intro: HeroDialogueLine[];
-	/** 话题列表；点击某话题进入其逐句台词，末句后返回菜单 */
-	topics: HeroDialogueTopic[];
-	/** 话题菜单提示语，默认「想聊点什么？」 */
+	/** 说话者名称（当前项目版式） */
+	speakers?: { host?: string; visitor?: string };
+	/** 默认展示的简介台词（当前项目版式） */
+	intro?: HeroDialogueLine[];
+	/** 话题列表（当前项目版式） */
+	topics?: HeroDialogueTopic[];
+	/** 话题菜单提示语 */
 	menuTitle?: string;
-	/** 打字机速度（毫秒/字），默认 45 */
+	/** 打字机速度（毫秒/字） */
 	typingSpeed?: number;
-	/** 自动播放时每句停留时间（毫秒），默认 1600 */
+	/** 自动播放时每句停留时间（毫秒） */
 	autoDelay?: number;
+	/** 气泡台词，按顺序弹出（参考站版式） */
+	lines?: string[];
+};
+
+export type HeroMosaicInitialTile = {
+	/** 碎片中心点在马赛克画布中的横向比例（0–1）。 */
+	x: number;
+	/** 碎片中心点在马赛克画布中的纵向比例（0–1）。 */
+	y: number;
+	/** 碎片宽度占马赛克画布的比例（0–1）。 */
+	width: number;
+	/** 碎片高度占马赛克画布的比例（0–1）。 */
+	height: number;
+	/** 初始旋转角度。 */
+	rotation?: number;
+	/** 初始模糊半径。 */
+	blur?: number;
+};
+
+export type HeroMosaicConfig = {
+	rows: number;
+	columns: number;
+	idleVisible: number;
+	seed: number;
+	scrub: number;
+	desktopScrollDistance: number;
+	mobileScrollDistance: number;
+	/** 对话框完成后保留的固定滚动距离。 */
+	desktopDialogueTailDistance: number;
+	mobileDialogueTailDistance: number;
+	desktopMinViewports: number;
+	mobileMinViewports: number;
+	/** 仅用于首屏静止状态的碎片布局，后续轮换仍使用随机参数。 */
+	initialLayout?: HeroMosaicInitialTile[];
+	/** 第二层全部出现后继续固定 Hero 的时间线长度，用于交互驻留。 */
+	interactionHold: number;
+};
+
+export type HeroContactConfig = {
+	platform: string;
+	handle: string;
+	href?: string;
+};
+
+export type HeroStickerConfig = {
+	image: string;
+	alt: string;
+	/** 按下与松开的音效，留空则不出声 */
+	sounds: {
+		press: string;
+		loosen: string;
+	};
 };
 
 export type ProfileConfig = {
@@ -370,6 +513,7 @@ export type ProfileConfig = {
 		url: string;
 		icon: string;
 		showName?: boolean;
+		color?: string;
 	}[];
 };
 
@@ -383,6 +527,18 @@ export type HomeConfig = {
 	occupation?: string;
 	bio?: string | string[];
 	hero: {
+		/** 参考站视觉：飘浮照片拼图布局 */
+		mosaic?: HeroMosaicConfig;
+		/** 参考站视觉：右下角联系方式 */
+		contact?: HeroContactConfig;
+		/** 参考站视觉：左下角角色贴纸 */
+		sticker?: HeroStickerConfig;
+		/** 参考站视觉：拼合完成后的照片态 */
+		photo?: {
+			main: { image: string; author?: string };
+			overlay?: { image: string; author?: string };
+			intro?: { direction: string; hobby: string; bio: string };
+		};
 		backgroundImage: string;
 		backgroundImageMobile?: string;
 		backgroundImagePool?: string[];
@@ -414,6 +570,7 @@ export type HomeConfig = {
 	};
 	displayLayer: HomeDisplayLayerConfig;
 	portfolioShutter: HomePortfolioShutterConfig;
+	homeBlinds?: HomeBlindsConfig;
 	skills?: {
 		name: string;
 		icon?: string;
