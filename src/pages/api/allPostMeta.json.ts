@@ -1,5 +1,5 @@
-import { getSortedPosts } from "@/utils/content-utils";
 import { getCategoryFromId } from "@/utils/category-tree";
+import { getSortedPosts } from "@/utils/content-utils";
 
 export async function GET(): Promise<Response> {
 	const posts = await getSortedPosts();

@@ -74,7 +74,7 @@ const deckItems: DeckItem[] = await Promise.all(
 					image,
 					basePath: getFileDirFromPath(post.filePath || ""),
 					widths: [828],
-				sizes: "(max-width: 768px) 100vw, 33vw",
+					sizes: "(max-width: 768px) 100vw, 33vw",
 				})
 			: null;
 		return {
@@ -189,7 +189,7 @@ const sceneAgents: SceneAgent[] = await Promise.all(
 						image,
 						basePath: getFileDirFromPath(lead.filePath || ""),
 						widths: [828],
-				sizes: "(max-width: 768px) 100vw, 33vw",
+						sizes: "(max-width: 768px) 100vw, 33vw",
 					})
 				: null;
 		return { name: category.name, count: category.count, cover };
