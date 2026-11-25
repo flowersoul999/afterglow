@@ -9,7 +9,14 @@
  */
 import { onMount } from "svelte";
 
+interface Props {
+	/** 主题变了就重读 --admin-star，粒子颜色跟着换 */
+	theme: "day" | "night";
+}
+let { theme }: Props = $props();
+
 let canvas = $state<HTMLCanvasElement>();
+let color = $state("oklch(0.55 0.12 285 / 0.42)");
 
 onMount(() => {
 	const el = canvas;
@@ -18,9 +25,6 @@ onMount(() => {
 	if (!ctx) return;
 
 	const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-	const color =
-		getComputedStyle(el).getPropertyValue("--admin-star").trim() ||
-		"oklch(0.88 0.06 300 / 0.55)";
 
 	type Star = {
 		x: number;
@@ -96,6 +100,14 @@ onMount(() => {
 		cancelAnimationFrame(frameId);
 		observer.disconnect();
 	};
+});
+
+$effect(() => {
+	theme;
+	const value = getComputedStyle(canvas)
+		.getPropertyValue("--admin-star")
+		.trim();
+	if (value) color = value;
 });
 </script>
 

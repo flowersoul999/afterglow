@@ -56,7 +56,7 @@
 src/
 ├── assets/images/       # 头像、封面等构建时图片
 ├── components/          # 按功能域组织的组件（163 个文件）
-│   ├── admin/           # 站内后台 /admin（2026-11-04，11-07 补混合内容批量提交，11-24 补「状态」面板，11-25 换深空星尘主题）：AdminApp 三栏骨架 / AdminList 条目列表+统计卡 / AdminEditor 表单+Markdown 编辑+预览 / AdminBatchQueue 待提交队列 / AdminStatusBoard 我的状态（私有仓库时间轴+两日对比，横跨中右两栏）/ AdminStarfield canvas 星尘 / AdminMascot 看板娘小曜 (7)
+│   ├── admin/           # 站内后台 /admin（2026-11-04，11-07 补混合内容批量提交，11-24 补「状态」面板，11-25 双主题：默认晴空白天 / 可切深空夜色）：AdminApp 三栏骨架 / AdminList 条目列表+统计卡 / AdminEditor 表单+Markdown 编辑+预览 / AdminBatchQueue 待提交队列 / AdminStatusBoard 我的状态（私有仓库时间轴+两日对比，横跨中右两栏）/ AdminStarfield canvas 星尘 / AdminMascot 看板娘小曜 (7)
 │   ├── analytics/       # GA, Clarity, Umami (3)
 │   ├── comment/         # 评论系统：index + 5 种后端 + 2 个弹窗组件（Waline 树形回复 pid/rid/at + 表情 :item: 标记，昵称/邮箱必填） (9)
 │   ├── common/          # 跨域共享基础组件 (17)
@@ -1490,7 +1490,7 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 2. **frontmatter 保序保留，不要改成「解析成对象再序列化」。** 那样字段会重排、注释会消失、不认识的字段会被吃掉，每次保存都制造一整片 diff。`content-serializer.ts` 的做法是拆成有序 entry、没改过的写 `original`。实测 26 个文件（文章 + 面经 + 说说）解析再序列化逐字节一致 —— 改这块之后要重跑这个校验。
 3. **/admin 只能整页进入。** Swup 只替换容器内容，不会重新挂载 Astro 岛，SPA 导航进来会白屏。任何指向 `/admin` 的链接都要带 `data-no-swup`；后台内的链接同理。
 4. **批量提交必须原子更新一次分支。** 前端队列可以混合文章、说说和更新日志，但 Worker 必须创建多个 blob、一个 tree、一个 commit，最后只 PATCH 一次 ref；禁止退化成循环调用 Contents API，否则会产生半批成功和重复构建。同名路径在完整仓库树与本批次内统一追加 `-2`、`-3`，ref 冲突只自动重试一次。
-5. **视觉主题只在 `.admin` 作用域内覆盖令牌（2026-11-25 深空星尘）。** 后台是独立全屏页，不参与站点明暗切换；配色集中在 `src/styles/pages/admin.css` 末尾的 `.admin` 令牌块，新增后台组件一律读 `--admin-*` 或既有令牌，才能和编辑器、状态板、队列抽屉一起变。不写进 `main.css`、不新增 `!important`、不硬编码黑白。
+5. **视觉主题只在 `.admin` 作用域内覆盖令牌（2026-11-25 双主题）。** 后台是独立全屏页，不参与站点明暗切换；**默认「晴空晨曦」浅色主题**（站长嫌深空太黑看不清），顶栏月亮/太阳按钮切「深空星尘」，选择存 `localStorage.admin-theme`。配色集中在 `src/styles/pages/admin.css` 末尾：`.admin` 定义白天令牌、`.admin[data-admin-theme="night"]` 覆盖夜间令牌，两套共用同一批语义变量（`--admin-*`）。新增后台组件一律读这些变量，才能跟着主题和编辑器/状态板/队列抽屉一起变。不写进 `main.css`、不新增 `!important`、不硬编码黑白。canvas 星尘组件靠 `theme` prop 触发 `$effect` 重读 `--admin-star`，别在 `onMount` 里只读一次。
 
 ### 编辑按钮的显隐
 

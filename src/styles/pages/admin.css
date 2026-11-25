@@ -2228,14 +2228,68 @@
 }
 
 /* ============================================
- * 深空星尘主题（2026-11-25）
+ * 后台双主题（2026-11-25）
  *
- * 后台是独立全屏页，不参与站点明暗切换，所以在 .admin 作用域内
- * 直接覆盖一套令牌：所有子组件（编辑器 / 状态板 / 队列抽屉）无需改动
- * 就跟着变深空紫金。颜色一律 oklch 带色度，不硬编码黑白。
- * 本节放在文件末尾，覆盖上面的极简样式；不新增 !important。
+ * 默认「晴空晨曦」＝浅底 + 金/紫/青，顶栏按钮可切「深空星尘」。
+ * 后台是独立全屏页，不参与站点明暗切换，所以令牌集中在 .admin
+ * 作用域：所有子组件（编辑器 / 状态板 / 队列抽屉）跟着变。
+ * 两套主题共用同一批语义变量（--admin-*），换主题只换变量值。
+ * 颜色一律 oklch 带色度，不硬编码黑白；本节放在文件末尾覆盖上面
+ * 的极简样式，不新增 !important。
  * ============================================ */
 .admin {
+	--page-bg: oklch(0.975 0.008 255);
+	--float-panel-bg: oklch(1 0 0 / 0.9);
+	--card-bg: oklch(1 0 0 / 0.92);
+	--deep-text: oklch(0.28 0.04 265);
+	--content-meta: oklch(0.52 0.03 265);
+	--line-color: oklch(0.88 0.015 255);
+	--line-divider: oklch(0.9 0.012 255);
+	--border: oklch(0.84 0.02 255);
+	--primary: oklch(0.58 0.19 295);
+	--btn-content: oklch(1 0 0);
+	--btn-regular-bg: oklch(0.96 0.012 255);
+	--btn-regular-bg-hover: oklch(0.93 0.018 255);
+	--btn-plain-bg-hover: oklch(0.93 0.018 255);
+	--btn-card-bg-hover: oklch(0.96 0.012 255);
+	--inline-code-bg: oklch(0.95 0.012 255);
+	--codeblock-bg: oklch(0.97 0.008 255);
+
+	--admin-gold: oklch(0.72 0.14 70);
+	--admin-violet: oklch(0.58 0.19 295);
+	--admin-cyan: oklch(0.6 0.13 215);
+	--admin-rose: oklch(0.65 0.17 8);
+	--admin-danger: oklch(0.52 0.19 25);
+
+	--admin-shell-bg: oklch(1 0 0 / 0.86);
+	--admin-shell-line: oklch(0.78 0.06 290);
+	--admin-surface: oklch(1 0 0 / 0.9);
+	--admin-surface-hover: oklch(0.96 0.02 280);
+	--admin-list-bg: oklch(0.985 0.006 255 / 0.72);
+	--admin-line-strong: oklch(0.8 0.06 290);
+	--admin-glow-gold: oklch(0.72 0.14 70 / 0.24);
+	--admin-glow-violet: oklch(0.58 0.19 295 / 0.2);
+	--admin-glow-cyan: oklch(0.6 0.13 215 / 0.2);
+	--admin-glow-rose: oklch(0.65 0.17 8 / 0.2);
+	--admin-ambient-1: oklch(0.8 0.11 295 / 0.2);
+	--admin-ambient-2: oklch(0.82 0.09 210 / 0.18);
+	--admin-star: oklch(0.55 0.12 285 / 0.42);
+	--admin-glint: oklch(1 0 0 / 0.6);
+	--admin-halo: oklch(0.8 0.12 295 / 0.14);
+	--admin-active-wash: oklch(0.6 0.16 295 / 0.1);
+	--admin-active-wash-2: oklch(0.6 0.12 210 / 0.07);
+	--admin-shadow: oklch(0.35 0.06 280 / 0.13);
+	--admin-text-on-accent: oklch(1 0 0);
+
+	--admin-mascot-hair: oklch(0.56 0.19 300);
+	--admin-mascot-hair-light: oklch(0.72 0.13 300);
+	--admin-mascot-skin: oklch(0.94 0.035 80);
+	--admin-mascot-dress: oklch(0.74 0.11 210);
+	--admin-mascot-ink: oklch(0.28 0.08 300);
+	--admin-mascot-blush: oklch(0.75 0.13 10 / 0.55);
+}
+
+.admin[data-admin-theme="night"] {
 	--page-bg: oklch(0.125 0.035 275);
 	--float-panel-bg: oklch(0.175 0.04 275 / 0.88);
 	--card-bg: oklch(0.19 0.045 275 / 0.9);
@@ -2245,6 +2299,7 @@
 	--line-divider: oklch(0.29 0.05 275);
 	--border: oklch(0.36 0.06 275);
 	--primary: oklch(0.82 0.145 88);
+	--btn-content: oklch(0.14 0.035 275);
 	--btn-regular-bg: oklch(0.2 0.045 275);
 	--btn-regular-bg-hover: oklch(0.25 0.055 275);
 	--btn-plain-bg-hover: oklch(0.25 0.055 275);
@@ -2255,10 +2310,29 @@
 	--admin-gold: oklch(0.82 0.145 88);
 	--admin-violet: oklch(0.68 0.2 300);
 	--admin-cyan: oklch(0.75 0.13 210);
+	--admin-rose: oklch(0.78 0.15 5);
+	--admin-danger: oklch(0.78 0.14 30);
+
+	--admin-shell-bg: oklch(0.16 0.04 275 / 0.92);
+	--admin-shell-line: oklch(0.42 0.1 300 / 0.55);
+	--admin-surface: oklch(0.2 0.045 275 / 0.85);
+	--admin-surface-hover: oklch(0.24 0.05 275 / 0.9);
+	--admin-list-bg: oklch(0.14 0.035 275 / 0.6);
+	--admin-line-strong: oklch(0.5 0.15 300 / 0.5);
+	--admin-glow-gold: oklch(0.82 0.145 88 / 0.45);
+	--admin-glow-violet: oklch(0.68 0.2 300 / 0.3);
+	--admin-glow-cyan: oklch(0.75 0.13 210 / 0.3);
+	--admin-glow-rose: oklch(0.78 0.15 5 / 0.3);
+	--admin-ambient-1: oklch(0.52 0.18 300 / 0.16);
+	--admin-ambient-2: oklch(0.5 0.14 210 / 0.13);
 	--admin-star: oklch(0.88 0.06 300 / 0.55);
 	--admin-glint: oklch(0.95 0.02 285 / 0.12);
 	--admin-halo: oklch(0.55 0.16 300 / 0.1);
-	--admin-danger: oklch(0.78 0.14 30);
+	--admin-active-wash: oklch(0.58 0.18 300 / 0.24);
+	--admin-active-wash-2: oklch(0.45 0.12 210 / 0.1);
+	--admin-shadow: oklch(0.1 0.03 275 / 0.55);
+	--admin-text-on-accent: oklch(0.14 0.035 275);
+
 	--admin-mascot-hair: oklch(0.58 0.2 300);
 	--admin-mascot-hair-light: oklch(0.73 0.14 300);
 	--admin-mascot-skin: oklch(0.94 0.035 80);
@@ -2275,8 +2349,8 @@
 	z-index: 0;
 	pointer-events: none;
 	background:
-		radial-gradient(ellipse 60% 45% at 12% 0%, oklch(0.52 0.18 300 / 0.16), transparent 70%),
-		radial-gradient(ellipse 55% 50% at 95% 100%, oklch(0.5 0.14 210 / 0.13), transparent 70%);
+		radial-gradient(ellipse 60% 45% at 12% 0%, var(--admin-ambient-1), transparent 70%),
+		radial-gradient(ellipse 55% 50% at 95% 100%, var(--admin-ambient-2), transparent 70%);
 }
 
 .admin-starfield {
@@ -2296,9 +2370,9 @@
 
 /* 顶栏：毛玻璃 + 流动光带 + 渐变品牌字 */
 .admin__top {
-	background: oklch(0.16 0.04 275 / 0.92);
+	background: var(--admin-shell-bg);
 	backdrop-filter: blur(18px);
-	border-bottom-color: oklch(0.42 0.1 300 / 0.55);
+	border-bottom-color: var(--admin-shell-line);
 }
 
 .admin__top::after {
@@ -2323,8 +2397,8 @@
 
 .admin__brand-mark {
 	background: var(--admin-gold);
-	color: oklch(0.16 0.035 275);
-	box-shadow: 0 0 14px oklch(0.82 0.145 88 / 0.5);
+	color: var(--admin-text-on-accent);
+	box-shadow: 0 0 14px var(--admin-glow-gold);
 }
 
 .admin__brand-mark svg {
@@ -2340,26 +2414,26 @@
 }
 
 .admin__brand-tag {
-	border-color: oklch(0.4 0.1 300 / 0.6);
+	border-color: var(--admin-line-strong);
 	color: var(--admin-violet);
 }
 
 .admin-btn:hover:not(:disabled) {
-	border-color: oklch(0.82 0.145 88 / 0.7);
-	box-shadow: 0 0 12px oklch(0.82 0.145 88 / 0.18);
+	border-color: var(--admin-line-strong);
+	box-shadow: 0 0 12px var(--admin-glow-gold);
 }
 
 .admin-btn--primary {
-	box-shadow: 0 0 16px oklch(0.82 0.145 88 / 0.3);
+	box-shadow: 0 0 16px var(--admin-glow-gold);
 }
 
 .admin__batch-trigger.is-active b {
-	box-shadow: 0 0 10px oklch(0.82 0.145 88 / 0.5);
+	box-shadow: 0 0 10px var(--admin-glow-gold);
 }
 
 /* 左栏：集合图标各带一种光，选中项有光刃扫过 */
 .admin__collections {
-	background: oklch(0.15 0.04 275 / 0.78);
+	background: var(--admin-shell-bg);
 	backdrop-filter: blur(14px);
 }
 
@@ -2374,7 +2448,7 @@
 }
 
 .admin__collection.is-active {
-	background: linear-gradient(90deg, oklch(0.58 0.18 300 / 0.24), transparent 80%);
+	background: linear-gradient(90deg, var(--admin-active-wash), transparent 80%);
 	box-shadow: inset 2px 0 var(--admin-gold);
 }
 
@@ -2389,42 +2463,42 @@
 
 .admin__collection:nth-of-type(1) .admin__collection-icon {
 	color: var(--admin-gold);
-	box-shadow: 0 0 10px oklch(0.82 0.145 88 / 0.3);
+	box-shadow: 0 0 10px var(--admin-glow-gold);
 }
 
 .admin__collection:nth-of-type(2) .admin__collection-icon {
-	color: oklch(0.78 0.15 5);
-	box-shadow: 0 0 10px oklch(0.78 0.15 5 / 0.3);
+	color: var(--admin-rose);
+	box-shadow: 0 0 10px var(--admin-glow-rose);
 }
 
 .admin__collection:nth-of-type(3) .admin__collection-icon {
 	color: var(--admin-cyan);
-	box-shadow: 0 0 10px oklch(0.75 0.13 210 / 0.3);
+	box-shadow: 0 0 10px var(--admin-glow-cyan);
 }
 
 .admin__collection:nth-of-type(4) .admin__collection-icon {
 	color: var(--admin-violet);
-	box-shadow: 0 0 10px oklch(0.68 0.2 300 / 0.3);
+	box-shadow: 0 0 10px var(--admin-glow-violet);
 }
 
 /* 中栏：统计小卡 + 卡片化条目 + 依次入场 */
 .admin-list {
-	background: oklch(0.14 0.035 275 / 0.6);
+	background: var(--admin-list-bg);
 }
 
 .admin-list__head {
-	background: oklch(0.17 0.04 275 / 0.88);
+	background: var(--admin-shell-bg);
 	backdrop-filter: blur(12px);
 }
 
 .admin-search {
-	border-color: oklch(0.36 0.07 275);
-	background: oklch(0.2 0.045 275);
+	border-color: var(--line-color);
+	background: var(--btn-regular-bg);
 }
 
 .admin-search:focus-within {
 	border-color: var(--admin-violet);
-	box-shadow: 0 0 0 3px oklch(0.68 0.2 300 / 0.16);
+	box-shadow: 0 0 0 3px var(--admin-glow-violet);
 }
 
 .admin-stats {
@@ -2436,9 +2510,9 @@
 
 .admin-stat {
 	padding: 0.5rem 0.7rem;
-	border: 1px solid oklch(0.36 0.07 275);
+	border: 1px solid var(--line-color);
 	border-radius: 0.625rem;
-	background: oklch(0.19 0.045 275 / 0.8);
+	background: var(--admin-surface);
 }
 
 .admin-stat__label {
@@ -2458,12 +2532,12 @@
 
 .admin-stat--gold .admin-stat__value {
 	color: var(--admin-gold);
-	text-shadow: 0 0 12px oklch(0.82 0.145 88 / 0.4);
+	text-shadow: 0 0 12px var(--admin-glow-gold);
 }
 
 .admin-stat--violet .admin-stat__value {
 	color: var(--admin-violet);
-	text-shadow: 0 0 12px oklch(0.68 0.2 300 / 0.4);
+	text-shadow: 0 0 12px var(--admin-glow-violet);
 }
 
 .admin-item {
@@ -2473,19 +2547,15 @@
 
 .admin-item:hover {
 	transform: translateY(-2px);
-	background: oklch(0.22 0.05 275 / 0.85);
-	border-color: oklch(0.5 0.15 300 / 0.5);
-	box-shadow: 0 8px 20px oklch(0.1 0.03 275 / 0.55);
+	background: var(--admin-surface-hover);
+	border-color: var(--admin-line-strong);
+	box-shadow: 0 8px 20px var(--admin-shadow);
 }
 
 .admin-item.is-active {
-	background: linear-gradient(
-		135deg,
-		oklch(0.5 0.16 300 / 0.22),
-		oklch(0.45 0.12 210 / 0.1)
-	);
-	border-color: oklch(0.82 0.145 88 / 0.6);
-	box-shadow: 0 0 18px oklch(0.82 0.145 88 / 0.14);
+	background: linear-gradient(135deg, var(--admin-active-wash), var(--admin-active-wash-2));
+	border-color: var(--admin-gold);
+	box-shadow: 0 0 18px var(--admin-glow-gold);
 }
 
 .admin__state.is-error,
@@ -2515,8 +2585,8 @@
 }
 
 .admin__empty code {
-	border: 1px solid oklch(0.36 0.07 275);
-	background: oklch(0.2 0.045 275);
+	border: 1px solid var(--line-color);
+	background: var(--btn-regular-bg);
 	color: var(--admin-violet);
 }
 
@@ -2560,11 +2630,11 @@
 /* 保存成功：星星撒花 */
 .admin__toast {
 	background: linear-gradient(135deg, var(--admin-gold), var(--admin-violet));
-	color: oklch(0.14 0.035 275);
+	color: var(--admin-text-on-accent);
 	font-weight: 600;
 	box-shadow:
-		0 12px 32px oklch(0.1 0.03 275 / 0.5),
-		0 0 24px oklch(0.82 0.145 88 / 0.35);
+		0 12px 32px var(--admin-shadow),
+		0 0 24px var(--admin-glow-gold);
 }
 
 .admin__confetti {

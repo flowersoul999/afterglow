@@ -16,7 +16,9 @@ import {
 	Files,
 	Github,
 	Loader2,
+	Moon,
 	RefreshCw,
+	Sun,
 } from "lucide-svelte";
 import { onMount } from "svelte";
 import AdminBatchQueue from "@/components/admin/AdminBatchQueue.svelte";
@@ -88,6 +90,19 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null;
 let confettiOn = $state(false);
 let confettiKey = $state(0);
 let confettiTimer: ReturnType<typeof setTimeout> | null = null;
+/** 白天晴空 / 深空星尘，选择存 localStorage，默认白天 */
+const ADMIN_THEME_KEY = "admin-theme";
+type AdminTheme = "day" | "night";
+let adminTheme = $state<AdminTheme>("day");
+
+function toggleTheme(): void {
+	adminTheme = adminTheme === "day" ? "night" : "day";
+	try {
+		localStorage.setItem(ADMIN_THEME_KEY, adminTheme);
+	} catch {
+		// 隐私模式下 localStorage 不可写，本次切换仍然生效
+	}
+}
 
 /** 撒花纸片：径向散开、四种主题色轮换，纯 CSS 动画不引第三方库 */
 const CONFETTI = Array.from({ length: 14 }, (_, index) => {
@@ -431,6 +446,12 @@ function switchCollection(id: string): void {
 }
 
 onMount(() => {
+	try {
+		const saved = localStorage.getItem(ADMIN_THEME_KEY);
+		if (saved === "day" || saved === "night") adminTheme = saved;
+	} catch {
+		// 读不到就用默认白天
+	}
 	queuedDrafts = parseQueuedDrafts(
 		sessionStorage.getItem(BATCH_QUEUE_STORAGE_KEY),
 	);
@@ -449,8 +470,8 @@ $effect(() => {
 });
 </script>
 
-<div class="admin">
-	<AdminStarfield />
+<div class="admin" data-admin-theme={adminTheme}>
+	<AdminStarfield theme={adminTheme} />
 	<header class="admin__top">
 		<div class="admin__brand">
 			<span class="admin__brand-mark" aria-hidden="true">
@@ -476,6 +497,19 @@ $effect(() => {
 
 		<div class="admin__top-right">
 			{#if authed}
+				<button
+					type="button"
+					class="admin-icon-btn"
+					title={adminTheme === "day" ? "切换到深空夜色" : "切换到晴空白天"}
+					aria-label={adminTheme === "day" ? "切换到深空夜色" : "切换到晴空白天"}
+					onclick={toggleTheme}
+				>
+					{#if adminTheme === "day"}
+						<Moon size={13} />
+					{:else}
+						<Sun size={13} />
+					{/if}
+				</button>
 				<button
 					type="button"
 					class="admin-icon-btn"
