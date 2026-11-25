@@ -40,7 +40,7 @@ import { url } from "@/utils/url-utils";
     const cdnLink = document.createElement("link");
     cdnLink.rel = "stylesheet";
     cdnLink.href =
-      "https://unpkg.com/@esotericsoftware/spine-player@4.2.*/dist/spine-player.min.css";
+      "https://cdn.jsdelivr.net/npm/@esotericsoftware/spine-player@4.2/dist/spine-player.min.css";
 
     // 监听加载失败事件，自动回退到本地文件
     cdnLink.onerror = function () {
@@ -179,7 +179,7 @@ import { url } from "@/utils/url-utils";
         console.log("📦 Loading Spine runtime...");
         const script = document.createElement("script");
         script.src =
-          "https://unpkg.com/@esotericsoftware/spine-player@4.2.*/dist/iife/spine-player.min.js";
+          "https://cdn.jsdelivr.net/npm/@esotericsoftware/spine-player@4.2/dist/iife/spine-player.min.js";
         script.onload = () => {
           console.log("✅ Spine runtime loaded from CDN");
           resolve();

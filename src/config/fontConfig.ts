@@ -54,7 +54,7 @@ export const fontConfig = {
 		"misans-normal": {
 			id: "misans-normal",
 			name: "MiSans Normal",
-			src: "https://unpkg.com/misans@4.1.0/lib/Normal/MiSans-Normal.min.css",
+			src: "https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Normal/MiSans-Normal.min.css",
 			family: "MiSans",
 			weight: 400,
 			display: "swap" as const,
@@ -83,7 +83,7 @@ export const fontConfig = {
 		"misans-regular": {
 			id: "misans-regular",
 			name: "MiSans Regular",
-			src: "https://unpkg.com/misans@4.1.0/lib/Normal/MiSans-Regular.min.css",
+			src: "https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Normal/MiSans-Regular.min.css",
 			family: "MiSans",
 			weight: 500,
 			display: "swap" as const,
@@ -93,7 +93,7 @@ export const fontConfig = {
 		"misans-semibold": {
 			id: "misans-semibold",
 			name: "MiSans Semibold",
-			src: "https://unpkg.com/misans@4.1.0/lib/Normal/MiSans-Semibold.min.css",
+			src: "https://cdn.jsdelivr.net/npm/misans@4.1.0/lib/Normal/MiSans-Semibold.min.css",
 			family: "MiSans",
 			weight: 600,
 			display: "swap" as const,
