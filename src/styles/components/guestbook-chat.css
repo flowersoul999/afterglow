@@ -465,7 +465,9 @@ html:has(.guestbook-page) {
 .guestbook-chat__skeleton-name,
 .guestbook-chat__skeleton-bubble,
 .guestbook-chat__skeleton-meta {
-	background: var(--guestbook-bubble);
+	/* 骨架屏是「还没内容」的占位，必须用浅灰描边色；
+	   不能用 --guestbook-bubble（#262626 深黑气泡色），否则整屏是黑块 */
+	background: var(--guestbook-editor-line);
 	animation: guestbook-skeleton 1.4s ease-in-out infinite;
 }
 

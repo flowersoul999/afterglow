@@ -55,7 +55,8 @@ const CHANNEL_PATH = GUESTBOOK_WALINE_PATH;
 const SYNC_PAGE_SIZE = 64;
 // 单次请求的超时。fetch 本身没有超时，连线被丢包时会一直 pending，
 // 页面就会永久停在骨架屏上（用户只会看到「一直卡住」）。
-const REQUEST_TIMEOUT_MS = 15_000;
+// 服务端迁到国内后正常往返 <200ms，6 秒足够覆盖弱网；过长只会让「打不开」变成「干等」。
+const REQUEST_TIMEOUT_MS = 6_000;
 // 对半拆页只对「个别页 500」有意义。连不上时拆一次就是白等一轮，
 // 所以首屏失败直接放弃，并且整轮请求有次数上限。
 const MAX_SPLIT_REQUESTS = 8;
