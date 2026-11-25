@@ -3,6 +3,7 @@ import { getCollection } from "astro:content";
 import { Icon } from "astro-icon/components";
 import PageTitle from "@/components/common/PageTitle.astro";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { navIconColor } from "@/data/navIconColors";
 
 // 获取所有导航数据
 const allEntries = await getCollection("daohang");
@@ -605,34 +606,37 @@ const hostOf = (url: string): string => {
                     {tagline && <span class="nav-section__tagline">{tagline}</span>}
                   </div>
                   <div class="nav-grid">
-                    {catSites.map((site, index) => (
-                      <a
-                        href={site.data.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="nav-card"
-                        data-name={site.data.name}
-                        data-desc={site.data.description || ""}
-                        data-host={hostOf(site.data.url)}
-                        data-tags={(site.data.tags ?? []).join(",")}
-                        style={`--nav-card-i: ${Math.min(index, 8)}`}
-                      >
-                        <span class="nav-card__icon">
-                          {site.data.icon && /^(https?:|\/)/.test(site.data.icon) ? (
-                            <img src={site.data.icon} alt="" loading="lazy" />
-                          ) : (
-                            <Icon
-                              name={site.data.icon || "material-symbols:language"}
-                              is:inline
-                            />
-                          )}
-                        </span>
-                        <span class="nav-card__body">
-                          <span class="nav-card__title">{site.data.name}</span>
-                          <span class="nav-card__desc">{site.data.description}</span>
-                        </span>
-                      </a>
-                    ))}
+                    {catSites.map((site, index) => {
+                      const iconColor = navIconColor(site.data.icon, cat);
+                      return (
+                        <a
+                          href={site.data.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="nav-card"
+                          data-name={site.data.name}
+                          data-desc={site.data.description || ""}
+                          data-host={hostOf(site.data.url)}
+                          data-tags={(site.data.tags ?? []).join(",")}
+                          style={`--nav-card-i: ${Math.min(index, 8)}; --nav-icon-color: ${iconColor.light}; --nav-icon-color-dark: ${iconColor.dark}`}
+                        >
+                          <span class="nav-card__icon">
+                            {site.data.icon && /^(https?:|\/)/.test(site.data.icon) ? (
+                              <img src={site.data.icon} alt="" loading="lazy" />
+                            ) : (
+                              <Icon
+                                name={site.data.icon || "material-symbols:language"}
+                                is:inline
+                              />
+                            )}
+                          </span>
+                          <span class="nav-card__body">
+                            <span class="nav-card__title">{site.data.name}</span>
+                            <span class="nav-card__desc">{site.data.description}</span>
+                          </span>
+                        </a>
+                      );
+                    })}
                   </div>
                 </section>
               );
@@ -1094,8 +1098,14 @@ const hostOf = (url: string): string => {
     flex: 0 0 auto;
     font-size: 2rem;
     border-radius: 0.5rem;
-    color: var(--deep-text);
+    /* 以前统一继承主题墨色，整屏图标都是黑的；现在按站点品牌色着色（见 navIconColors.ts） */
+    color: var(--nav-icon-color, var(--deep-text));
     transform-origin: 50% 100%;
+  }
+
+  /* 暗色主题：黑底上深品牌色会糊掉，换用提亮后的那一版 */
+  :global(html.dark) .nav-card__icon {
+    color: var(--nav-icon-color-dark, var(--deep-text));
   }
 
   .nav-card__icon img {
