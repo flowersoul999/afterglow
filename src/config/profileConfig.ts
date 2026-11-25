@@ -45,7 +45,7 @@ export const profileConfig: ProfileConfig = {
 		{
 			name: "Bilibili",
 			icon: "simple-icons:bilibili",
-			url: "https://space.bilibili.com/1394731616?spm_id_from=333.1007.0.0",
+			url: "https://space.bilibili.com/1395949329?spm_id_from=333.1387.0.0",
 			showName: false,
 		},
 	],

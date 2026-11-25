@@ -15,7 +15,7 @@ export const footerConfig: FooterConfig = {
 		},
 		{
 			label: "Bilibili",
-			href: "https://space.bilibili.com/1394731616",
+			href: "https://space.bilibili.com/1395949329",
 			icon: "simple-icons:bilibili",
 		},
 		{
@@ -98,7 +98,7 @@ export const footerConfig: FooterConfig = {
 		},
 		{
 			label: "Bilibili",
-			href: "https://space.bilibili.com/1394731616",
+			href: "https://space.bilibili.com/1395949329",
 			external: true,
 		},
 		{ label: "邮箱", href: "mailto:3109581507@qq.com" },
