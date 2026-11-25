@@ -54,56 +54,56 @@ export const homeConfig = {
 			typingSpeed: 45,
 			autoDelay: 1600,
 			intro: [
-				{ speaker: "host", text: "哇，有客人来啦！欢迎欢迎～" },
+				{ speaker: "host", text: "外面在下雨呢，进来躲一会儿吧。" },
 				{
 					speaker: "host",
-					text: `这里是 ${profileConfig.name} 的小站，技术、生活和喜欢的东西都收在里面～`,
+					text: `这里是 ${profileConfig.name} 的小站，技术、生活，还有一堆舍不得删的东西。`,
 				},
 				{ speaker: "host", text: primaryBio },
 				{
 					speaker: "host",
-					text: "想先看哪儿呀？点下面的小按钮，我带你逛！",
+					text: "想先去哪儿？下面挂着两块小牌子，点一下就行。",
 				},
 			],
 			topics: [
 				{
 					title: "认识一下",
 					lines: [
-						{ speaker: "visitor", text: "站长是谁呀？" },
+						{ speaker: "visitor", text: "这儿的站长是谁？" },
 						{
 							speaker: "host",
 							text:
 								displayName === profileConfig.name
-									? `是我呀，${profileConfig.name}！`
-									: `是我呀，${profileConfig.name}！也可以叫我 ${displayName}～`,
+									? `是我呀，${profileConfig.name}。`
+									: `是我呀，${profileConfig.name}，也可以叫我 ${displayName}。`,
 						},
 						{
 							speaker: "host",
 							text: profileConfig.occupation
-								? `现在是 ${profileConfig.occupation} 哦！`
-								: "现在嘛，算是半个技术博主～",
+								? `现在是 ${profileConfig.occupation}。`
+								: "现在嘛，算是半个技术博主。",
 						},
 						{
 							speaker: "host",
-							text: "写代码、写文章、看番，这三件事能让我待一整天～",
+							text: "写代码、写文章、看番，这三件事能占满一整天。",
 						},
 					],
 				},
 				{
 					title: "这里有什么",
 					lines: [
-						{ speaker: "visitor", text: "这里都放些什么呀？" },
+						{ speaker: "visitor", text: "这儿都放了些什么？" },
 						{
 							speaker: "host",
-							text: "技术笔记、好用的工具、ACG 相关的东西，还有生活里的小碎片！",
+							text: "技术笔记、顺手做的小工具、ACG，还有生活里掉下来的碎片。",
 						},
 						{
 							speaker: "host",
-							text: "首页有站点数据、文章导航和作品展示，往下滚还有超好看的演出哦～",
+							text: "首页有站点数据、文章导航和作品墙，往下滚还有一整段演出。",
 						},
 						{
 							speaker: "host",
-							text: "别急着走嘛，下面还有好多好玩的，慢慢逛！",
+							text: "雨还没停，慢慢逛，别急着走。",
 						},
 					],
 				},
