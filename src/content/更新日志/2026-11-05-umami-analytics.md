@@ -1,6 +1,7 @@
 ---
 version: "v6.14.0"
 date: 2026-11-05
+time: "12:00"
 type: feature
 description: 接入 Umami 站点访问统计
 ---

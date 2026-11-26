@@ -1,6 +1,7 @@
 ---
 version: "v6.17.1"
 date: 2026-11-06
+time: "20:10"
 type: improvement
 description: 文章右侧目录同步参考站最新版，并修复切换文章后重复注册事件
 ---

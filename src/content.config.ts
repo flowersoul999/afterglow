@@ -264,7 +264,7 @@ const changelogCollection = defineCollection({
 	schema: z.object({
 		version: z.string(),
 		date: z.date(),
-		time: z.string().optional(),
+		time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "time 必须为 HH:MM 格式（如 16:30），同日日志按此倒序展示"),
 		type: z.enum(["feature", "improvement", "fix", "removal"]),
 		description: z.string(),
 	}),

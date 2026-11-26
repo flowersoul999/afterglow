@@ -1,6 +1,7 @@
 ---
 version: "v6.14.2"
 date: 2026-11-06
+time: "10:00"
 type: improvement
 description: 站内后台新增 Umami 统计控制台快捷入口
 ---

@@ -1,6 +1,7 @@
 ---
 version: "v6.13.0"
 date: 2026-11-05
+time: "10:00"
 type: feature
 description: 微信 ClawBot 私聊可直接对话编辑说说草稿，确认后提交部署
 ---
