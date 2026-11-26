@@ -836,7 +836,7 @@
 	left: var(--mp-disc-left);
 	bottom: calc(var(--mp-bar-h) - var(--mp-disc) / 2);
 }
-/* 唱片中心孔 */
+/* 唱片中心孔：只在有封面时画，空态是一枚玻璃圆钮（见下） */
 .music-player__disc::after {
 	content: "";
 	position: absolute;
@@ -852,6 +852,79 @@
 .music-player__disc-placeholder {
 	color: var(--content-meta);
 	opacity: 0.5;
+}
+
+/* ============================================
+   空态（无封面 / 首屏还没加载出封面）
+   默认那枚灰盘 + 中心孔 + 半透明小图标，缩到 5rem 就是一张「看不清的黑白唱片」。
+   这里换成白净的玻璃圆钮：顶部沿光 → 白色收边 → 墨色音符，Hover 轻轻浮起。
+   判定靠控制器维护的 .is-empty（抽掉封面时也会回到这个形态）。
+   底色用 --page-bg 而不是 --float-panel-bg：后者在部分主题带 alpha，
+   会透出首页网格，圆钮显脏。暗色另起一块（纯黑底上得要一层更亮的盘面）。
+   ============================================ */
+.music-player__disc:has(.music-player__disc-img.is-empty) {
+	background:
+		radial-gradient(
+			116% 116% at 32% 16%,
+			color-mix(in oklch, var(--page-bg) 98%, var(--deep-text)) 0%,
+			color-mix(in oklch, var(--page-bg) 95%, var(--deep-text)) 58%,
+			color-mix(in oklch, var(--page-bg) 88%, var(--deep-text)) 100%
+		);
+	border-color: color-mix(in oklch, var(--float-panel-bg) 68%, transparent);
+	box-shadow:
+		0 0.25rem 0.625rem rgb(0 0 0 / 10%),
+		0 0.75rem 1.75rem rgb(0 0 0 / 10%),
+		inset 0 0.0625rem 0 color-mix(in oklch, var(--primary) 14%, transparent);
+	transition:
+		left 450ms var(--mp-spring),
+		bottom 450ms var(--mp-spring),
+		transform 260ms var(--mp-motion),
+		box-shadow 260ms var(--mp-motion);
+}
+.music-player__disc:has(.music-player__disc-img.is-empty)::before {
+	content: "";
+	position: absolute;
+	inset: 0.4375rem;
+	border-radius: 9999px;
+	border: 1px solid color-mix(in oklch, var(--deep-text) 6%, transparent);
+	pointer-events: none;
+}
+.music-player__disc:has(.music-player__disc-img.is-empty)::after {
+	display: none;
+}
+.music-player__disc:has(.music-player__disc-img.is-empty) .music-player__disc-placeholder {
+	color: var(--primary);
+	opacity: 0.88;
+	font-size: 1.75rem;
+}
+/* 拖拽中不放大：拖着走时圆钮一直处于 hover，涨大一圈会晃眼，也会让抓取手感变飘 */
+.music-player:not(.is-dragging) .music-player__disc:has(.music-player__disc-img.is-empty):hover {
+	transform: scale(1.045);
+	box-shadow:
+		0 0.3rem 0.75rem rgb(0 0 0 / 12%),
+		0 0.9rem 2rem rgb(0 0 0 / 14%),
+		inset 0 0.0625rem 0 color-mix(in oklch, var(--primary) 18%, transparent);
+}
+.music-player:not(.is-dragging) .music-player__disc:has(.music-player__disc-img.is-empty):active {
+	transform: scale(0.985);
+}
+/* 暗色：纯黑底上 --page-bg 也是黑，圆钮会整个融掉，改用比底亮一档的 --music-surface 起盘 */
+:root.dark .music-player__disc:has(.music-player__disc-img.is-empty) {
+	background:
+		radial-gradient(
+			116% 116% at 32% 16%,
+			color-mix(in oklch, var(--music-surface) 88%, var(--deep-text)) 0%,
+			color-mix(in oklch, var(--music-surface) 95%, var(--deep-text)) 56%,
+			color-mix(in oklch, var(--music-surface) 82%, var(--float-panel-bg)) 100%
+		);
+	border-color: color-mix(in oklch, var(--deep-text) 14%, transparent);
+	box-shadow:
+		0 0.25rem 0.625rem rgb(0 0 0 / 30%),
+		0 0.75rem 1.75rem rgb(0 0 0 / 24%),
+		inset 0 0.0625rem 0 color-mix(in oklch, var(--deep-text) 16%, transparent);
+}
+:root.dark .music-player__disc:has(.music-player__disc-img.is-empty)::before {
+	border-color: color-mix(in oklch, var(--deep-text) 7%, transparent);
 }
 .music-player__disc-img {
 	position: absolute;
