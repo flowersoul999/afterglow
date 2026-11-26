@@ -220,6 +220,30 @@ export class EditorStore {
 		this.notify("已退出登录");
 	}
 
+	/**
+	 * 服务端回了 401 —— 注意这不是「没登录」，而是 **Cookie 里的 GitHub token
+	 * 已经失效**（授权被撤销、OAuth App 密钥轮换等），可 Cookie 本身还有 30 天
+	 * 有效期，所以 `/api/auth/me` 照样 200，页面一直假装已登录：后台能进、
+	 * 列表却每次 401，点「重试」拿到的还是同一个 401，看起来像按钮坏了
+	 * （2026-11-26 站长报障）。
+	 *
+	 * 所以这里必须把坏 Cookie 清掉、把本地状态整体复位，界面回落到登录门，
+	 * 用户点「使用 GitHub 登录」才走得出去。清 Cookie 是 HttpOnly，只能请
+	 * Worker 代劳；失败了也照样复位前端，别把人卡死在假登录态里。
+	 */
+	async expireSession(): Promise<void> {
+		try {
+			await logoutSession();
+		} catch {
+			// 网络不通也继续复位，否则界面会一直停在「已登录 + 满屏 401」
+		}
+		syncDocumentFlag(false);
+		this.patch({
+			...emptySnapshot(),
+			error: "登录已过期，重新登录一次",
+		});
+	}
+
 	/** 把各类失败翻成一句人话，别把 GitHub 的英文原文糊到脸上 */
 	describeError(error: unknown): string {
 		if (error instanceof EditorApiError) {

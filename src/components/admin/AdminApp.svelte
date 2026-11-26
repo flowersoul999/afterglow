@@ -54,7 +54,7 @@ import {
 	writeField,
 } from "@/utils/editor/content-serializer";
 import { editor } from "@/utils/editor/editor-store";
-import { writeBatch } from "@/utils/editor/github-client";
+import { EditorApiError, writeBatch } from "@/utils/editor/github-client";
 import "@/styles/pages/admin.css";
 
 let collectionId = $state(adminCollections[0].id);
@@ -162,6 +162,25 @@ function persistQueue(next: QueuedDraft[]): void {
 	sessionStorage.setItem(BATCH_QUEUE_STORAGE_KEY, JSON.stringify(next));
 }
 
+/**
+ * 统一收口接口错误。
+ *
+ * 401 单独处理：它代表 Cookie 里的 GitHub token 已经失效，而不是「这条请求
+ * 恰好失败」。只把文案塞进列表错误框的话，界面会一直停在「已登录」的外壳里，
+ * 点「重试」永远拿到同一个 401 —— 必须把登录态整体作废、切回登录门，
+ * 用户才有「重新登录」这条出路（2026-11-26 站长报障）。
+ */
+async function handleApiError(
+	error: unknown,
+	apply: (message: string) => void,
+): Promise<void> {
+	if (error instanceof EditorApiError && error.status === 401) {
+		await editor.expireSession();
+		return;
+	}
+	apply(editor.describeError(error));
+}
+
 async function refreshList(force = false): Promise<void> {
 	if (!$editor.isEditor) return;
 	// 「状态」的数据在私有仓库里，列表由 AdminStatusBoard 自己拉 ——
@@ -177,7 +196,11 @@ async function refreshList(force = false): Promise<void> {
 		});
 		if (requestSeq === listRequestSeq) entries = result;
 	} catch (error) {
-		if (requestSeq === listRequestSeq) listError = editor.describeError(error);
+		if (requestSeq === listRequestSeq) {
+			await handleApiError(error, (message) => {
+				listError = message;
+			});
+		}
 	} finally {
 		if (requestSeq === listRequestSeq) listLoading = false;
 	}
@@ -202,7 +225,11 @@ async function openEntry(path: string): Promise<void> {
 		doc = loaded.doc;
 		sha = loaded.sha;
 	} catch (error) {
-		if (requestSeq === entryRequestSeq) docError = editor.describeError(error);
+		if (requestSeq === entryRequestSeq) {
+			await handleApiError(error, (message) => {
+				docError = message;
+			});
+		}
 	} finally {
 		if (requestSeq === entryRequestSeq) docLoading = false;
 	}
@@ -318,7 +345,9 @@ async function handleSave(): Promise<void> {
 			sha = saved.sha;
 		}
 	} catch (error) {
-		docError = editor.describeError(error);
+		await handleApiError(error, (message) => {
+			docError = message;
+		});
 	} finally {
 		saving = false;
 	}
@@ -406,7 +435,9 @@ async function submitQueuedDrafts(): Promise<void> {
 		await refreshList(true);
 		notify("整批内容已提交，正在重新构建，1~3 分钟后生效");
 	} catch (error) {
-		batchError = editor.describeError(error);
+		await handleApiError(error, (message) => {
+			batchError = message;
+		});
 	} finally {
 		batchSubmitting = false;
 	}
@@ -428,7 +459,9 @@ async function handleDelete(): Promise<void> {
 		closeEditor();
 		await refreshList(true);
 	} catch (error) {
-		docError = editor.describeError(error);
+		await handleApiError(error, (message) => {
+			docError = message;
+		});
 	} finally {
 		saving = false;
 	}

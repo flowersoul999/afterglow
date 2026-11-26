@@ -1499,7 +1499,7 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 ## 24. 站长在线编辑 + 站内后台（2026-11-03 起，11-04 补 OAuth 与 /admin）
 
 站内改内容，不用回本地开编辑器。桌面和手机共用同一登录态与编辑弹层：
-- **桌面端**：资料卡里的「后台 / + 说说 / 退出」
+- **桌面端**：资料卡里的「后台 / + 说说 / 退出」。2026-11-25 起主导航换成灵动岛，入口在灵动岛「个人信息面板」底部社交图标行最右一枚（`IslandAdminEntry.svelte`）；旧资料卡（`EditorNavButton.svelte`）仍在，两套并存
 - **手机端**：底部 Dock 打开的菜单弹窗最底部显示低对比度「站长登录」；登录后切换为「内容管理 / 新建说说 / 退出登录」
 - **`/admin` 后台**：三栏界面管文章 / 说说 / 更新日志，正经写东西用的
 
@@ -1507,7 +1507,11 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 
 ```
 NavbarProfileCard.astro（「JOJOSTAR」悬停弹出的资料卡）
-└── EditorNavButton.svelte   # 桌面卡内入口；≤1023px 由 CSS 隐藏
+└── EditorNavButton.svelte   # 旧资料卡内的入口；≤1023px 由 CSS 隐藏
+
+DynamicIsland.astro（桌面端主导航「灵动岛」，2026-11-25 起接手资料面板）
+└── IslandAdminEntry.svelte  # 个人信息面板社交图标行末尾的站长入口（2026-11-26 补，
+                             # 换灵动岛后漏搬，站长一度找不到进后台的地方）
 
 MobileMenuSheet.astro（手机底部 Dock 打开的菜单弹窗）
 └── EditorMobileMenuEntry.svelte
@@ -1544,11 +1548,25 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
 | `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
 | `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部站长入口；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
+| `src/components/editor/IslandAdminEntry.svelte` | 灵动岛个人信息面板里的站长入口；与社交图标同形制（未登录 `LogIn` 用强调色、已登录 `LayoutGrid` 带绿点），挂 `data-di-tooltip-label` 复用灵动岛浮层 |
 | `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉）、AdminStatusBoard（我的状态：时间轴 + 上传 + 两日对比，选中 `privateBoard` 集合时替换「列表 + 编辑」两栏） |
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
 | `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
 | `src/styles/pages/admin.css` | 后台样式，只由 AdminApp import |
 | `cloudflare-worker/index.js` | 服务端全部逻辑：8 条路由（`/file` 按 GET/PUT/DELETE 分支）+ Cookie + AES-GCM 信封加密 + 路径护栏；`POST /api/github/batch` 用 Git Data API 把最多 30 条内容合成一个原子提交。**图片必须走 `PUT /api/github/blob`**：`/file` 走 `textToBase64`（UTF-8 重编码），二进制进去必然损坏，`/blob` 只收 base64 原串直接透传（上限 8MB） |
+
+### 登录失效（401）的处理约定（2026-11-26，站长报障后定）
+
+Cookie 里封的是 GitHub OAuth token，有效期 30 天。**token 会被 GitHub 单方面作废**（在 GitHub 设置里撤销授权、OAuth App 的 client secret 轮换等），而 Cookie 本身还没到期 —— 于是 `/api/auth/me` 照样返回 200（它只解信封、不打 GitHub），页面「假装已登录」；可凡是真正打 GitHub 的接口（`/file`、`/tree`、`/batch`）全部 401，理由是 `Bad credentials`。
+
+界面表现：进 `/admin` 顶部显示 `flowersoul999`、左侧集合和列表都能渲染，中间却是一片「登录已过期，重新登录一次」；点「重试」毫无反应。
+
+规矩（别再犯）：
+
+1. **任何请求 catch 到 `EditorApiError.status === 401`，必须调 `editor.expireSession()`**：它会请 Worker 清掉 HttpOnly Cookie，并把快照整体复位 + 带上「登录已过期，重新登录一次」文案，界面回落到 `/admin` 登录门，用户点「使用 GitHub 登录」就能重来。
+2. **只把文案塞进局部错误框（`listError` / `docError`）是错的**：外壳仍是已登录，`refreshList` 开头的 `if (!$editor.isEditor) return` 也不会让它自愈，点重试永远拿同一个 401 —— 就是「按钮坏了」的成因。
+3. `AdminApp.svelte` 的统一入口是 `handleApiError(error, apply)`，新加的请求一律走它，别直接 `editor.describeError(error)`。
+4. 公开页面的 `isEditor` 只看 `/api/auth/me`，所以 token 失效时导航栏仍显示「后台」图标 —— 这是**已知且刻意接受**的：点进 `/admin` 触发一次 401 就会自动清 Cookie 复位，不必为了这点在每页加载时多打一次 GitHub API。
 
 ### 为什么需要 Worker（关键认知）
 
