@@ -795,6 +795,12 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **样式只用令牌**（`--float-panel-bg` / `--border` / `--deep-text` / `--content-meta` / `--primary` / `--z-toast`），不写死颜色，所以亮色两套（classic / warm）与暗色自动跟随；窄屏抬到 `calc(5rem + safe-area)` 避开底部栏，并适配 `prefers-reduced-motion`。
 - **文案不进制 i18n**：时段问候与句式都带运行时插值（时辰、站名、区县地址），`i18n()` 没有插值能力，放组件顶部常量（`GREETING_STEPS` / `FALLBACK_MESSAGE`）更直接。**这不是漏翻**，别再去 `zh_CN.ts` 补键。
 
+### 5.27 更新日志类型颜色（2026-11-26）
+
+- **四类日志各一色**：`feature` 绿 `#1d9e75` / `improvement` 蓝 `#2f7fd4` / `fix` 红 `#e24b4a` / `removal` 灰蓝 `#64748b`；暗色统一提亮一档（`#34d399` / `#60a5fa` / `#f87171` / `#94a3b8`）。改色板只动 `src/styles/components/about-changelog.css` 里那组 `.changelog-card[data-type="…"]`。
+- ⚠️ **选择器必须用 `content.config.ts` 的真实枚举值**（`feature|improvement|fix|removal`）。这里踩过坑：2026-11-26 之前写的是 `feat / style / refactor / chore`（照 commit 类型的习惯写的），只有 `fix` 撞上，于是界面上只有「问题修复」变色、另外三类永远是默认灰，看起来像「没做颜色区分」。
+- **卡片与详情弹窗共用 `--changelog-type-color` 一个变量**：卡片由 `data-type` 赋值、`::before` 色点与文字颜色都取它，弹窗 `data-type` 由 `openDialog` 从卡片 `dataset.type` 拷过来，所以两处永远同步，别再给弹窗另写一套字面色值。
+
 ---
 
 ## 6. 配置系统

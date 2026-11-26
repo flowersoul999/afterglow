@@ -215,6 +215,7 @@
 	align-items: center;
 	gap: 0.3125rem;
 	font-weight: 700;
+	color: var(--changelog-type-color, var(--primary));
 }
 
 .changelog-card__type::before {
@@ -226,25 +227,33 @@
 	background: var(--changelog-type-color, var(--primary));
 }
 
-.changelog-card[data-type="feat"] {
+/* 取值与 content.config.ts 的 changelog type 枚举一一对应：
+   feature 功能新增 / improvement 功能优化 / fix 问题修复 / removal 功能删除 */
+.changelog-card[data-type="feature"] {
 	--changelog-type-color: #1d9e75;
+}
+.changelog-card[data-type="improvement"] {
+	--changelog-type-color: #2f7fd4;
 }
 .changelog-card[data-type="fix"] {
 	--changelog-type-color: #e24b4a;
 }
-.changelog-card[data-type="style"] {
-	--changelog-type-color: #7f77dd;
-}
-.changelog-card[data-type="refactor"] {
-	--changelog-type-color: #ef9f27;
-}
-
-.changelog-card[data-type="chore"] {
+.changelog-card[data-type="removal"] {
 	--changelog-type-color: #64748b;
 }
 
-.changelog-card__type {
-	color: var(--changelog-type-color, var(--primary));
+/* 暗色主题下整体提亮，避免 0.75rem 小字号彩色文字糊在深底上 */
+:root.dark .changelog :is(.changelog-card, .changelog-dialog__type)[data-type="feature"] {
+	--changelog-type-color: #34d399;
+}
+:root.dark .changelog :is(.changelog-card, .changelog-dialog__type)[data-type="improvement"] {
+	--changelog-type-color: #60a5fa;
+}
+:root.dark .changelog :is(.changelog-card, .changelog-dialog__type)[data-type="fix"] {
+	--changelog-type-color: #f87171;
+}
+:root.dark .changelog :is(.changelog-card, .changelog-dialog__type)[data-type="removal"] {
+	--changelog-type-color: #94a3b8;
 }
 
 .changelog-card__date {
@@ -398,23 +407,20 @@ html.changelog-dialog-open {
 
 .changelog-dialog__type {
 	font-weight: 700;
+	color: var(--changelog-type-color, var(--primary));
 }
 
-.changelog-dialog__type[data-type="feat"] {
-	color: #1d9e75;
+.changelog-dialog__type[data-type="feature"] {
+	--changelog-type-color: #1d9e75;
+}
+.changelog-dialog__type[data-type="improvement"] {
+	--changelog-type-color: #2f7fd4;
 }
 .changelog-dialog__type[data-type="fix"] {
-	color: #e24b4a;
+	--changelog-type-color: #e24b4a;
 }
-.changelog-dialog__type[data-type="style"] {
-	color: #7f77dd;
-}
-.changelog-dialog__type[data-type="refactor"] {
-	color: #ef9f27;
-}
-
-.changelog-dialog__type[data-type="chore"] {
-	color: #64748b;
+.changelog-dialog__type[data-type="removal"] {
+	--changelog-type-color: #64748b;
 }
 
 .changelog-dialog__date {
