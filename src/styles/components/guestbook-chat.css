@@ -75,6 +75,144 @@ html:has(.guestbook-page) {
 	outline: 0;
 }
 
+/* 聊天头部：这套样式在某次重构里被整体重写时连同 __header/__channel/__title-row/
+   __actions/__sync/__status/__refresh/__sidebar-toggle 一起删掉了，只剩组件里的 markup，
+   结果 header 退化成块级元素、贴在面板左上角。这里按当前结构（动态评论弹窗）重写补回：
+   桌面为横排、有下边框；移动端在 768px 以下改为浮层，见文件末尾的媒体查询。 */
+.guestbook-chat__header {
+	position: relative;
+	z-index: 3;
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	min-height: 4.25rem;
+	padding: var(--space-3) var(--space-4);
+	border-bottom: 1px solid var(--guestbook-line);
+	background: var(--guestbook-panel);
+}
+
+.guestbook-chat__channel,
+.guestbook-chat__actions,
+.guestbook-chat__sync,
+.guestbook-chat__status {
+	display: flex;
+	align-items: center;
+}
+
+.guestbook-chat__channel {
+	min-width: 0;
+	gap: var(--space-3);
+}
+
+.guestbook-chat__desktop-channel-details {
+	min-width: 0;
+}
+
+.guestbook-chat__title-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--space-1);
+}
+
+.guestbook-chat__title-row h2 {
+	margin: 0;
+	font-size: 1.5rem;
+	font-weight: 800;
+	line-height: 1.2;
+	letter-spacing: 0;
+}
+
+/* 「· N 条评论」属于辅助信息，压低字号和颜色，避免和标题抢注意力 */
+.guestbook-chat__title-row > span {
+	color: var(--guestbook-muted);
+	font-size: 0.75rem;
+}
+
+.guestbook-chat__sync {
+	gap: var(--space-1);
+}
+
+.guestbook-chat__status {
+	gap: var(--space-1);
+	color: var(--guestbook-muted);
+	font-size: 0.75rem;
+	line-height: 1.2;
+}
+
+.guestbook-chat__status.is-failed {
+	color: var(--guestbook-danger);
+}
+
+/* markup 里的状态点是空 <span>，不给尺寸和圆角就完全不可见 */
+.guestbook-chat__status > span {
+	flex: 0 0 auto;
+	width: 0.4375rem;
+	height: 0.4375rem;
+	border-radius: var(--radius-full);
+	background: var(--guestbook-success);
+}
+
+.guestbook-chat__status > span.is-offline {
+	background: var(--guestbook-danger);
+}
+
+.guestbook-chat__actions {
+	flex: 0 0 auto;
+	gap: var(--space-2);
+}
+
+.guestbook-chat__refresh {
+	display: grid;
+	place-items: center;
+	flex: 0 0 auto;
+	width: 1.75rem;
+	height: 1.75rem;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	color: var(--guestbook-muted);
+	transition: color 180ms ease, opacity 180ms ease;
+}
+
+.guestbook-chat__refresh:hover:not(:disabled) {
+	color: var(--deep-text);
+}
+
+.guestbook-chat__refresh svg {
+	display: block;
+}
+
+.guestbook-chat__refresh.is-syncing svg {
+	animation: guestbook-spin 0.85s linear infinite;
+}
+
+/* 移动端专用的「动态评论 + 刷新」胶囊，桌面隐藏（768px 以下反转） */
+.guestbook-chat__mobile-channel-refresh {
+	display: none;
+}
+
+.guestbook-chat__sidebar-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-1);
+	min-height: var(--control-size);
+	padding: 0 var(--space-3);
+	border: 1px solid var(--guestbook-line);
+	border-radius: var(--radius-medium);
+	background: transparent;
+	color: var(--deep-text);
+}
+
+.guestbook-chat__sidebar-toggle > span {
+	color: var(--guestbook-muted);
+	font-size: 0.75rem;
+	font-variant-numeric: tabular-nums;
+}
+
 .guestbook-chat__empty-mark {
 	display: grid;
 	place-items: center;
@@ -1297,6 +1435,15 @@ html:has(.guestbook-page) {
 	white-space: nowrap;
 }
 
+/* GitHub 已登录：名字前面挂一枚头像，比任何文字都更快认出来 */
+.guestbook-composer__identity-avatar {
+	flex: 0 0 auto;
+	width: 1.125rem;
+	height: 1.125rem;
+	border-radius: var(--radius-full);
+	object-fit: cover;
+}
+
 .guestbook-composer__send {
 	display: grid;
 	place-items: center;
@@ -1664,6 +1811,80 @@ html:has(.guestbook-page) {
 	.guestbook-page {
 		min-height: 100vh;
 		min-height: 100dvh;
+	}
+
+	/* 移动端头部改为浮层：整条 header 不占文档流、也不吞触摸事件，
+	   只有按钮本身 pointer-events:auto，消息列表才能从它下面滚过去。
+	   列表上方的让位间距由弹窗组件按弹窗场景补，避免污染留言板整页布局。 */
+	.guestbook-chat__header {
+		position: absolute;
+		inset: 0 0 auto;
+		z-index: 5;
+		min-height: auto;
+		padding: 0.375rem var(--space-3);
+		border-bottom: 0;
+		background: transparent;
+		pointer-events: none;
+	}
+
+	.guestbook-chat__header button {
+		pointer-events: auto;
+	}
+
+	.guestbook-chat__desktop-channel-details {
+		display: none;
+	}
+
+	.guestbook-chat__mobile-channel-refresh {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		min-width: 6.25rem;
+		min-height: 2.5rem;
+		padding: 0 var(--space-3);
+		border: 1px solid var(--guestbook-line);
+		border-radius: var(--radius-full);
+		background: var(--guestbook-editor-bg);
+		color: var(--guestbook-editor-text);
+		font-size: 0.9rem;
+		font-weight: 800;
+	}
+
+	.guestbook-chat__mobile-channel-refresh:disabled {
+		opacity: 1;
+	}
+
+	.guestbook-chat__mobile-channel-refresh:disabled:not(.is-syncing) {
+		opacity: 0.48;
+	}
+
+	/* 刷新图标只在同步中出现；用 display 切换而不是 opacity 0，
+	   否则空闲时会在文字右边留出 15px 空白，胶囊宽度忽大忽小 */
+	.guestbook-chat__mobile-refresh-icon {
+		display: none;
+		place-items: center;
+		width: 0.9375rem;
+		height: 0.9375rem;
+	}
+
+	.guestbook-chat__mobile-refresh-icon.is-visible {
+		display: grid;
+	}
+
+	.guestbook-chat__mobile-refresh-icon.is-visible svg {
+		animation: guestbook-spin 0.85s linear infinite;
+	}
+
+	.guestbook-chat__sidebar-toggle {
+		min-height: 2.5rem;
+		border-radius: var(--radius-full);
+		background: var(--guestbook-editor-bg);
+		color: var(--guestbook-editor-text);
+	}
+
+	.guestbook-chat__sidebar-toggle > span {
+		color: inherit;
 	}
 
 	.guestbook-chat__messages,

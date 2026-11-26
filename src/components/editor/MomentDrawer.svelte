@@ -3,8 +3,8 @@
  * 说说编辑抽屉
  *
  * 新建和编辑共用一套表单，靠 editorUi.momentMode 区分：
- * - create：空白草稿，提交时不带 sha；同一天已有文件会返回 422，自动加 -2、-3 重试
- * - edit：先读源文件拿 sha（更新必须带），提交时带回去，避免覆盖别人的改动
+ * - create：空白草稿，入队时按 create 走，撞名由批量接口加 -2、-3 避让
+ * - edit：先读源文件拿 sha（删除必须带），入队时按 update 走，覆盖同一个文件
  *
  * 表单顺序 = 填写顺序：标题 → 正文 → 图片 → 心情 → 话题 → 时间地点。
  * 心情和话题在文件里同属 `tags`，但语义不同（第一项是心情，其余是话题），
@@ -14,20 +14,28 @@
  * 载入时用 splitMomentMedia 把它们从正文里拆出来，保存时按列表顺序重新拼回去
  * —— 也就是说，图片永远排在正文之后，正文里不再手写图片语法。
  *
- * 提交成功不等于上线：文件 push 上去之后 GitHub Actions 还要重新构建，完成后才可见。
- * 所以提示语写「已提交」而不是「已发布」，别让人以为立刻生效。
+ * 提交 = 存入后台共用的草稿箱（见 utils/editor/batch-queue.ts），不直接写仓库：
+ * 站长经常一次改好几条说说，逐条提交会攒出一串零碎 commit。唯一的例外是图片
+ * —— 本地 File 塞不进 localStorage，只能在点提交这一刻先传上去。
+ *
+ * 提交成功不等于上线：草稿箱整理完点「提交全部」才 push，之后 GitHub Actions
+ * 还要重新构建，才真正可见。
  */
 import { ImagePlus, Link2, Loader2, Plus, Trash2, X } from "lucide-svelte";
 import { untrack } from "svelte";
+import {
+	createQueuedDraftId,
+	loadQueuedDrafts,
+	persistQueuedDrafts,
+	upsertQueuedDraft,
+} from "@/utils/editor/batch-queue";
 import { editor } from "@/utils/editor/editor-store";
 import { editorUi } from "@/utils/editor/editor-ui";
 import {
 	deleteFile,
-	EditorApiError,
 	REPO_NAME,
 	REPO_OWNER,
 	readFile,
-	writeFile,
 } from "@/utils/editor/github-client";
 import { uploadMomentImage } from "@/utils/editor/image-upload";
 import {
@@ -56,6 +64,8 @@ interface PhotoItem {
 }
 
 const MAX_PHOTOS = 9;
+/** 队列里要记住自己属于哪个集合，后台「待提交」靠它显示分类；与 admin-collections 的 id 对齐 */
+const MOMENT_COLLECTION_ID = "moments";
 
 let draft: MomentDraft | null = $state(null);
 let photos = $state<PhotoItem[]>([]);
@@ -339,40 +349,32 @@ async function save(): Promise<void> {
 		};
 		const payload = serializeMoment(next);
 
-		if (isEdit) {
-			await writeFile({
-				path: momentPath(draft.id),
-				text: payload,
-				message: `chore(moments): 更新说说 ${draft.id}`,
-				branch: editor.branch,
-				sha,
-			});
-		} else {
-			const baseId = buildMomentId(dateFromPublished(draft.published));
-			let attempt = 1;
-			for (;;) {
-				try {
-					await writeFile({
-						path: momentPath(nextMomentId(baseId, attempt)),
-						text: payload,
-						message: `feat(moments): 新增说说 ${baseId}`,
-						branch: editor.branch,
-					});
-					break;
-				} catch (error) {
-					// 422 = 文件已存在但没给 sha，说明同一天已经有说说了
-					const exists =
-						error instanceof EditorApiError && error.status === 422;
-					if (exists && attempt < 9) {
-						attempt += 1;
-						continue;
-					}
-					throw error;
-				}
-			}
-		}
+		// 提交只入草稿箱，不直接写仓库：站长常常一次改好几条，逐条提交会变成
+		// 一串零碎 commit。队列由后台的「待提交」统一合成一次提交。
+		// 图片是例外 —— 本地 File 没法塞进 localStorage，只能现在传上去。
+		//
+		// 新建的路径先按「当天第一条」算：真正撞名时由批量接口加 -2、-3 后缀，
+		// 这里不去仓库里探一遍，免得为了一个可能不冲突的路径多打一次请求。
+		const path = isEdit
+			? momentPath(draft.id)
+			: momentPath(
+					nextMomentId(buildMomentId(dateFromPublished(draft.published)), 1),
+				);
+		const queued = upsertQueuedDraft(loadQueuedDrafts(), {
+			id: createQueuedDraftId(),
+			collectionId: MOMENT_COLLECTION_ID,
+			collectionLabel: "说说",
+			title: next.title.trim() || text.slice(0, 20) || "未命名说说",
+			category: "",
+			path,
+			text: payload,
+			mode: isEdit ? "update" : "create",
+		});
+		persistQueuedDrafts(queued);
 
-		editor.notify("已提交，正在重新构建，1~3 分钟后生效");
+		editor.notify(
+			`已存入草稿箱，共 ${queued.length} 条，去后台「待提交」一次性提交`,
+		);
 		close();
 	} catch (error) {
 		errorText = editor.describeError(error);
@@ -733,10 +735,10 @@ async function remove(): Promise<void> {
 					disabled={saving || !draft || loading}
 				>
 					{#if saving}
-						{pendingPhoto ? "上传图片…" : "提交中…"}
+						{pendingPhoto ? "上传图片…" : "存入中…"}
 					{:else}
 						<Plus size={14} aria-hidden="true" />
-						提交
+						存入草稿箱
 					{/if}
 				</button>
 			</footer>

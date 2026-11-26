@@ -28,6 +28,11 @@ export interface EditorIdentity {
 	name: string;
 	avatar: string;
 	defaultBranch: string;
+	/**
+	 * 是不是站长。2026-11-26 起登录对所有人开放，这个字段决定「有没有编辑权」：
+	 * 普通访客登录只为在留言板留个 GitHub 身份，拿不到任何仓库权限。
+	 */
+	isOwner: boolean;
 }
 
 export interface RepoFile {
@@ -59,6 +64,12 @@ export interface BatchWriteItem {
 	text: string;
 	collectionId: string;
 	label: string;
+	/**
+	 * create = 新建文件，撞名时服务端加 `-2` 后缀避让；
+	 * update = 覆盖同路径文件，绝不能加后缀（否则会多出一份重复文件）。
+	 * 缺省按 create，保持与旧版 Worker 的行为一致。
+	 */
+	mode?: "create" | "update";
 }
 
 export interface BatchWriteResultItem extends Omit<BatchWriteItem, "text"> {
@@ -79,11 +90,20 @@ export interface BatchWriteResult {
  */
 export class EditorApiError extends Error {
 	public readonly status: number;
+	/**
+	 * 出错的那个接口路径，如 `/api/private/tree`。
+	 *
+	 * 为什么要带上：404 有两种完全不同的成因 —— `/api/github/*` 与
+	 * `/api/private/*` 是 Cloudflare 上**两条独立的 Route**，缺哪条只有知道
+	 * 请求的是哪条才说得清。只凭 status 猜，提示就会指错方向。
+	 */
+	public readonly endpoint: string;
 
-	constructor(message: string, status: number) {
+	constructor(message: string, status: number, endpoint = "") {
 		super(message);
 		this.name = "EditorApiError";
 		this.status = status;
+		this.endpoint = endpoint;
 	}
 }
 
@@ -115,6 +135,7 @@ export async function fetchSession(): Promise<EditorIdentity> {
 		name?: string;
 		avatar?: string;
 		branch?: string;
+		isOwner?: boolean;
 	};
 
 	return {
@@ -122,6 +143,8 @@ export async function fetchSession(): Promise<EditorIdentity> {
 		name: data.name ?? data.login ?? REPO_OWNER,
 		avatar: data.avatar ?? "",
 		defaultBranch: data.branch ?? "main",
+		// 老 Worker 不返回这个字段时按「不是站长」处理，宁可少给权限
+		isOwner: data.isOwner === true,
 	};
 }
 
@@ -260,7 +283,7 @@ export async function writeBlob(options: {
 	return data.sha ?? "";
 }
 
-/** 把多条新内容合成一个 Git 提交。 */
+/** 把多条内容（新建或更新）合成一个 Git 提交。 */
 export async function writeBatch(options: {
 	items: BatchWriteItem[];
 	message: string;

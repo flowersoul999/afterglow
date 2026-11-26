@@ -122,39 +122,35 @@ export default {
 		if (path === "/api/auth/logout" && method === "POST") return logout();
 
 		if (path === "/api/github/file") {
-			const session = await readSession(request, env);
-			if (!session)
-				return json({ ok: false, message: "未登录或登录已过期" }, 401);
-			if (method === "GET") return readFile(request, session.token);
-			if (method === "PUT") return writeFile(request, session.token);
-			if (method === "DELETE") return deleteFile(request, session.token);
+			const auth = await requireOwner(request, env);
+			if (auth.error) return auth.error;
+			if (method === "GET") return readFile(request, auth.session.token);
+			if (method === "PUT") return writeFile(request, auth.session.token);
+			if (method === "DELETE") return deleteFile(request, auth.session.token);
 			return json({ ok: false, message: "不支持的请求方法" }, 405);
 		}
 
 		// 图片等二进制文件：`/file` 走 textToBase64，图片进去必然损坏，
 		// 所以单开一条只收 base64 原串的通道（说说编辑器上传图用）。
 		if (path === "/api/github/blob" && method === "PUT") {
-			const session = await readSession(request, env);
-			if (!session)
-				return json({ ok: false, message: "未登录或登录已过期" }, 401);
-			return writeBlob(request, session.token);
+			const auth = await requireOwner(request, env);
+			if (auth.error) return auth.error;
+			return writeBlob(request, auth.session.token);
 		}
 
 		if (path === "/api/github/batch") {
-			const session = await readSession(request, env);
-			if (!session)
-				return json({ ok: false, message: "未登录或登录已过期" }, 401);
-			if (method === "POST") return writeBatch(request, session.token);
+			const auth = await requireOwner(request, env);
+			if (auth.error) return auth.error;
+			if (method === "POST") return writeBatch(request, auth.session.token);
 			return json({ ok: false, message: "不支持的请求方法" }, 405);
 		}
 
 		// 列目录：后台的条目列表靠它。只返回一层，子目录由前端按需再拉 ——
 		// 内容目录结构是「集合/分类/文件」，深度固定，逐层拉比整棵 Git Tree 便宜。
 		if (path === "/api/github/tree" && method === "GET") {
-			const session = await readSession(request, env);
-			if (!session)
-				return json({ ok: false, message: "未登录或登录已过期" }, 401);
-			return listDir(request, session.token);
+			const auth = await requireOwner(request, env);
+			if (auth.error) return auth.error;
+			return listDir(request, auth.session.token);
 		}
 
 		// 私有通道：读写私有仓库里的 status/ 目录（「我的状态」）。
@@ -329,6 +325,29 @@ async function readSession(request, env) {
 	}
 }
 
+/**
+ * 读登录态 + 确认是站长。
+ *
+ * 2026-11-26 起登录对所有人开放（普通访客也能用 GitHub 身份留言），所以
+ * 内容仓库这几条通道不能再看「有没有登录」，必须再看「是不是站长」——
+ * 否则任何登录用户都能读写博客仓库。
+ */
+async function requireOwner(request, env) {
+	const session = await readSession(request, env);
+	if (!session)
+		return {
+			error: json({ ok: false, message: "未登录或登录已过期" }, 401),
+		};
+	if (!isOwner(session.login, env))
+		return {
+			error: json(
+				{ ok: false, message: "内容管理只有站长能操作" },
+				403,
+			),
+		};
+	return { session };
+}
+
 /* ---------------------------------------------------------------- 响应 */
 
 function json(data, status = 200, extraHeaders = {}) {
@@ -466,9 +485,8 @@ async function callback(request, env) {
 		return failure(origin, "profile_failed", returnTo);
 	}
 
-	if (!isOwner(user?.login, env)) return failure(origin, "not_owner", returnTo);
-
-	// 身份一起封进 Cookie：/api/auth/me 就不用每次都再打一轮 GitHub API
+	// 登录对所有人开放（留言板要用 GitHub 身份），但**站长身份由这里判定**：
+	// 写进 session 的 isOwner 才是前端显示「后台」的依据，写仓库时还会再校验一次。
 	const session = await seal(
 		secret,
 		JSON.stringify({
@@ -476,6 +494,7 @@ async function callback(request, env) {
 			login: user.login,
 			name: user.name || user.login,
 			avatar: user.avatar_url || "",
+			isOwner: isOwner(user?.login, env),
 		}),
 	);
 
@@ -496,6 +515,8 @@ async function me(request, env) {
 		name: session.name,
 		avatar: session.avatar,
 		branch: DEFAULT_BRANCH,
+		// 旧 Cookie 里没这个字段，用 login 现算一遍兜底；换人只需改 OWNER_LOGIN
+		isOwner: isOwner(session.login, env),
 	});
 }
 
@@ -986,10 +1007,20 @@ function withPathSuffix(path, attempt) {
 	return path.replace(/(\.mdx?)$/i, `-${attempt}$1`);
 }
 
-/** 给仓库已有路径和本批次重名统一避让，保持输入顺序。 */
+/**
+ * 给仓库已有路径和本批次重名统一避让，保持输入顺序。
+ *
+ * `mode: "update"` 的条目例外：它的语义就是覆盖同路径文件，加后缀反而会
+ * 在仓库里多留下一份重复内容，所以原样返回（但仍占位，后面的新建条目不
+ * 会再抢这个路径）。
+ */
 export function resolveBatchPaths(items, existingPaths) {
 	const occupied = new Set(existingPaths);
 	return items.map((item) => {
+		if (item.mode === "update") {
+			occupied.add(item.path);
+			return item;
+		}
 		let attempt = 1;
 		let path = item.path;
 		while (occupied.has(path)) {
@@ -1215,10 +1246,13 @@ function validateBatchItems(items) {
 		if (typeof item.text !== "string") {
 			return { error: `第 ${index + 1} 条内容缺少 Markdown` };
 		}
+		// 只认这两种，拼错/多传都退回 create；update 会跳过撞名后缀
+		const mode = item.mode === "update" ? "update" : "create";
 		totalBytes += new TextEncoder().encode(item.text).byteLength;
 		normalized.push({
 			path,
 			text: item.text,
+			mode,
 			collectionId:
 				typeof item.collectionId === "string" ? item.collectionId : "",
 			label: typeof item.label === "string" ? item.label : "",
@@ -1244,7 +1278,7 @@ async function writeBatch(request, token) {
 	const message =
 		typeof body.message === "string" && body.message
 			? body.message
-			: `feat(content): 批量新增 ${checked.items.length} 条内容`;
+			: `chore(content): 批量提交 ${checked.items.length} 条内容`;
 
 	try {
 		const result = await commitBatchFiles({

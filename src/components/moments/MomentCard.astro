@@ -4,7 +4,8 @@ import type { CollectionEntry } from "astro:content";
 import { render } from "astro:content";
 import { Icon } from "astro-icon/components";
 import Markdown from "@/components/common/Markdown.astro";
-import { formatDateToYYYYMMDD } from "@/utils/date-utils";
+import { siteConfig } from "@/config";
+import { formatDateTimeToYYYYMMDDHHmm } from "@/utils/date-utils";
 import { resolveMomentMedia, stripMomentMedia } from "@/utils/moment-media";
 import { splitTags } from "@/utils/moment-mood";
 import { getTagUrl } from "@/utils/url-utils";
@@ -111,20 +112,17 @@ const momentExcerpt = stripMomentMedia(moment.body)
 	.slice(0, 80);
 const momentPublished = moment.data.published.toISOString();
 
-// 相对时间
-const formatTimeAgo = (date: Date): string => {
-	const now = new Date();
-	const diff = now.getTime() - date.getTime();
-	const minutes = Math.floor(diff / 60000);
-	const hours = Math.floor(diff / 3600000);
-	const days = Math.floor(diff / 86400000);
-
-	if (minutes < 1) return "刚刚";
-	if (minutes < 60) return `${minutes}分钟前`;
-	if (hours < 24) return `${hours}小时前`;
-	if (days < 30) return `${days}天前`;
-	return formatDateToYYYYMMDD(date);
-};
+// 时间：站长要求显示具体时刻（构建期 SSG，别再算「几天前」）。
+// 复用 date-utils 的实现，它会按 siteConfig.timezone 出 `YYYY-MM-DD HH:mm`；
+// title 再补星期，悬停能看到更完整的信息。
+const publishedText = formatDateTimeToYYYYMMDDHHmm(published);
+const publishedTitle = `${publishedText} ${published.toLocaleDateString(
+	"zh-CN",
+	{
+		weekday: "long",
+		timeZone: siteConfig.timezone,
+	},
+)}`;
 ---
 
 <div id={moment.id} class="moment-card group">
@@ -165,11 +163,8 @@ const formatTimeAgo = (date: Date): string => {
 				)}
 			</div>
 			<div class="meta-row">
-				<time
-					datetime={published.toISOString()}
-					title={formatDateToYYYYMMDD(published)}
-				>
-					{formatTimeAgo(published)}
+				<time datetime={published.toISOString()} title={publishedTitle}>
+					{publishedText}
 				</time>
 				{location && (
 					<>
@@ -777,27 +772,81 @@ const formatTimeAgo = (date: Date): string => {
 		width: 1.75rem;
 		height: 1.75rem;
 		padding: 0;
-		border: 1.5px solid var(--line-color);
+		/* 卡片底色是 transparent，透明按钮在浅色卡面上只剩一个虚圈，
+		   所以用「实心淡底 + 主题色描边」，让它有实体感 */
+		border: 1.5px solid
+			color-mix(in srgb, var(--primary) 30%, var(--intro-surface-bg));
 		border-radius: 9999px;
-		background: transparent;
-		color: var(--content-meta);
+		background: color-mix(in srgb, var(--primary) 8%, var(--intro-surface-bg));
+		color: var(--primary);
 		cursor: pointer;
-		transition: all 0.2s ease;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease,
+			color 0.2s ease;
 	}
 
 	.moment-edit-btn:hover {
 		border-color: var(--primary);
+		background: color-mix(in srgb, var(--primary) 16%, var(--intro-surface-bg));
 		color: var(--primary);
+	}
+
+	/* 删除按钮默认保持中性，只有 hover 才转红，降低误触的心理压力 */
+	.moment-edit-btn.is-danger {
+		border-color: color-mix(
+			in srgb,
+			var(--content-meta) 30%,
+			var(--intro-surface-bg)
+		);
+		background: color-mix(
+			in srgb,
+			var(--content-meta) 8%,
+			var(--intro-surface-bg)
+		);
+		color: var(--content-meta);
 	}
 
 	.moment-edit-btn.is-danger:hover {
 		border-color: oklch(0.55 0.19 25);
+		background: oklch(0.55 0.19 25 / 0.12);
 		color: oklch(0.55 0.19 25);
 	}
 
+	/* 暗色：--primary 本身是近白色，同样的混比压在纯黑卡面上会糊成一团，
+	   这里单独把底色/描边抬一档；删除按钮的红也提亮，否则在暗底上发闷 */
+	:global(:root.dark) .moment-edit-btn {
+		border-color: color-mix(in srgb, var(--primary) 42%, var(--intro-surface-bg));
+		background: color-mix(in srgb, var(--primary) 12%, var(--intro-surface-bg));
+	}
+
+	:global(:root.dark) .moment-edit-btn:hover {
+		background: color-mix(in srgb, var(--primary) 20%, var(--intro-surface-bg));
+	}
+
+	/* 删除按钮在暗色下也要保持中性，别被上面的通用规则染成主题色 */
+	:global(:root.dark) .moment-edit-btn.is-danger {
+		border-color: color-mix(
+			in srgb,
+			var(--content-meta) 42%,
+			var(--intro-surface-bg)
+		);
+		background: color-mix(
+			in srgb,
+			var(--content-meta) 12%,
+			var(--intro-surface-bg)
+		);
+	}
+
+	:global(:root.dark) .moment-edit-btn.is-danger:hover {
+		border-color: oklch(0.72 0.17 25);
+		background: oklch(0.72 0.17 25 / 0.16);
+		color: oklch(0.72 0.17 25);
+	}
+
 	.moment-edit-icon {
-		width: 1rem;
-		height: 1rem;
+		width: 1.125rem;
+		height: 1.125rem;
 	}
 
 	.comment-toggle-btn {

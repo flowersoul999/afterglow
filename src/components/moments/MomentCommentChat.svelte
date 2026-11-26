@@ -51,6 +51,11 @@ import "../../styles/components/guestbook-chat.css";
 const CHANNEL_PATH = MOMENT_CHANNEL;
 const PAGE_SIZE = 30;
 const POLL_INTERVAL = 30_000;
+/* 单次数据请求的兜底超时：Waline 偶发 401/连接挂住时 fetch 可能永远不落地，
+   状态机会一直停在 initialLoading（骨架屏）。超时后主动 abort 并落到错误态，
+   轮询也受同一套超时约束，避免一次挂起的请求把后续轮询全堵死。 */
+const REQUEST_TIMEOUT = 9_000;
+const REQUEST_TIMEOUT_MESSAGE = "评论服务响应超时，点重试重新加载";
 const MIN_MESSAGE_LENGTH = 2;
 const MAX_MESSAGE_LENGTH = 300;
 const PROFILE_STORAGE_KEY = "moment-chat-profile";
@@ -348,6 +353,27 @@ function handleAuthenticationError(error: unknown): boolean {
 	return true;
 }
 
+/**
+ * 给一次数据请求挂上兜底超时。
+ * 超时 abort 与「被新请求/离线接管」都会让 fetch 抛 AbortError，
+ * 所以由 timedOut 标记区分语义：超时要落到可读错误，接管则直接丢弃结果。
+ */
+function createRequestGuard(controller: AbortController) {
+	let timedOut = false;
+	const timer = window.setTimeout(() => {
+		timedOut = true;
+		controller.abort();
+	}, REQUEST_TIMEOUT);
+	return {
+		get timedOut() {
+			return timedOut;
+		},
+		clear() {
+			window.clearTimeout(timer);
+		},
+	};
+}
+
 async function fetchPage(page: number, signal?: AbortSignal) {
 	if (!serverURL) throw new Error("Waline 服务地址未配置");
 	return getComment({
@@ -376,6 +402,7 @@ async function loadInitial() {
 	initialLoading = true;
 	initialError = "";
 	syncError = "";
+	const guard = createRequestGuard(controller);
 
 	try {
 		const response = await fetchPage(1, controller.signal);
@@ -393,7 +420,15 @@ async function loadInitial() {
 		scrollToBottom(false);
 		preserveInitialBottomWhileMediaLoads();
 	} catch (error) {
-		if (controller.signal.aborted || dataController !== controller) return;
+		if (dataController !== controller) return;
+		if (controller.signal.aborted && !guard.timedOut) return;
+		if (guard.timedOut) {
+			// 超时后不再自动补跑排队的同步，否则会变成每 9s 一次的无限重试，等下次轮询或手动重试
+			syncQueued = false;
+			if (messages.length > 0) syncError = REQUEST_TIMEOUT_MESSAGE;
+			else initialError = REQUEST_TIMEOUT_MESSAGE;
+			return;
+		}
 		const authenticationExpired = handleAuthenticationError(error);
 		if (authenticationExpired) syncQueued = true;
 		const message = getMomentErrorMessage(error);
@@ -402,6 +437,7 @@ async function loadInitial() {
 			else initialError = message;
 		}
 	} finally {
+		guard.clear();
 		if (dataController === controller) {
 			initialLoading = false;
 			finishDataRequest(controller);
@@ -429,6 +465,7 @@ async function syncLatest() {
 			.filter((message) => !message.localState)
 			.map((message) => message.id),
 	);
+	const guard = createRequestGuard(controller);
 
 	try {
 		const response = await fetchPage(1, controller.signal);
@@ -446,12 +483,19 @@ async function syncLatest() {
 		if (freshCount > 0 && wasNearBottom) scrollToBottom(true);
 		else if (freshCount > 0) newMessageCount += freshCount;
 	} catch (error) {
-		if (controller.signal.aborted || dataController !== controller) return;
+		if (dataController !== controller) return;
+		if (controller.signal.aborted && !guard.timedOut) return;
+		if (guard.timedOut) {
+			syncQueued = false;
+			syncError = REQUEST_TIMEOUT_MESSAGE;
+			return;
+		}
 		const authenticationExpired = handleAuthenticationError(error);
 		if (authenticationExpired) syncQueued = true;
 		const message = getMomentErrorMessage(error);
 		if (message && !authenticationExpired) syncError = message;
 	} finally {
+		guard.clear();
 		if (dataController === controller) {
 			syncing = false;
 			finishDataRequest(controller);
@@ -466,6 +510,7 @@ async function loadOlder() {
 	loadingOlder = true;
 	const previousHeight = messageList.scrollHeight;
 	const nextPage = currentPage + 1;
+	const guard = createRequestGuard(controller);
 
 	try {
 		const response = await fetchPage(nextPage, controller.signal);
@@ -480,12 +525,19 @@ async function loadOlder() {
 		await tick();
 		messageList.scrollTop += messageList.scrollHeight - previousHeight;
 	} catch (error) {
-		if (controller.signal.aborted || dataController !== controller) return;
+		if (dataController !== controller) return;
+		if (controller.signal.aborted && !guard.timedOut) return;
+		if (guard.timedOut) {
+			syncQueued = false;
+			syncError = REQUEST_TIMEOUT_MESSAGE;
+			return;
+		}
 		const authenticationExpired = handleAuthenticationError(error);
 		if (authenticationExpired) syncQueued = true;
 		const message = getMomentErrorMessage(error);
 		if (message && !authenticationExpired) syncError = message;
 	} finally {
+		guard.clear();
 		if (dataController === controller) {
 			loadingOlder = false;
 			finishDataRequest(controller);
@@ -1249,10 +1301,10 @@ onMount(() => {
 										</div>
 									{/if}
 
-																		<GuestbookChatMessage
+									<GuestbookChatMessage
 										referencedMessage={message.replyToId ? messages.find((c) => c.id === message.replyToId) as unknown as import("@/types/guestbook-chat").GuestbookChatMessage | undefined : undefined}
-											momentQuote={message.momentQuote}
-											message={message as unknown as import("@/types/guestbook-chat").GuestbookChatMessage}
+										momentQuote={message.momentQuote}
+										message={message as unknown as import("@/types/guestbook-chat").GuestbookChatMessage}
 										timeLabel={formatMessageTime(message.createdAt)}
 										canManage={canManageMessage(message)}
 										isEditing={editingMessageId === message.id}
@@ -1576,7 +1628,6 @@ onMount(() => {
 		padding: 0;
 		background: oklch(0 0 0 / 0.28);
 		backdrop-filter: blur(12px) saturate(1.15);
-		-webkit-backdrop-filter: blur(12px) saturate(1.15);
 	}
 
 	.moment-comment-modal__panel {
@@ -1592,9 +1643,11 @@ onMount(() => {
 		width: 100%;
 		height: 100%;
 		min-height: 0;
-		background: oklch(1 0 0 / 0.78);
+		/* 只写无前缀 backdrop-filter：手写成对声明时 Lightning CSS 会只保留 -webkit- 版本，
+		   Chrome 只认无前缀 → 毛玻璃失效、面板变成半透明白膜。前缀交给构建自动补。
+		   底色同时提到 0.9，保证即便机器不支持 blur 也不会把背后页面透出来。 */
+		background: oklch(1 0 0 / 0.9);
 		backdrop-filter: blur(22px) saturate(1.4);
-		-webkit-backdrop-filter: blur(22px) saturate(1.4);
 		border: 1px solid oklch(1 0 0 / 0.55);
 		box-shadow:
 			0 8px 32px oklch(0 0 0 / 0.14),
@@ -1602,7 +1655,7 @@ onMount(() => {
 	}
 
 	:root.dark .moment-comment-modal__panel .guestbook-chat {
-		background: oklch(0.16 0 0 / 0.72);
+		background: oklch(0.16 0 0 / 0.86);
 		border-color: oklch(1 0 0 / 0.12);
 		box-shadow:
 			0 18px 56px oklch(0 0 0 / 0.48),
@@ -1675,7 +1728,13 @@ onMount(() => {
 			/* 全屏面板直接不透明：不再透视背后的说说列表，也省掉 backdrop-filter 开销 */
 			background: var(--float-panel-bg);
 			backdrop-filter: none;
-			-webkit-backdrop-filter: none;
+		}
+
+		/* 移动端 header 是浮层（guestbook-chat.css 里 position:absolute），
+		   这里给列表让出 3.5rem，否则第一条消息会被「动态评论」胶囊压住 */
+		.moment-comment-modal__panel :global(.guestbook-chat__messages),
+		.moment-comment-modal__panel :global(.guestbook-chat__loading) {
+			padding-top: 3.5rem;
 		}
 
 		/* 移动端弹窗是 fixed 全屏，已盖住 MobileDock，输入框无需为 dock 预留 6.25rem，直接贴底 */

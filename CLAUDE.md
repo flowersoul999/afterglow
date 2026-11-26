@@ -19,6 +19,7 @@
 | `pnpm compress-images` | 压缩图片（`--dry-run` 预检）；另有 rename-images / import-wallpapers 图片脚本 |
 | `pnpm compress-albums` / `pnpm compress-albums:dry` | 递归转换本地相册图片为 WebP（质量 80；执行前先 dry-run） |
 | `pnpm test:album` | Node 内置测试：本地相册扫描、URL 编码与路径越界防护 |
+| `pnpm test:media` | Node 内置测试：说说正文媒体的拆分 / 拼装 / 拖动排序（`src/utils/moment-media.test.ts`） |
 | `pnpm cli` | 仓库工具 CLI（scripts/cli.js） |
 | `pnpm cli cover [--dry-run] [--limit=N] [--force] [--only=分类] [--provider=dashscope\|gemini\|mock]` | AI 批量生成文章封面（scripts/生成封面，黑板粉笔手绘风，详见第 2 节「文章封面生成」） |
 | `pnpm cli desc` | AI 批量补全文章摘要（scripts/生成摘要，需 `DASHSCOPE_API_KEY`） |
@@ -126,7 +127,7 @@ cloudflare-worker/        # ⚠️ 站长登录用的 Cloudflare Worker（2026-1
                           # 站点本身仍是 GitHub Pages 托管，两者互不干扰。说明见第 24 节
 ```
 
-**首页演出链路（2026-11-25 参考站移植）**：首页路由 `[...page].astro` 渲染 `HomeHero → HomeDataLayer → HeroDialogue → HomeBlinds → HomeMobile`；原 `HomeTicker` / `HomeDisplayLayer` 仍保留但不再渲染。视觉参数在 `homeConfig.hero.mosaic/photo/sticker/contact` 与 `homeBlinds`，动画工具在 `utils/home-hero-*` / `utils/home-blinds-*`，生命周期统一走 `utils/home-lifecycle.ts`（依赖新增的 `utils/swup-lifecycle.ts` 与 `types/swup.ts`）。顶部胶囊音乐面样式在 `styles/layout/navbar-dynamic-island.css`：音乐面与导航菜单必须互斥，`#navbar[data-di-face="music"]` 时导航 `position: absolute` 让位，否则歌名会和菜单文字叠在一起。左下角播放器 UI / 引擎 / 控制器 / 样式分别对应 `features/MusicPlayerWidget.astro`、`features/MusicManager.astro`、`utils/music-player-controller.ts`、`styles/features/music-player.css`，**替换组件时必须同时保留样式 import**（曾因漏掉导致播放器无样式）。
+**首页演出链路（2026-11-25 参考站移植）**：首页路由 `[...page].astro` 渲染 `HomeHero → HomeDataLayer → HeroDialogue → HomeBlinds → HomeMobile`；原 `HomeTicker` / `HomeDisplayLayer` 仍保留但不再渲染。视觉参数在 `homeConfig.hero.mosaic/photo/sticker/contact` 与 `homeBlinds`，动画工具在 `utils/home-hero-*` / `utils/home-blinds-*`，生命周期统一走 `utils/home-lifecycle.ts`（依赖新增的 `utils/swup-lifecycle.ts` 与 `types/swup.ts`）。其中 `hero.contact` 是首屏右下角那块手绘熔融字水印，由 `components/layout/HeroContact.astro` 渲染成上下两行自由文本（`platform` 小字行 / `handle` 大字行，标点须写进字符串，组件不补冒号），2026-11-26 已从「B站：jojo」改为站内 slogan；`HomeDataLayer` 里 `link.name === hero.contact.platform` 那处匹配是历史遗留（links 里 B 站叫 `Bilibili`，从来就没匹配上，一直 fallback 到第一个链接），改文案不影响它。顶部胶囊音乐面样式在 `styles/layout/navbar-dynamic-island.css`：音乐面与导航菜单必须互斥，`#navbar[data-di-face="music"]` 时导航 `position: absolute` 让位，否则歌名会和菜单文字叠在一起。左下角播放器 UI / 引擎 / 控制器 / 样式分别对应 `features/MusicPlayerWidget.astro`、`features/MusicManager.astro`、`utils/music-player-controller.ts`、`styles/features/music-player.css`，**替换组件时必须同时保留样式 import**（曾因漏掉导致播放器无样式）。
 
 **禁止在 `components/` 根目录平铺组件文件，必须放入对应功能域子目录。**
 **注意：`src/pages/admin/`、`src/utils/admin/`、`src/components/album|daily/` 等 admin/废弃目录已删除，勿再创建自研后台（后台用 PagesCMS）。**
@@ -795,6 +796,12 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **样式只用令牌**（`--float-panel-bg` / `--border` / `--deep-text` / `--content-meta` / `--primary` / `--z-toast`），不写死颜色，所以亮色两套（classic / warm）与暗色自动跟随；窄屏抬到 `calc(5rem + safe-area)` 避开底部栏，并适配 `prefers-reduced-motion`。
 - **文案不进制 i18n**：时段问候与句式都带运行时插值（时辰、站名、区县地址），`i18n()` 没有插值能力，放组件顶部常量（`GREETING_STEPS` / `FALLBACK_MESSAGE`）更直接。**这不是漏翻**，别再去 `zh_CN.ts` 补键。
 
+### 5.27 更新日志类型颜色（2026-11-26）
+
+- **四类日志各一色**：`feature` 绿 `#1d9e75` / `improvement` 蓝 `#2f7fd4` / `fix` 红 `#e24b4a` / `removal` 灰蓝 `#64748b`；暗色统一提亮一档（`#34d399` / `#60a5fa` / `#f87171` / `#94a3b8`）。改色板只动 `src/styles/components/about-changelog.css:229` 那组 `.changelog-card[data-type="…"]`。
+- ⚠️ **选择器必须用 `content.config.ts` 的真实枚举值**（`feature|improvement|fix|removal`，第 273 行）。这里踩过坑：2026-11-26 之前写的是 `feat / style / refactor / chore`（照 commit 类型的习惯写的），只有 `fix` 撞上，所以界面上只有「问题修复」变色、另外三类永远是默认灰，看起来像「没做颜色区分」。
+- **卡片与详情弹窗共用 `--changelog-type-color` 一个变量**：卡片由 `data-type` 赋值、`::before` 色点与文字颜色都取它，弹窗 `data-type` 由 `openDialog` 从卡片 `dataset.type` 拷过来，所以两处永远同步，别再给弹窗另写一套字面色值。
+
 ---
 
 ## 6. 配置系统
@@ -1181,6 +1188,9 @@ return controller;
 | 在纯静态站（无 adapter）里做「密码登录」 | 没有服务端就没有可信的校验点，密码只能在前端比对，读源码即可绕过，等于没有密码 | 要么上服务端（Edge Function / Worker，令牌放服务端、前端只拿 HttpOnly Cookie），要么直接让用户填能真正决定权限的凭证（见 §24） |
 | 全局 `keydown` 拦截只对「首次按下」`preventDefault`，把 `e.repeat` 分支直接 `return` | 按住键不放时浏览器会持续派发 auto-repeat `keydown`，**每一次都是一次完整的默认动作**（Tab 移焦点、方向键滚动），于是轮盘/面板还开着，焦点继续在背后页面里跳（2026-11-25 Tab 轮盘事故：长按 Tab 焦点一路跳到导航按钮） | 用「键是否物理按下」的状态位（如 `TabRadialMenu.svelte` 的 `tabDown`）在 capture 阶段吞掉所有后续事件，并在 `window blur` / `astro:page-load` 重置（keyup 丢失会永久吞键）；`preventDefault` 必须排在所有 `return` 之前 |
 | 拿 Umami 上报脚本地址（`scriptUrl`）取 `origin` 去拼 `/api/share`、`/api/websites` | Umami Cloud 的读数接口在 `/analytics/{region}` 前缀下，根路径请求 404，首页 UV/PV 永远显示 `--`（2026-11-08 首修，`9b297bc` 首页移植时回归，11-25 二次修复） | 统一用 `siteConfig.analytics.umamiAnalytics.apiBase`（Cloud 自动推导 region 前缀）；桌面端 `HomeDataLayer.astro` 与移动端 `HomeMobile.astro` 必须同步改，勿只改一处 |
+| 在 Svelte/astro 的 `<style>` 里**手写** `-webkit-backdrop-filter` 与 `backdrop-filter` 成对声明 | 构建只保留 webkit 前缀那条，Chrome 里 `backdrop-filter` 计算值变成 `none`，毛玻璃退化成「半透明白膜」，背后页面内容清晰可见（2026-11-26 动态评论弹窗"面板透明"事故） | 组件 `<style>` 里只写**无前缀** `backdrop-filter`，让构建按目标补前缀；纯 `.css` 文件（如 `guestbook-chat.css`）由构建统一去前缀，不受影响 |
+| 在 `MomentCommentChat.svelte` 里用 `guestbook-chat__*` 类，却没在 `guestbook-chat.css` 里给同名规则 | 留言板的 `.guestbook-chat__header/__channel/__actions/__sync…` 若只存在于 `GuestbookChat.svelte` 的**组件作用域样式**，动态评论弹窗拿不到，头部会塌成竖排贴左、压住页面背景（2026-11-26 实测 `__header` 计算值 `display:block`） | 两个组件是**跨组件复用类名**的关系，不带同款 scoped 哈希：凡是 MomentCommentChat 新用到的 `guestbook-chat__*`，必须同时写进 `guestbook-chat.css`；改这两处要一起验收 |
+| 给第三方数据请求（Waline 评论、统计接口）不设超时 | 请求挂住时 `initialLoading` 永远为 `true`，弹窗一直停在骨架屏，用户只看到"转圈的空壳"（2026-11-26 动态评论事故） | 一律 `AbortController` + `setTimeout`（8~10s）双保险，超时落到可重试的错误态；已有数据时降级为 `syncError`，别把已加载的列表清掉 |
 
 ---
 
@@ -1511,8 +1521,9 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 
 站内改内容，不用回本地开编辑器。桌面和手机共用同一登录态与编辑弹层：
 - **桌面端**：资料卡里的「后台 / + 说说 / 退出」。2026-11-25 起主导航换成灵动岛，入口在灵动岛「个人信息面板」底部社交图标行最右一枚（`IslandAdminEntry.svelte`）；旧资料卡（`EditorNavButton.svelte`）仍在，两套并存
-- **手机端**：底部 Dock 打开的菜单弹窗最底部显示低对比度「站长登录」；登录后切换为「内容管理 / 新建说说 / 退出登录」
+- **手机端**：底部 Dock 打开的菜单弹窗最底部显示低对比度「GitHub 登录」；登录后切换为「内容管理 / 新建说说 / 退出登录」
 - **`/admin` 后台**：三栏界面管文章 / 说说 / 更新日志，正经写东西用的
+- ⚠️ **2026-11-26 起登录对所有人开放**（原先非站长在 callback 直接被拒），三个入口都有三态，详见本节「登录对所有人开放」
 
 ### 架构
 
@@ -1521,18 +1532,28 @@ NavbarProfileCard.astro（「JOJOSTAR」悬停弹出的资料卡）
 └── EditorNavButton.svelte   # 旧资料卡内的入口；≤1023px 由 CSS 隐藏
 
 DynamicIsland.astro（桌面端主导航「灵动岛」，2026-11-25 起接手资料面板）
-└── IslandAdminEntry.svelte  # 个人信息面板社交图标行末尾的站长入口（2026-11-26 补，
+└── IslandAdminEntry.svelte  # 个人信息面板社交图标行末尾的账号入口（2026-11-26 补，
                              # 换灵动岛后漏搬，站长一度找不到进后台的地方）
 
 MobileMenuSheet.astro（手机底部 Dock 打开的菜单弹窗）
 └── EditorMobileMenuEntry.svelte
-    # 菜单末项：未登录=低对比度「站长登录」
-    # 已登录=「内容管理 / 新建说说 / 退出登录」
+    # 菜单末项：未登录=低对比度「GitHub 登录」
+    # 已登录=站长「内容管理 / 新建说说 / 退出登录」；访客只有「身份 + 退出」
+
+上列三个入口统一的三种形态（`$editor.isEditor` / `$editor.loggedIn` 判定）：
+  未登录            LogIn 图标（强调色）→ 打开 GitHub 登录弹窗
+  已登录 · 普通访客  只有头像（桌面）/「头像 + 昵称 + 退出」（手机），**没有任何编辑入口**
+  已登录 · 站长      后台 / 新建说说 / 退出
 
 EditorRoot.svelte（⚠️ 挂 MainGridLayout.astro、#navbar-wrapper **外面** → 换页不重建）
 ├── EditorLoginModal.svelte  # 复用 .privacy-modal 骨架（dialog = top layer，不受 transform 影响）
 ├── MomentDrawer.svelte      # 新建/编辑/删除说说
 └── editor.toast             # 提交提示
+
+/guestbook（留言板）
+└── GuestbookChat.svelte → GuestbookChatComposer.svelte
+    # 登录走站内 GitHub（editorUi.openLogin），不是 Waline /oauth/github；
+    # 登录后把昵称 + 主页灌进留言资料，留言自动带身份
 
 /admin（独立全屏路由，不套 MainGridLayout，也不参与 Swup）
 └── AdminApp.svelte → AdminList.svelte + AdminEditor.svelte + AdminBatchQueue.svelte
@@ -1551,15 +1572,15 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/moment-serializer.ts` | 说说 md ↔ 草稿（抽屉专用）；**未知 frontmatter 字段收进 `extra` 原样吐回** |
 | `src/utils/editor/album-serializer.ts` | 相册 json ↔ 草稿（照片弹窗 / 新建相册共用）；相册是 json 不是 md，所以走 `JSON.parse/stringify`，**未知键（cover / imgbedFolder / draft 及逐张未知字段）同样原样保留**。新建相关的三个纯函数：`sanitizeAlbumId`（ASCII 化 + 40 字封顶）、`newAlbumFolderId`（`album-<时间戳><随机>`）、`createAlbumDraft`（`localFolder` 恒等于 `id`）。有 13 条单测，见 `test:admin-batch` |
 | `src/utils/editor/album-ui.ts` | 相册弹窗的开合与目标（哪个相册、哪张照片、还是新建一本）；`AlbumDrawerMode = create \| edit \| new`，刻意不塞进 `editor-ui.ts`，两边字段几乎不重叠 |
-| `src/utils/editor/image-upload.ts` | 图片上传：canvas 缩到长边 1920 转 webp（gif/svg 直传），走 `PUT /api/github/blob`。说说落 `动态/assets/diary/`，相册落 `public/assets/images/albums/<localFolder>/` |
+| `src/utils/editor/image-upload.ts` | 图片上传：canvas 缩到长边 1920 转 webp（gif/svg 直传），走 `PUT /api/github/blob`。**抽屉与后台共用 `uploadBodyImage()`**，落点由调用方传（说说抽屉写死 `动态/assets/diary/`，后台从集合配置的 `mediaInBody` 读），相册落 `public/assets/images/albums/<localFolder>/` |
 | `src/utils/editor/content-serializer.ts` | **通用 frontmatter**：拆成有序 entry，没改过的原样写回（改一个字段只产生一行 diff）。支持内联数组 `[a, b]` 与块数组两种写法，`gap` 记录 `---` 与正文之间的空行 |
 | `src/utils/editor/content-repo.ts` | 集合列目录（递归 + 20s 缓存）、路径模板展开、撞名 `-2` 重试 |
 | `src/utils/editor/private-client.ts` | **私有仓库通道**（`/api/private/*`）：list/read/write/writeBlob/delete + `statusPhotoUrl`。只给「我的状态」用，读写的是独立私有仓库，不是博客主仓 |
 | `src/utils/editor/status-serializer.ts` | 状态 json ↔ 记录：`dayKey`（**本地时区**，不能用 `toISOString`）、`thumbOf`（缩略图按 `-thumb` 命名约定推导）、`parseStatus`/`serializeStatus`；未知键进 `extra` 原样保留 |
-| `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
-| `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
-| `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部站长入口；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
-| `src/components/editor/IslandAdminEntry.svelte` | 灵动岛个人信息面板里的站长入口；与社交图标同形制（未登录 `LogIn` 用强调色、已登录 `LayoutGrid` 带绿点），挂 `data-di-tooltip-label` 复用灵动岛浮层 |
+| `src/utils/editor/batch-queue.ts` | 后台与说说抽屉共用的草稿箱：混合集合草稿、30 条上限、`mode: create/update`、`localStorage` 持久化（启动时迁移旧的 `sessionStorage`）、损坏数据过滤与按 id/路径去重 |
+| `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板 / 正文图片区 `mediaInBody`） |
+| `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部账号入口；三态（登录 / 访客身份 + 退出 / 站长三项）；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
+| `src/components/editor/IslandAdminEntry.svelte` | 灵动岛个人信息面板里的账号入口；与社交图标同形制（未登录 `LogIn` 用强调色、访客显示 GitHub 头像、站长 `LayoutGrid` 带绿点 + 新建 + 退出），挂 `data-di-tooltip-label` 复用灵动岛浮层 |
 | `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉）、AdminStatusBoard（我的状态：时间轴 + 上传 + 两日对比，选中 `privateBoard` 集合时替换「列表 + 编辑」两栏） |
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
 | `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
@@ -1578,6 +1599,35 @@ Cookie 里封的是 GitHub OAuth token，有效期 30 天。**token 会被 GitHu
 2. **只把文案塞进局部错误框（`listError` / `docError`）是错的**：外壳仍是已登录，`refreshList` 开头的 `if (!$editor.isEditor) return` 也不会让它自愈，点重试永远拿同一个 401 —— 就是「按钮坏了」的成因。
 3. `AdminApp.svelte` 的统一入口是 `handleApiError(error, apply)`，新加的请求一律走它，别直接 `editor.describeError(error)`。
 4. 公开页面的 `isEditor` 只看 `/api/auth/me`，所以 token 失效时导航栏仍显示「后台」图标 —— 这是**已知且刻意接受**的：点进 `/admin` 触发一次 401 就会自动清 Cookie 复位，不必为了这点在每页加载时多打一次 GitHub API。
+
+### 登录对所有人开放（2026-11-26 起）
+
+站长原话：「改成所有人都可以登录，用 github 登录，然后别人登录后只会在留言板保存登录信息，我登录的话自动识别是站长，会有站长该有的功能」。落地方式：
+
+**服务端（`cloudflare-worker/index.js`）**
+
+- `callback()` **不再**拒非站长：任何 GitHub 账号都能登录，session 里多一个 `isOwner: isOwner(user.login, env)`；`/api/auth/me` 也返回 `isOwner`（旧 Cookie 没这字段时用 `login` 现算兜底）。
+- **所有写仓库的通道必须用 `requireOwner(request, env)`**，不许再用 `readSession`：`/api/github/file`(PUT/DELETE)、`/blob`、`/batch`、`/tree` 四处已切过去。无 session → 401「未登录或登录已过期」；非站长 → 403「内容管理只有站长能操作」。**这条是安全边界：漏一处，任何登录访客都能改博客仓库。** 新增写接口时照抄 `requireOwner`。
+- `isOwner()` 判据仍是 `OWNER_LOGIN`（默认 `flowersoul999`），只认 GitHub 账号名，前端说什么都不算。
+
+**前端（两个概念别混）**
+
+| 字段 | 含义 | 用途 |
+|------|------|------|
+| `$editor.loggedIn` | 已用 GitHub 登录（任何人都可能） | 显示头像/身份、留言板取昵称 |
+| `$editor.isEditor` | **有编辑权 = 是站长** | 所有编辑按钮显隐、`<html class="is-editor">` |
+
+`applyIdentity()` 里 `isEditor: identity.isOwner`、`loggedIn: true`；`emptySnapshot()` 两者都 `false`。`<html>` 上的 `is-editor` 挂的是**编辑权**，不是登录态 —— 访客登录后页面里不能冒出任何编辑按钮。
+
+**留言板（`GuestbookChat.svelte`）**
+
+- 登录按钮走 `editorUi.openLogin(...)`（站内 Worker），**不再调 Waline `login()`** —— Waline 的 `/oauth/github` 需要服务端配 `GITHUB_ID/SECRET`，线上没配就是 403。
+- `siteIdentity`（`$derived` 自 `$editor`）派生 `{ name, avatar, link }`；`$effect` 在登录后把**空着的** `nick` / `link` 灌进 `guestbook-chat-profile`（写 localStorage），已在 `syncedIdentityLogin` 记过的账号不重复灌，避免覆盖访客手填内容。
+- 提交时优先级：Waline 登录态 → 留言资料（含预填）→ `siteIdentity`；`validateComposer` 在有 `siteIdentity` 时不再要求手填昵称。
+- 「退出登录」= 清 Waline 登录态 + `forgetGithubProfile()`（只清仍是 `https://github.com/<login>` 的自动填值）+ `editor.logout()`，三件事一起做，别只退一半。
+- **已知限制**：评论列表里的头像/「站长」徽章来自 Waline 服务端（`avatar` 由 `mail` 推 gravatar、`type: administrator` 要 Waline 登录态），所以访客留言的头像仍是字母占位。要真头像/可删自己的评论，得去 Waline 项目配 `GITHUB_ID`/`GITHUB_SECRET`/`JWT_TOKEN` 打开 Waline 自带的 OAuth —— 那是另一条链路，别在本仓库里硬凑。
+
+**OAuth scope 现状**：仍是单一 App + `public_repo`（站长要写仓库）。普通访客因此也会授权到 `public_repo`，但后端写操作只放行站长，别人的仓库他本来也没权限。若将来要收紧，做法是 `read:user` 登录 + 站长进后台时再引导一次写权限授权（未实现）。
 
 ### 为什么需要 Worker（关键认知）
 
@@ -1610,10 +1660,12 @@ Cookie 里封的是 GitHub OAuth token，有效期 30 天。**token 会被 GitHu
 GET /api/auth/callback?code=…&state=…
   ├─ 比对 state（Cookie 里那份 vs URL 里那份），不一致就拒
   ├─ POST github.com/login/oauth/access_token —— client_secret 只在这一行出现
-  ├─ GET api.github.com/user → login 必须等于 flowersoul999
-  └─ 封 { token, login, name, avatar } → Set-Cookie: jojo_editor（HttpOnly, 30 天）
+  ├─ GET api.github.com/user → 拿 login/name/avatar，**不拒非站长**
+  └─ 封 { token, login, name, avatar, isOwner } → Set-Cookie: jojo_editor（HttpOnly, 30 天）
         ↓ 302 回站，带 ?auth=ok
-editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」，拿不到 token
+editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁 + isOwner」，拿不到 token
+        ↓
+写仓库的接口（/api/github/file|blob|batch|tree）再走一遍 requireOwner → 非站长 403
 ```
 
 ### 四条硬约束
@@ -1639,8 +1691,36 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 1. **列表只读文件名，不预读 frontmatter。** 面经 108 篇逐篇读就是 108 次请求，慢且烧额度。文件名本身可读（面经带序号、说说带日期），真实标题打开时再显示。别为了「列表上多显示几个字段」去全量读一遍。
 2. **frontmatter 保序保留，不要改成「解析成对象再序列化」。** 那样字段会重排、注释会消失、不认识的字段会被吃掉，每次保存都制造一整片 diff。`content-serializer.ts` 的做法是拆成有序 entry、没改过的写 `original`。实测 26 个文件（文章 + 面经 + 说说）解析再序列化逐字节一致 —— 改这块之后要重跑这个校验。
 3. **/admin 只能整页进入。** Swup 只替换容器内容，不会重新挂载 Astro 岛，SPA 导航进来会白屏。任何指向 `/admin` 的链接都要带 `data-no-swup`；后台内的链接同理。
-4. **批量提交必须原子更新一次分支。** 前端队列可以混合文章、说说和更新日志，但 Worker 必须创建多个 blob、一个 tree、一个 commit，最后只 PATCH 一次 ref；禁止退化成循环调用 Contents API，否则会产生半批成功和重复构建。同名路径在完整仓库树与本批次内统一追加 `-2`、`-3`，ref 冲突只自动重试一次。
+4. **批量提交必须原子更新一次分支。** 前端队列可以混合文章、说说和更新日志，但 Worker 必须创建多个 blob、一个 tree、一个 commit，最后只 PATCH 一次 ref；禁止退化成循环调用 Contents API，否则会产生半批成功和重复构建。ref 冲突只自动重试一次。
+   - **`mode` 决定撞名怎么办（2026-11-26）**：每个 item 可带 `mode: "create" | "update"`，缺省 `create`。
+     `create` 在同名路径已存在时由 `resolveBatchPaths()` 追加 `-2`、`-3`（查的是完整仓库树 + 本批次内已占位）；
+     `update` **必须原样覆盖那一个文件，绝不加后缀** —— 草稿箱里改一篇文章走的就是 update，
+     加了后缀会在仓库里多出一份重复文件。校验层 `validateBatchItems()` 只认这两个值，其余归一到 `create`。
+   - 改这块要同步两边：`cloudflare-worker/index.js`（服务端语义）与 `src/utils/editor/github-client.ts` 的 `BatchWriteItem`；
+     旧的 Worker 收到 update 仍会加后缀，所以**前端与 Worker 必须同批上线**。
 5. **视觉主题只在 `.admin` 作用域内覆盖令牌（2026-11-25 双主题）。** 后台是独立全屏页，不参与站点明暗切换；**默认「晴空晨曦」浅色主题**（站长嫌深空太黑看不清），顶栏月亮/太阳按钮切「深空星尘」，选择存 `localStorage.admin-theme`。配色集中在 `src/styles/pages/admin.css` 末尾：`.admin` 定义白天令牌、`.admin[data-admin-theme="night"]` 覆盖夜间令牌，两套共用同一批语义变量（`--admin-*`）。新增后台组件一律读这些变量，才能跟着主题和编辑器/状态板/队列抽屉一起变。不写进 `main.css`、不新增 `!important`、不硬编码黑白。canvas 星尘组件靠 `theme` prop 触发 `$effect` 重读 `--admin-star`，别在 `onMount` 里只读一次。
+
+### 后台「草稿箱」= 待提交队列（2026-11-26 起）
+
+站长改稿常常一次动好几篇，"点一次提交 = 一个 commit"太慢，所以后台的「提交」语义改成了**只入队**：
+
+- 编辑器主按钮是「存入草稿箱」，不写仓库、不发请求，只把序列化后的 Markdown 连同 `collectionId / path / mode` 塞进队列（`src/utils/editor/batch-queue.ts`）。
+- 队列存在 `localStorage`（key `jojo_admin_batch_queue`，上限 30 条），关标签页不丢；启动时把旧版的 `sessionStorage` 数据搬一次过来再清掉。
+- 站内的说说抽屉（`MomentDrawer.svelte`）写的是**同一份队列**：抽屉里存进去的说说，会出现在后台右上角「待提交」里，可以一起提交。抽屉里唯一例外是**本地图片**——`File` 塞不进 localStorage，只能在点「存入草稿箱」时先上传（每张一次 blob 提交）；后台编辑器那边则是「带未上传图片时禁止入队」，两条路都通，别只测一条。
+- 去重规则：`id` 相同必定是同一条；**路径去重只对 `update` 生效**。`create` 不能按路径合并，否则同一天的两条说说（服务端加后缀前路径相同）会被吃掉一条。
+- 队列里点「提交全部」才真正写入：`writeBatch()` → Worker 造 blobs → 一个 tree → 一个 commit，commit message 形如 `chore(content): 批量提交 3 条内容（新建 1 / 更新 2）`。
+- **删除仍走即时提交**（需要 sha，且通常只删一条，没必要排队）；这条边界写在 `AdminApp.svelte` 顶部注释里。
+
+### 后台正文图片区（说说，2026-11-26）
+
+说说的图片**不占 frontmatter**，存的是正文末尾一行一个 `![](assets/diary/xxx.webp)`（§5.19 的约定）。所以后台的「图片」不是表单字段，而是正文的一种形态：
+
+- **配置驱动，不认集合 id。** `AdminCollection.mediaInBody = { uploadDir, refPrefix, max }` 有值才渲染图片区（`admin-collections.ts`）。通用层只问「这个集合有没有正文图片区」，以后别的集合要配图也只改配置表，别在组件里写 `collection.id === "moments"`。
+- **`doc.body` 不再是双向绑定，是拼出来的。** 正文框绑 `bodyText`（拆掉图片行之后的纯文字），图片列表单独一份状态；点提交才 `syncBody()` → `joinBodyMedia(bodyText, urls)` 写回 `doc.body`。所以「提交」和「加入待提交」之前都必须先 `syncBody()`，漏一处就把图片写丢（队列存的是序列化后的文本）。
+- **上传压在提交时，且严格串行。** GitHub 同分支不能并发提交，第二张起必然 422；中途取消编辑也不会在仓库留没人引用的图。带未上传图片时**禁止进待提交队列**（文件没法序列化），挡住并提示直接提交。
+- **缩略图两套来源**：构建期就存在的图用 `import.meta.glob(..., { query: "?url", import: "default" })` 取真实地址；刚上传的图在这个映射里查不到，用本地 objectURL 顶着，刷新后显示「重新构建后可见」的占位卡 —— 不要用裂图假装加载失败。
+- 拆分 / 拼装 / 拖动排序的纯函数都在 `src/utils/moment-media.ts`（`splitMomentMedia` / `joinBodyMedia` / `moveMediaItem` / `isRepoMediaUrl`），有 8 条单测：`pnpm test:media`。**别在组件里各写一套正则。**
+- 拖动排序的语义是「占用目标位置」（`moveMediaItem` 直接 `splice(to, 0, moved)`），不是「插到目标之前」—— 后者永远挪不到最后一位。抽屉那份旧实现是「插到之前」，改它之前先想清楚。
 
 ### 编辑按钮的显隐
 
@@ -1660,7 +1740,8 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 | 点登录提示「还没配 GitHub OAuth」 | Worker 缺 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` |
 | GitHub 报 `redirect_uri_mismatch` | OAuth App 的 Callback URL 必须是 `https://jojocode.cn/api/auth/callback`，一字不差 |
 | 回跳后仍是未登录 | Cookie 没写进去：必须 HTTPS 访问；用 workers.dev 测试域名登录但 callback 配的是正式域名也会这样 |
-| 登录成功但后台列表提示接口不存在 | Cloudflare Worker 还没部署含 `GET /api/github/tree` 的最新版；重新发布仓库 `cloudflare-worker/index.js`，并确认 `jojocode.cn/api/github/*` Route |
+| 后台列表提示 `/api/github/*` 返回 404 | Cloudflare Worker 还没部署含 `GET /api/github/tree` 的最新版；重新发布仓库 `cloudflare-worker/index.js`，并确认 `jojocode.cn/api/github/*` Route |
+| 「我的状态」提示 `/api/private/*` 返回 404 | **另一条 Route**：`jojocode.cn/api/private/*` 没加，或 Worker 没重新部署（旧版没有私有通道）。curl `https://jojocode.cn/api/private/tree` 若返回站点的 HTML 404 页（而非 JSON），就是请求根本没进 Worker |
 | 提示「不是站长」 | 登录的 GitHub 账号不是 `flowersoul999`（判定在服务端，前端改不了） |
 
 完整操作步骤见 `docs/deploy-github-pages.md` 第七节。
@@ -1705,7 +1786,9 @@ Contents 读写的 fine-grained PAT，放 Worker Secret，登录链路一个字�
 - **不注册 content collection。** 状态没有公开页面，`src/content.config.ts` 里没有 `status`，
   `.gitignore` 也不用加白名单 —— 它压根不经过 `src/content/`。
 
-**排障**：提示「私有仓库还没配 PRIVATE_TOKEN」= 第 3 步没做；面板报 404 = Route 少一条；
+**排障**：提示「私有仓库还没配 PRIVATE_TOKEN」= 第 3 步没做；面板报 404 = Route 少一条
+（2026-11-26 起文案会直接写出出错路径 `/api/private/*`，与内容通道 `/api/github/*` 分开说 ——
+两条通道在 Cloudflare 上是**两条独立 Route**，缺哪条只影响哪一块面板）；
 报 403「只有站长能访问私有内容」= 登录的 GitHub 账号不是站长；图片全是裂图 = PAT 少了
 Contents 权限，或者 `PRIVATE_TOKEN` 过期（fine-grained PAT 有有效期）。
 
