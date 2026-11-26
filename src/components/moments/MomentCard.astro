@@ -280,7 +280,7 @@ const publishedTitle = `${publishedText} ${published.toLocaleDateString(
 				))}
 			</div>
 		)}
-			<div class="card-comment-toggle">
+		<div class="card-comment-toggle">
 			<!-- 站长专属：未登录时整组 display:none，靠 <html>.is-editor 开关 -->
 			<div class="moment-edit-actions">
 				<button
@@ -290,7 +290,10 @@ const publishedTitle = `${publishedText} ${published.toLocaleDateString(
 					aria-label="编辑这条说说"
 					title="编辑"
 				>
-					<Icon name="material-symbols:edit-outline" class="moment-edit-icon" />
+					{/* 不能用 material-symbols:edit-outline：astro-icon 会为它生成 <use>
+					    引用却吐不出对应的 <symbol>，按钮里只剩一个空圆（2026-11-26 实测
+					    全站 151 个页面都这样）。edit-note-outline 能正常内联。 */}
+					<Icon name="material-symbols:edit-note-outline" class="moment-edit-icon" />
 				</button>
 				<button
 					class="moment-edit-btn is-danger"
