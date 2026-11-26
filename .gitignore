@@ -46,7 +46,7 @@ scripts/fill-descriptions/index.ts
 _tmp_*
 .tmp_*
 .codex-*
-.wb-probe-*
+.wb-*
 .toc-probe.mjs
 *.log
 
