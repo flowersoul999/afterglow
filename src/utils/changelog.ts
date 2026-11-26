@@ -48,11 +48,29 @@ function normalizeType(raw: string | undefined): ChangelogType {
 		: "feature";
 }
 
+/** 缺失 time 时返回空串，排序时自然落在有 time 的条目之后。 */
+function e_timeOf(raw: string | undefined): string {
+	return (raw ?? "").trim();
+}
+
 export function changelogEntriesFromCollection(
 	entries: CollectionEntry<"changelog">[],
 ): ChangelogEntry[] {
 	return entries
-		.sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+		.sort((a, b) => {
+			const dateDiff = b.data.date.getTime() - a.data.date.getTime();
+			if (dateDiff !== 0) return dateDiff;
+			// 同一天按 time 倒序（HH:MM 字符串可直接比较）；缺失 time 的排在有 time 的之后
+			const timeA = e_timeOf(a.data.time);
+			const timeB = e_timeOf(b.data.time);
+			if (timeA !== timeB) {
+				if (!timeA) return 1;
+				if (!timeB) return -1;
+				return timeB.localeCompare(timeA);
+			}
+			// time 也相同则按 id 兜底，保证排序稳定
+			return a.id.localeCompare(b.id);
+		})
 		.map((e) => {
 			const raw = e.body ?? "";
 			const detail = raw.trim();

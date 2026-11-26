@@ -1321,7 +1321,7 @@ description: 一句话概括（显示在列表页）
 
 **正文**：`## 标题` + bullet 列表，按“用户视角”写改了什么、怎么用，关联关键文件 `路径:行号`（如 `src/utils/category-tree.ts:17`）。
 
-**流程**：功能验证通过（dev 实测；**推送线上前**按第 18 节 C 档跑 `pnpm build` + `pnpm check`）→ 立即写 changelog → 与代码同提交或紧后提交 → `changelog` 页自动按 `date` 倒序展示。
+**流程**：功能验证通过（dev 实测；**推送线上前**按第 18 节 C 档跑 `pnpm build` + `pnpm check`）→ 立即写 changelog → 与代码同提交或紧后提交 → `changelog` 页自动按 `date` 倒序、同日按 `time` 倒序展示（排序逻辑在 `src/utils/changelog.ts` 的 `changelogEntriesFromCollection`，缺 `time` 的条目排在同日有 `time` 的之后）。
 
 **反例**：功能已上线数周但 `changelog` 仍停留在旧版本（本次 audit 发现 2026-08-13 后无更新）。
 
