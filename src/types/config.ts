@@ -550,6 +550,11 @@ export type HeroMosaicConfig = {
 	interactionHold: number;
 };
 
+/**
+ * 首屏右下角的熔融字水印（上小下大两行）。
+ * 字段沿用了「平台 / 账号」的老名字，实际渲染成两行自由文本：
+ * platform 是小字行、handle 是大字行，标点需要的话直接写进字符串。
+ */
 export type HeroContactConfig = {
 	platform: string;
 	handle: string;

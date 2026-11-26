@@ -6,18 +6,19 @@ interface Props {
 }
 
 const { contact } = Astro.props;
-const label = `${contact.platform}：${contact.handle}`;
+/** 上小下大两行水印；两行都是自由文本，标点由配置自带，组件不再补冒号 */
+const label = `${contact.platform} ${contact.handle}`.trim();
 ---
 
 <aside class="home-hero__contact" data-hero-contact aria-label={label}>
 	{contact.href ? (
 		<a href={contact.href} class="home-hero__contact-link">
-			<span class="home-hero__contact-platform">{contact.platform}：</span>
+			<span class="home-hero__contact-platform">{contact.platform}</span>
 			<span class="home-hero__contact-handle">{contact.handle}</span>
 		</a>
 	) : (
 		<p class="home-hero__contact-link">
-			<span class="home-hero__contact-platform">{contact.platform}：</span>
+			<span class="home-hero__contact-platform">{contact.platform}</span>
 			<span class="home-hero__contact-handle">{contact.handle}</span>
 		</p>
 	)}
