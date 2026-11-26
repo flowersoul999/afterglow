@@ -64,3 +64,4 @@ export { skillsConfig } from "./skillsConfig";
 export { sponsorConfig } from "./sponsorConfig"; // 赞助配置
 export { tabRadialMenuConfig } from "./tabRadialMenuConfig"; // Tab 呼出轮盘配置
 export { ttsConfig } from "./ttsConfig"; // 文章朗读（TTS）配置
+export { visitorLocationConfig } from "./visitorLocationConfig"; // 首页欢迎弹窗的访客地域查询

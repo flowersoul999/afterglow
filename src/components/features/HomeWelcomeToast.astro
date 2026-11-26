@@ -1,0 +1,294 @@
+---
+/**
+ * 首页欢迎弹窗：按访客当前时段问候，并显示 IP 归属地。
+ *
+ * 定位来自浏览器直连的第三方归属地接口（配置见 `config/visitorLocationConfig.ts`），
+ * 只用于这一次文案渲染，本站不接收、不存储访客 IP。
+ *
+ * 实现要点：
+ * - 自定义元素 `<home-welcome-toast>`：`customElements.define` 全局只执行一次，
+ *   Swup 换页插入的新节点会自动 upgrade 并触发 `connectedCallback`，不需要 window guard。
+ * - 运行参数全部走 data-*，脚本不 import 任何 config，避免把配置对象打进客户端包。
+ * - 定时器与 fetch 都在 `disconnectedCallback` 里清理（§8）。
+ */
+import { siteConfig } from "@/config";
+import { visitorLocationConfig } from "@/config/visitorLocationConfig";
+
+const { enabled, url, timeoutMs, sessionKey, delayMs, visibleMs } =
+	visitorLocationConfig;
+---
+
+{
+	enabled && (
+		<home-welcome-toast
+			class="home-welcome-toast"
+			data-state="idle"
+			data-site-title={siteConfig.title}
+			data-location-url={url}
+			data-timeout={timeoutMs}
+			data-delay={delayMs}
+			data-visible={visibleMs}
+			data-session-key={sessionKey}
+			role="status"
+			aria-live="polite"
+		>
+			<div class="home-welcome-toast__panel">
+				<span class="home-welcome-toast__icon" aria-hidden="true">
+					✦
+				</span>
+				<div class="home-welcome-toast__copy">
+					<p class="home-welcome-toast__title">欢迎来到 {siteConfig.title}</p>
+					<p class="home-welcome-toast__message">很高兴在这里遇见你。</p>
+				</div>
+				<button
+					class="home-welcome-toast__close"
+					type="button"
+					aria-label="关闭欢迎提示"
+				>
+					×
+				</button>
+			</div>
+		</home-welcome-toast>
+	)
+}
+
+<style>
+	.home-welcome-toast {
+		position: fixed;
+		z-index: var(--z-toast);
+		right: max(1.25rem, env(safe-area-inset-right));
+		bottom: max(1.25rem, env(safe-area-inset-bottom));
+		width: min(23rem, calc(100vw - 2rem));
+		opacity: 0;
+		pointer-events: none;
+		transform: translateY(0.9rem);
+		transition:
+			opacity 280ms ease,
+			transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.home-welcome-toast[data-state="visible"] {
+		opacity: 1;
+		pointer-events: auto;
+		transform: translateY(0);
+	}
+
+	.home-welcome-toast__panel {
+		position: relative;
+		display: grid;
+		align-items: center;
+		padding: 0.85rem 2.4rem 0.85rem 0.9rem;
+		border: 1px solid var(--border);
+		border-radius: 0.9rem;
+		grid-template-columns: auto 1fr;
+		gap: 0.75rem;
+		background: var(--float-panel-bg);
+		box-shadow: 0 0.7rem 1.8rem color-mix(in srgb, var(--deep-text) 12%, transparent);
+		backdrop-filter: blur(14px);
+	}
+
+	.home-welcome-toast__icon {
+		display: grid;
+		width: 2.2rem;
+		height: 2.2rem;
+		border-radius: 0.7rem;
+		place-items: center;
+		background: color-mix(in srgb, var(--primary) 10%, transparent);
+		color: var(--primary);
+		font-size: 1rem;
+		line-height: 1;
+	}
+
+	.home-welcome-toast__copy {
+		min-width: 0;
+	}
+
+	.home-welcome-toast__title {
+		margin: 0;
+		color: var(--deep-text);
+		font-size: 0.86rem;
+		font-weight: 600;
+		line-height: 1.45;
+		overflow-wrap: anywhere;
+	}
+
+	.home-welcome-toast__message {
+		margin: 0.12rem 0 0;
+		color: var(--content-meta);
+		font-size: 0.76rem;
+		line-height: 1.55;
+		overflow-wrap: anywhere;
+	}
+
+	.home-welcome-toast__close {
+		position: absolute;
+		top: 0.4rem;
+		right: 0.45rem;
+		display: grid;
+		width: 1.5rem;
+		height: 1.5rem;
+		padding: 0;
+		border: 0;
+		border-radius: 999px;
+		place-items: center;
+		background: transparent;
+		color: var(--content-meta);
+		cursor: pointer;
+		font-size: 1.05rem;
+		line-height: 1;
+		transition:
+			background 160ms ease,
+			color 160ms ease;
+	}
+
+	.home-welcome-toast__close:hover {
+		background: var(--btn-regular-bg);
+		color: var(--primary);
+	}
+
+	@media (max-width: 640px) {
+		.home-welcome-toast {
+			right: 1rem;
+			bottom: calc(5rem + env(safe-area-inset-bottom));
+			left: 1rem;
+			width: auto;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.home-welcome-toast {
+			transition: opacity 120ms linear;
+			transform: none;
+		}
+	}
+</style>
+
+<script>
+	// 时段问候：按小时升序匹配，最后一项兜住 18 点以后
+	const GREETING_STEPS: ReadonlyArray<readonly [number, string]> = [
+		[6, "夜深了"],
+		[9, "早上好"],
+		[12, "上午好"],
+		[14, "中午好"],
+		[18, "下午好"],
+		[24, "晚上好"],
+	];
+
+	const FALLBACK_MESSAGE = "很高兴在这里遇见你。";
+
+	function greetingFor(hour: number): string {
+		for (const [limit, text] of GREETING_STEPS) {
+			if (hour < limit) return text;
+		}
+		return "晚上好";
+	}
+
+	/**
+	 * 从接口响应里取地址文本。
+	 * 兼容 `{data:{address}}` 与 `{address}` 两种形态；中文地址顺带去掉
+	 * 库返回的分隔制表符/多余空格（部分接口是「中国\t湖北省\t襄阳市」）。
+	 */
+	function readLocation(payload: unknown): string {
+		if (!payload || typeof payload !== "object") return "";
+		const root = payload as Record<string, unknown>;
+		const node =
+			root.data && typeof root.data === "object"
+				? (root.data as Record<string, unknown>)
+				: root;
+
+		for (const key of ["address", "location", "city"]) {
+			const value = node[key] ?? root[key];
+			if (typeof value === "string" && value.trim()) {
+				return value.replace(/[\s\u3000]+/g, "");
+			}
+		}
+		return "";
+	}
+
+	class HomeWelcomeToast extends HTMLElement {
+		private delayTimer = 0;
+		private closeTimer = 0;
+		private request: AbortController | null = null;
+
+		connectedCallback() {
+			const sessionKey = this.dataset.sessionKey || "welcome_seen";
+			// 同一次会话只看一次：先占位，避免首页来回切换时反复弹
+			if (sessionStorage.getItem(sessionKey)) return;
+			sessionStorage.setItem(sessionKey, "1");
+
+			this.querySelector<HTMLButtonElement>(
+				".home-welcome-toast__close",
+			)?.addEventListener("click", () => this.close(), { once: true });
+
+			const delay = Number(this.dataset.delay) || 900;
+			this.delayTimer = window.setTimeout(() => void this.show(), delay);
+		}
+
+		disconnectedCallback() {
+			window.clearTimeout(this.delayTimer);
+			window.clearTimeout(this.closeTimer);
+			this.request?.abort();
+		}
+
+		private async show() {
+			const title = this.querySelector<HTMLElement>(
+				".home-welcome-toast__title",
+			);
+			const message = this.querySelector<HTMLElement>(
+				".home-welcome-toast__message",
+			);
+			const siteTitle = this.dataset.siteTitle || "";
+
+			if (title) {
+				title.textContent = `${greetingFor(new Date().getHours())}，欢迎来到 ${siteTitle}`;
+			}
+
+			this.dataset.state = "visible";
+
+			const locationUrl = this.dataset.locationUrl;
+			const location = locationUrl ? await this.fetchLocation(locationUrl) : "";
+
+			if (message) {
+				message.textContent = location
+					? `来自 ${location}，很高兴遇见你。`
+					: FALLBACK_MESSAGE;
+			}
+
+			const visible = Number(this.dataset.visible) || 7000;
+			this.closeTimer = window.setTimeout(() => this.close(), visible);
+		}
+
+		private async fetchLocation(url: string): Promise<string> {
+			const timeout = Number(this.dataset.timeout) || 3500;
+			this.request?.abort();
+			const controller = new AbortController();
+			this.request = controller;
+			const timer = window.setTimeout(() => controller.abort(), timeout);
+
+			try {
+				const response = await fetch(url, {
+					signal: controller.signal,
+					credentials: "omit",
+					referrerPolicy: "no-referrer",
+				});
+				if (!response.ok) return "";
+				return readLocation(await response.json());
+			} catch {
+				// 超时、网络失败、接口改结构都走通用文案，不打扰访客
+				return "";
+			} finally {
+				window.clearTimeout(timer);
+			}
+		}
+
+		private close() {
+			this.dataset.state = "closed";
+			this.request?.abort();
+			window.clearTimeout(this.closeTimer);
+		}
+	}
+
+	if (!customElements.get("home-welcome-toast")) {
+		customElements.define("home-welcome-toast", HomeWelcomeToast);
+	}
+</script>

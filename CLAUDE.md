@@ -62,7 +62,7 @@ src/
 │   ├── common/          # 跨域共享基础组件 (17)
 │   ├── controls/        # 交互控件：搜索、归档三视图树（ArchivePanel/ArchiveTree）、主题、Dock (8)
 │   ├── editor/          # 站长在线编辑（2026-11-03，11-04 改 GitHub OAuth，11-07 补手机菜单入口）：EditorNavButton 桌面资料卡入口 / EditorMobileMenuEntry 手机导航菜单末项 / EditorLoginModal OAuth 登录 / MomentDrawer 说说抽屉 / EditorRoot 常驻外壳（唯一 import editor.css 的地方） (5)
-│   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器)
+│   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器、HomeWelcomeToast.astro 首页欢迎弹窗)
 │   ├── layout/          # 布局组件：Navbar, DynamicIsland(参考站源码 + 本站设置适配), ProfileCardSiteAvatar, Footer(DoodleCrewFooter.svelte), SideBar, HomeHero(参考站版), HeroMosaic, HeroDialogue, HomeBlinds, HomeMobile... + doodle-crew-footer/ (33)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
 │   ├── moments/         # 动态卡片与评论弹窗
@@ -587,7 +587,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **改了什么**：原先「开心」下拉里挂着 7 个技能图入口（计算机基础 / 前端技能图 / 后端技能图 / Agent 开发 / 音乐（修行录）/ 英语（修行录）/ 理财（修行录）），菜单过长。现合并成**唯一一项「技能」**，落在 `/skills/`（前端技能图），图标 `material-symbols:account-tree-rounded`。
 - **只删导航入口，不删路由**：`/cs/` `/skills/` `/backend/` `/agent/` `/music/` `/english/` `/finance/` 七条路由、七套 `src/data/*Skills.ts`、`src/components/skills/*`、`page-type.ts` 的 `SKILL_GRAPH_PATHS` 与 `skills` 页型（满宽无侧栏）**全部原样保留**。页间跳转靠每页顶部的 `SkillGraphSwitch` 切换条，它才是七张图的真正总入口 —— 别再把它当装饰删掉。
 - **两份硬编码要同步改**：桌面走 `src/config/navBarConfig.ts` 的 `recordChildren`，「开心」分组；移动端抽屉 `src/components/layout/MobileMenuSheet.astro` 的 `groups` 是另写的一份（**不从 navBarConfig 读**）。以后增删「开心」下拉项，两处必须一起改，否则手机端和桌面端会不一致。
-- **「开心」默认跳转未变**：仍是 `/books/` → `/movies-games/` → `/changelog/` 兜底。
+- **「开心」默认跳转**：仍是 `/books/` → `/movies-games/` 兜底；最后一档 2026-11-26 起改为 `/life/places/`（更新日志已移到「关于」，见 5.25）。
 
 ### 5.19 动态图片写在正文（2026-10-21）
 
@@ -676,7 +676,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 
 - **/schedules/ 日历、/bills/ 账单、/apps/ 应用展示、/music/ 音乐页面**的路由文件与导航入口（导航栏 + 移动菜单的「我的」分组）已删除。
 - ⚠️ **`/music/` 这个路由 2026-10-29 被重新占用了**：现在是「音乐（修行录）」技能图（`src/pages/music.astro`），和当年那个音乐播放页毫无关系。别再按「音乐页已下线」去理解这个路径，也别因为它跳过来就把这个页面删了。
-- 「开心」分组（原「记录」，2026-10-29 改名）的默认跳转：/books/ → /movies-games/ → /changelog/（兜底**不再**用 /music/，原因同上）。
+- 「开心」分组（原「记录」，2026-10-29 改名）的默认跳转：/books/ → /movies-games/ → /life/places/（兜底**不用** /music/，原因同上；2026-11-26 前兜底是 /changelog/，更新日志移到「关于」后改掉了）。
 - ⚠️ **不要顺手删这几个集合与内容**：bills(117) / schedules(7) / apps(1) 的 schema 与 md 都还在（页面先下线、数据保留），SiteStats 仍在用 bills 统计。想彻底清掉要站长确认。
 - ⚠️ **音乐功能与音乐页面无关**：右下角悬浮坞的音乐按钮/抽屉 + musicConfig + bangumi 的 music 条目是另一条链路，删页面时不要动它们。
 
@@ -777,11 +777,29 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - ⚠️ **暗色下按钮底要单独提亮**：`--page-bg` 暗色只有 `oklch(0.08)`，和压暗后的背景几乎同色，`:global(:root.dark) .trm__tile` 把它提到 `--btn-card-bg-active`（暗色 0.20）才分得出来。
 - 层级 `z-index: 1100`（高于 `--z-toast` 的 1080）。
 
+### 5.25 「更新日志」从「开心」移到「关于」下（2026-11-26）
+
+- **现状**：「关于」下拉 = 关于 / 友链 / 赞助 / 更新日志（`src/config/navBarConfig.ts:159`，按 `siteConfig.pages.changelog` 开关追加）；「开心」下拉不再含更新日志，只剩书架 / 影视与游戏 / 足迹 / 技能。
+- **两份硬编码依旧要一起改**：桌面 `navBarConfig.ts` 的 `recordChildren` 与「关于」`children`；移动端 `src/components/layout/MobileMenuSheet.astro` 的 `groups`（手写静态列表，**不从 navBarConfig 读**，本次同步改了「开心」组与「关于」组两处）。
+- **「开心」默认跳转兜底已换**：`/books/` → `/movies-games/` → **`/life/places/`**（原为 `/changelog/`；更新日志搬走后不能再指向不在这栏里的页面）。
+- 页脚 `src/config/footerConfig.ts:58` 仍保留更新日志入口，与导航分组无关，不要跟着删。
+
+### 5.26 首页欢迎弹窗（2026-11-26 新增）
+
+- **组成**：`src/components/features/HomeWelcomeToast.astro`（弹窗本体）+ `src/config/visitorLocationConfig.ts`（接口与时长），只在 `src/pages/[...page].astro` 挂载，其余页面不渲染 —— 定位是「首页见面礼」，不是全局 toast。
+- **地域来源**：浏览器直连 `https://v2.xxapi.cn/api/ip`（国内 IP 库，到区县，已开 CORS）。本站是静态托管、没有服务端，**请求由访客浏览器发出，本站不接收也不存储 IP**。接口返回 `data.address` 形如「中国湖北省襄阳市谷城县」。
+- ⚠️ **必须挂在 `.home-page` 之外**（与它同级、同在 `#content-wrapper` 内）：首页 hero 的位移动画会让祖先带上 transform，`position: fixed` 元素会改以该容器为包含块，弹窗就不是固定在视口右下角了。这与 `styles/transitions/swup.css` 里「首页转场退化成纯 opacity」是同一个坑的两种表现。
+- **Swup 兼容靠自定义元素**：用 `<home-welcome-toast>` + `customElements.define`（`customElements.get` 守卫）。定义全局只执行一次，Swup 换页插入的新节点会自动 upgrade 并触发 `connectedCallback`，所以**不需要** `window.__xxx` 守卫，也**不要**改成 `document.addEventListener("swup:content:replaced")` 那一套 —— 实测「列表页 → 点 logo 回首页」能正常弹出。
+- **参数全走 data-\***：`data-site-title / location-url / timeout / delay / visible / session-key`。脚本**不 import** `siteConfig` 或配置对象，避免把整个配置打进客户端包；改行为只改 frontmatter 的传值。
+- **行为约定**：`sessionStorage` 键 `jojostar_welcome_seen_v1`，同一次会话只弹一次（先写标记再延时，防止来回切首页重复弹）；延迟 900ms 出现、7 秒自动收起、右上角可关；请求 3.5 秒超时，失败/被拦截一律退回「很高兴在这里遇见你。」。
+- **样式只用令牌**（`--float-panel-bg` / `--border` / `--deep-text` / `--content-meta` / `--primary` / `--z-toast`），不写死颜色，所以亮色两套（classic / warm）与暗色自动跟随；窄屏抬到 `calc(5rem + safe-area)` 避开底部栏，并适配 `prefers-reduced-motion`。
+- **文案不进制 i18n**：时段问候与句式都带运行时插值（时辰、站名、区县地址），`i18n()` 没有插值能力，放组件顶部常量（`GREETING_STEPS` / `FALLBACK_MESSAGE`）更直接。**这不是漏翻**，别再去 `zh_CN.ts` 补键。
+
 ---
 
 ## 6. 配置系统
 
-27 个配置文件，通过 `src/config/index.ts` barrel export（29 个具名导出）。
+28 个配置文件，通过 `src/config/index.ts` barrel export（30 个具名导出）。
 
 ### 核心配置
 
@@ -803,7 +821,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 
 ### 其他配置
 
-`adConfig`, `announcementConfig`, `circleConfig`, `coverImageConfig`, `expressiveCodeConfig`, `fontConfig`, `footerConfig`, `friendsConfig`, `guestbookConfig`, `licenseConfig`, `momentConfig`(动态评论配置), `pioConfig`(Live2D/Spine), `relationshipConfig`, `sakuraConfig`, `skillsConfig`, `sponsorConfig`, `ttsConfig`(文章朗读)
+`adConfig`, `announcementConfig`, `circleConfig`, `coverImageConfig`, `expressiveCodeConfig`, `fontConfig`, `footerConfig`, `friendsConfig`, `guestbookConfig`, `licenseConfig`, `momentConfig`(动态评论配置), `pioConfig`(Live2D/Spine), `relationshipConfig`, `sakuraConfig`, `skillsConfig`, `sponsorConfig`, `ttsConfig`(文章朗读), `visitorLocationConfig`(首页欢迎弹窗的归属地接口与时长，见 §5.26)
 
 > **代码块语言别名（在 `astro.config.mjs`，不在 src/config）**：Shiki 没有 `mysql` 语法（只有 `sql`），所以 `expressiveCode({ shiki: { langAlias: { mysql: "sql" } } })` 把 ` ```mysql ` 映射到 SQL 高亮。没有这条映射时，构建会刷 `astro-expressive-code` 的 "language could not be found" 警告并把代码块降级成纯文本。新增其它别名（如 `vue3` → `vue`）同样加在这里。
 
@@ -1162,6 +1180,7 @@ return controller;
 | 在组件 `<style>`（scoped）里用 `:root.xxx` / `html.xxx` 当**祖先选择器**（如 `:root.is-editor .foo{}`） | Astro 的作用域处理会把前缀连同作用域一起吃掉，编译后只剩 `.foo[data-astro-cid]`，条件样式变成无条件生效（2026-11-03 说说编辑按钮「登录前后都显示」事故，产物里 `:root.is-editor` 直接消失） | 跨作用域的祖先一律包 `:global()`：`:global(html.is-editor) .foo{}`，编译后前缀原样保留 |
 | 在纯静态站（无 adapter）里做「密码登录」 | 没有服务端就没有可信的校验点，密码只能在前端比对，读源码即可绕过，等于没有密码 | 要么上服务端（Edge Function / Worker，令牌放服务端、前端只拿 HttpOnly Cookie），要么直接让用户填能真正决定权限的凭证（见 §24） |
 | 全局 `keydown` 拦截只对「首次按下」`preventDefault`，把 `e.repeat` 分支直接 `return` | 按住键不放时浏览器会持续派发 auto-repeat `keydown`，**每一次都是一次完整的默认动作**（Tab 移焦点、方向键滚动），于是轮盘/面板还开着，焦点继续在背后页面里跳（2026-11-25 Tab 轮盘事故：长按 Tab 焦点一路跳到导航按钮） | 用「键是否物理按下」的状态位（如 `TabRadialMenu.svelte` 的 `tabDown`）在 capture 阶段吞掉所有后续事件，并在 `window blur` / `astro:page-load` 重置（keyup 丢失会永久吞键）；`preventDefault` 必须排在所有 `return` 之前 |
+| 拿 Umami 上报脚本地址（`scriptUrl`）取 `origin` 去拼 `/api/share`、`/api/websites` | Umami Cloud 的读数接口在 `/analytics/{region}` 前缀下，根路径请求 404，首页 UV/PV 永远显示 `--`（2026-11-08 首修，`9b297bc` 首页移植时回归，11-25 二次修复） | 统一用 `siteConfig.analytics.umamiAnalytics.apiBase`（Cloud 自动推导 region 前缀）；桌面端 `HomeDataLayer.astro` 与移动端 `HomeMobile.astro` 必须同步改，勿只改一处 |
 
 ---
 
@@ -1253,6 +1272,100 @@ scope: layout | config | i18n | styles | utils | components | content
 >
 > 想彻底消灭误报可加 `.gitattributes`（`* text=auto eol=lf`），但那会改所有平台的检出行为，**属项目级决定，先问站长**。
 
+### 18.2 任务完成即自动推送（新增 2026-11-26：多会话并行工作流）
+
+站长会**同时开多个会话做不同任务**，因此：**每个任务完成后默认自动提交并推送远程 `main`，不再逐次询问「要不要提交」**（已明确授权）。但「自动」不等于「粗暴」，下面三条是不可跳过的硬约束。
+
+#### 一、只推自己做的东西（工作区随时躺着别的会话的改动）
+
+- **只允许显式路径提交**：`git add -- <文件1> <文件2> …`；**禁止 `git add -A` / `git add .` / `git commit -a` / `git stash -u`**。本仓工作区常有 60+ 个 `_tmp_*`、`.codex-*.log`、`.wb-probe-*.mjs` 无人认领，一条 `-A` 就能把垃圾全推上线。
+- **判断「哪些是我的改动」只能比 `origin/main`，不能比 `HEAD`**：本机分支常落后远程十几个提交（2026-11-26 实测落后 11 个），此时裸 `git diff` 会把**别的会话早已推送的改动**一并显示成「未提交」，据此判断必然误判成混改。正确姿势：
+  ```bash
+  git fetch origin main                              # 反代 fetch 通常比官方稳定
+  git diff --stat origin/main -- <要提交的文件…>      # 真实归属
+  git diff -U0 origin/main -- <文件> | grep -E "^\+#{2,3} "   # 看改了哪些章节
+  ```
+- **不属于本次任务的改动原样保留**：不 stash、不 `checkout --`、不删除、不「顺手整理」。别人的会话还等着它。
+- **同一文件被多个会话混改**（一个文件里既有我的改动也有别人的，且无法按 hunk 拆分）→ **停下报告站长**，不擅自提交半成品。
+- 提交后自查 `git show --stat HEAD`，确认文件清单与预期完全一致；多出或少了一律回退重来。
+
+#### 二、质量门全绿才允许 push（即 §18.1 C 档，不得豁免）
+
+| 检查 | 命令 | 说明 |
+|---|---|---|
+| Lint/格式 | `pnpm exec biome ci ./src --reporter=github` | 与 CI 同一 reporter，几秒出结果，**改了 `src/` 必跑** |
+| 类型/诊断 | `pnpm check` | astro check，抓类型错误与集合键名错 |
+| 生产构建 | `pnpm build` | 涉及集合/配置/`content.config.ts`/内容目录/样式构建**必跑**；其余情况推送前也建议跑 |
+
+- **任一红灯 → 先修再推**。修不动就停下来报告问题，**绝不带着红灯推 `main`**（站长原话：「不要推送过去代码质量又有问题」）。
+- 构建报 `EPERM ... data-store.json` 是 dev server 抢占锁，杀掉残留 node 再跑，不是代码问题（§18.1）。
+- `biome` 报 "File content differs" 按 §18.1 的 CRLF 判别流程逐个确认，别一律当误报。
+
+#### 三、推送姿势（多分支并存，`push.default=current`）
+
+1. 在**当前工作分支**直接提交，**不要 `git switch main`**——切分支会打乱其它会话的工作区与 dev server。
+2. `git fetch origin main` 后看是否落后；**落后时不能用 `git rebase`**：工作区里有别的会话的改动，rebase 会直接报 `cannot rebase: You have unstaged changes`。改用 §18.2「工作区脏时的 plumbing 提交路径」（不动工作区、不切分支、不 stash）。
+3. 工作区**干净**时才走常规路径：`git rebase origin/main` → `git push origin HEAD:main`。
+4. 出现冲突 → **停下问站长**，不硬解、不 `--force`、不 `reset --hard`。
+5. 反代（ghfast.top）push 报 CAS 失败时，按 MEMORY.md「推送通道」走官方 remote + 小代理，别反复重试同一命令。
+6. 提交信息按 §18 格式；面向用户的功能/修复按 §21 写 changelog，**纯文档或流程调整走 `docs` scope、不占版本号**。
+7. 临时产物（`_tmp_*`、`.tmp_*`、`.codex-*`、`.wb-probe-*`、`*.log`）**永不入库**，已在 `.gitignore` 兜底；若日志里出现它们，说明忽略了规则，回头补 `.gitignore`。
+
+#### 四、工作区脏时的 plumbing 提交路径（本仓验证过的唯一安全解）
+
+工作区有别的会话的未提交改动时，`git add` 只加自己的文件仍然是安全的（索引操作不碰工作区），但 **rebase 会失败**。此时用 plumbing 直接从 `origin/main` 造提交，全程不碰工作区与分支指针：
+
+```bash
+# 1) 把自己的每个文件内容写成 blob（<tree-ish> 用 origin/main 的对应文件，新文件用 /dev/null 跳过）
+blob=$(git hash-object -w <文件路径>)
+
+# 2) 用临时索引以 origin/main 为基线，只替换自己这几个文件
+export GIT_INDEX_FILE=.git/.push-index.$$
+git read-tree origin/main
+git update-index --add --cacheinfo 100644,$blob,<仓库内路径>
+tree=$(git write-tree)
+commit=$(git commit-tree $tree -p origin/main -F .git/COMMIT_EDITMSG.$$)
+
+# 3) 推出（反代失败再切官方 remote）
+git push origin $commit:refs/heads/main
+unset GIT_INDEX_FILE; rm -f .git/.push-index.$$ .git/COMMIT_EDITMSG.$$
+```
+
+- 删除文件用 `git update-index --force-remove <路径>`；改多个文件就重复第 1、2 步。
+- 提交对象由 `commit-tree` 生成，**分支指针不动**（`HEAD` 仍是落后分支），这是预期行为，不要为了「看起来干净」去 reset。
+- 造完用 `git show --stat $commit` 核对文件清单，再 push。
+
+> ⚠️ **整文件上传前必须验证文件本身是干净的**（2026-11-26 踩过）：`hash-object -w <工作区文件>` 和 REST API 上传的都是**工作区当前字节**，如果这个文件里还混着别的会话的未提交改动，会一起带上线。本次推 `CLAUDE.md` 时就把别人没提交的 2 行「灵动岛入口」描述带了上去（基线版 vs 工作区版 diff 出现 `-2` 才发现）。
+> 判定方法：`git diff origin/main -- <文件>` 的增删行，与自己这次真正改的内容对不上 → 说明混了别人的改动。**不要改工作区文件去「还原」**（那会销毁别人的未提交工作），而是用「远程基线版 + 自己的段落」重建内容后提交。
+
+#### 五、推送失败不许停，继续换通道（2026-11-26 站长要求）
+
+**推送失败不是收工理由**，一次不通就换下一个通道，直到推上去或全部通道都试完才报告。
+
+| 顺序 | 通道 | 命令 / 做法 | 典型故障 |
+|---|---|---|---|
+| 1 | 反代 origin | `git push origin <sha>:refs/heads/main` | — |
+| 2 | 反代重试（先刷引用） | `git fetch origin main` 后再推 | `cannot lock ref: is at X but expected Y`（期望值过期） |
+| 3 | 官方 remote + 本地代理 | `git -c http.proxy=http://127.0.0.1:7897 push github <sha>:refs/heads/main`（需 clash 运行） | `schannel: failed to receive handshake` / `Connection was reset` |
+| 4 | **GitHub REST Git Data API** | 见下「API 兜底」；`github.com` 全挂但 `api.github.com` 直连可用时用 | — |
+| 5 | MCP GitHub 连接器 | `push_files`，**仅限小文件（<20KB）**；`CLAUDE.md` 这种 180KB 的别走它 | — |
+
+- **判定 API 通道是否可用**（一条命令）：`curl -s -o /dev/null -w "%{http_code}" --max-time 12 https://api.github.com/rate_limit` → `200` 即可用。
+- **反代 CAS 失败重试无效**：反代缓存了旧引用（本次卡在 `cfec6528`，而远程已是 `884c39e5`），同一命令反复重试只会一直红，直接换通道。
+- **代理可能反而是元凶**：本次 `api.github.com` 直连 200 / 0.5s 很快，走 `127.0.0.1:7897` 反而 TLS 超时——别默认「挂了就上代理」，两条都试。
+- **API 兜底流程**（Git Data API，一个提交推多个文件，不走 git 传输层）：
+  1. `GET /git/ref/heads/main` → 取 base commit；`GET /git/commits/{sha}` → 取 base tree
+  2. 每个文件 `POST /git/blobs`（`encoding: base64`）
+  3. `POST /git/trees`（`base_tree` + 文件条目）→ `POST /git/commits`（`parents: [base]`）
+  4. `PATCH /git/refs/heads/main`（`sha` 新提交，`force: false`）
+  - 凭据从凭据管理器取：`printf "protocol=https\nhost=github.com\n\n" | git credential fill`（`gho_` 开头 40 位）；只放请求头，**不打印、不落盘、不进提交**
+  - 用临时 `.mjs` 脚本跑完整流程（Node 22 原生 `fetch`），跑完立即删除
+- **底线**：每换一个通道，都要用 `git show --stat` 或 `GET /commits/{sha}` 复核远程文件清单，确认**只多了自己的文件、没删别人的行**；发现多带了别人的改动，按上一节的方法重建后重推。
+
+#### 六、推完必须汇报
+
+一条消息说清四件事：**commit hash（若走 API 兜底要说明本地 commit 已作废、远程实际 sha 是多少）**、**本次改动文件清单**、**三项质量门结果（全绿 / 哪些跳过及原因）**、**用过哪条推送通道、前面几条为什么失败**；同时说明工作区里还剩哪些不属于本次任务的改动未动。
+
 ---
 
 ## 19. PagesCMS 后台（2026-08 接入）
@@ -1312,7 +1425,7 @@ EdgeOne Pages（GitHub 集成自动构建：pnpm build → dist/）
 ---
 version: "v1.23.0"  # 递增：feature → minor，fix/improvement → patch，removal → minor
 date: 2026-08-20
-time: "16:30"       # 可选，同一天多条时区分
+time: "16:30"       # 必填且须为 HH:MM，缺失或格式错会 build 报错；同日按此倒序展示
 type: feature       # feature | improvement | fix | removal
 description: 一句话概括（显示在列表页）
 ---
@@ -1320,7 +1433,7 @@ description: 一句话概括（显示在列表页）
 
 **正文**：`## 标题` + bullet 列表，按“用户视角”写改了什么、怎么用，关联关键文件 `路径:行号`（如 `src/utils/category-tree.ts:17`）。
 
-**流程**：功能验证通过（dev 实测；**推送线上前**按第 18 节 C 档跑 `pnpm build` + `pnpm check`）→ 立即写 changelog → 与代码同提交或紧后提交 → `changelog` 页自动按 `date` 倒序展示。
+**流程**：功能验证通过（dev 实测；**推送线上前**按第 18 节 C 档跑 `pnpm build` + `pnpm check`）→ 立即写 changelog → 与代码同提交或紧后提交 → `changelog` 页自动按 `date` 倒序、同日按 `time` 倒序展示（排序逻辑在 `src/utils/changelog.ts` 的 `changelogEntriesFromCollection`；`time` 在 `content.config.ts` 强制为 `HH:MM` 必填，漏填或格式错 build 直接报错）。
 
 **反例**：功能已上线数周但 `changelog` 仍停留在旧版本（本次 audit 发现 2026-08-13 后无更新）。
 
@@ -1397,7 +1510,7 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 ## 24. 站长在线编辑 + 站内后台（2026-11-03 起，11-04 补 OAuth 与 /admin）
 
 站内改内容，不用回本地开编辑器。桌面和手机共用同一登录态与编辑弹层：
-- **桌面端**：资料卡里的「后台 / + 说说 / 退出」
+- **桌面端**：资料卡里的「后台 / + 说说 / 退出」。2026-11-25 起主导航换成灵动岛，入口在灵动岛「个人信息面板」底部社交图标行最右一枚（`IslandAdminEntry.svelte`）；旧资料卡（`EditorNavButton.svelte`）仍在，两套并存
 - **手机端**：底部 Dock 打开的菜单弹窗最底部显示低对比度「站长登录」；登录后切换为「内容管理 / 新建说说 / 退出登录」
 - **`/admin` 后台**：三栏界面管文章 / 说说 / 更新日志，正经写东西用的
 
@@ -1405,7 +1518,11 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 
 ```
 NavbarProfileCard.astro（「JOJOSTAR」悬停弹出的资料卡）
-└── EditorNavButton.svelte   # 桌面卡内入口；≤1023px 由 CSS 隐藏
+└── EditorNavButton.svelte   # 旧资料卡内的入口；≤1023px 由 CSS 隐藏
+
+DynamicIsland.astro（桌面端主导航「灵动岛」，2026-11-25 起接手资料面板）
+└── IslandAdminEntry.svelte  # 个人信息面板社交图标行末尾的站长入口（2026-11-26 补，
+                             # 换灵动岛后漏搬，站长一度找不到进后台的地方）
 
 MobileMenuSheet.astro（手机底部 Dock 打开的菜单弹窗）
 └── EditorMobileMenuEntry.svelte
@@ -1442,11 +1559,25 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
 | `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
 | `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部站长入口；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
+| `src/components/editor/IslandAdminEntry.svelte` | 灵动岛个人信息面板里的站长入口；与社交图标同形制（未登录 `LogIn` 用强调色、已登录 `LayoutGrid` 带绿点），挂 `data-di-tooltip-label` 复用灵动岛浮层 |
 | `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉）、AdminStatusBoard（我的状态：时间轴 + 上传 + 两日对比，选中 `privateBoard` 集合时替换「列表 + 编辑」两栏） |
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
 | `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
 | `src/styles/pages/admin.css` | 后台样式，只由 AdminApp import |
 | `cloudflare-worker/index.js` | 服务端全部逻辑：8 条路由（`/file` 按 GET/PUT/DELETE 分支）+ Cookie + AES-GCM 信封加密 + 路径护栏；`POST /api/github/batch` 用 Git Data API 把最多 30 条内容合成一个原子提交。**图片必须走 `PUT /api/github/blob`**：`/file` 走 `textToBase64`（UTF-8 重编码），二进制进去必然损坏，`/blob` 只收 base64 原串直接透传（上限 8MB） |
+
+### 登录失效（401）的处理约定（2026-11-26，站长报障后定）
+
+Cookie 里封的是 GitHub OAuth token，有效期 30 天。**token 会被 GitHub 单方面作废**（在 GitHub 设置里撤销授权、OAuth App 的 client secret 轮换等），而 Cookie 本身还没到期 —— 于是 `/api/auth/me` 照样返回 200（它只解信封、不打 GitHub），页面「假装已登录」；可凡是真正打 GitHub 的接口（`/file`、`/tree`、`/batch`）全部 401，理由是 `Bad credentials`。
+
+界面表现：进 `/admin` 顶部显示 `flowersoul999`、左侧集合和列表都能渲染，中间却是一片「登录已过期，重新登录一次」；点「重试」毫无反应。
+
+规矩（别再犯）：
+
+1. **任何请求 catch 到 `EditorApiError.status === 401`，必须调 `editor.expireSession()`**：它会请 Worker 清掉 HttpOnly Cookie，并把快照整体复位 + 带上「登录已过期，重新登录一次」文案，界面回落到 `/admin` 登录门，用户点「使用 GitHub 登录」就能重来。
+2. **只把文案塞进局部错误框（`listError` / `docError`）是错的**：外壳仍是已登录，`refreshList` 开头的 `if (!$editor.isEditor) return` 也不会让它自愈，点重试永远拿同一个 401 —— 就是「按钮坏了」的成因。
+3. `AdminApp.svelte` 的统一入口是 `handleApiError(error, apply)`，新加的请求一律走它，别直接 `editor.describeError(error)`。
+4. 公开页面的 `isEditor` 只看 `/api/auth/me`，所以 token 失效时导航栏仍显示「后台」图标 —— 这是**已知且刻意接受**的：点进 `/admin` 触发一次 401 就会自动清 Cookie 复位，不必为了这点在每页加载时多打一次 GitHub API。
 
 ### 为什么需要 Worker（关键认知）
 
