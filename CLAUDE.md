@@ -1324,9 +1324,36 @@ unset GIT_INDEX_FILE; rm -f .git/.push-index.$$ .git/COMMIT_EDITMSG.$$
 - 提交对象由 `commit-tree` 生成，**分支指针不动**（`HEAD` 仍是落后分支），这是预期行为，不要为了「看起来干净」去 reset。
 - 造完用 `git show --stat $commit` 核对文件清单，再 push。
 
-#### 五、推完必须汇报
+> ⚠️ **整文件上传前必须验证文件本身是干净的**（2026-11-26 踩过）：`hash-object -w <工作区文件>` 和 REST API 上传的都是**工作区当前字节**，如果这个文件里还混着别的会话的未提交改动，会一起带上线。本次推 `CLAUDE.md` 时就把别人没提交的 2 行「灵动岛入口」描述带了上去（基线版 vs 工作区版 diff 出现 `-2` 才发现）。
+> 判定方法：`git diff origin/main -- <文件>` 的增删行，与自己这次真正改的内容对不上 → 说明混了别人的改动。**不要改工作区文件去「还原」**（那会销毁别人的未提交工作），而是用「远程基线版 + 自己的段落」重建内容后提交。
 
-一条消息说清三件事：**commit hash**、**本次改动文件清单**、**三项质量门结果（全绿 / 哪些跳过及原因）**；同时说明工作区里还剩哪些不属于本次任务的改动未动。
+#### 五、推送失败不许停，继续换通道（2026-11-26 站长要求）
+
+**推送失败不是收工理由**，一次不通就换下一个通道，直到推上去或全部通道都试完才报告。
+
+| 顺序 | 通道 | 命令 / 做法 | 典型故障 |
+|---|---|---|---|
+| 1 | 反代 origin | `git push origin <sha>:refs/heads/main` | — |
+| 2 | 反代重试（先刷引用） | `git fetch origin main` 后再推 | `cannot lock ref: is at X but expected Y`（期望值过期） |
+| 3 | 官方 remote + 本地代理 | `git -c http.proxy=http://127.0.0.1:7897 push github <sha>:refs/heads/main`（需 clash 运行） | `schannel: failed to receive handshake` / `Connection was reset` |
+| 4 | **GitHub REST Git Data API** | 见下「API 兜底」；`github.com` 全挂但 `api.github.com` 直连可用时用 | — |
+| 5 | MCP GitHub 连接器 | `push_files`，**仅限小文件（<20KB）**；`CLAUDE.md` 这种 180KB 的别走它 | — |
+
+- **判定 API 通道是否可用**（一条命令）：`curl -s -o /dev/null -w "%{http_code}" --max-time 12 https://api.github.com/rate_limit` → `200` 即可用。
+- **反代 CAS 失败重试无效**：反代缓存了旧引用（本次卡在 `cfec6528`，而远程已是 `884c39e5`），同一命令反复重试只会一直红，直接换通道。
+- **代理可能反而是元凶**：本次 `api.github.com` 直连 200 / 0.5s 很快，走 `127.0.0.1:7897` 反而 TLS 超时——别默认「挂了就上代理」，两条都试。
+- **API 兜底流程**（Git Data API，一个提交推多个文件，不走 git 传输层）：
+  1. `GET /git/ref/heads/main` → 取 base commit；`GET /git/commits/{sha}` → 取 base tree
+  2. 每个文件 `POST /git/blobs`（`encoding: base64`）
+  3. `POST /git/trees`（`base_tree` + 文件条目）→ `POST /git/commits`（`parents: [base]`）
+  4. `PATCH /git/refs/heads/main`（`sha` 新提交，`force: false`）
+  - 凭据从凭据管理器取：`printf "protocol=https\nhost=github.com\n\n" | git credential fill`（`gho_` 开头 40 位）；只放请求头，**不打印、不落盘、不进提交**
+  - 用临时 `.mjs` 脚本跑完整流程（Node 22 原生 `fetch`），跑完立即删除
+- **底线**：每换一个通道，都要用 `git show --stat` 或 `GET /commits/{sha}` 复核远程文件清单，确认**只多了自己的文件、没删别人的行**；发现多带了别人的改动，按上一节的方法重建后重推。
+
+#### 六、推完必须汇报
+
+一条消息说清四件事：**commit hash（若走 API 兜底要说明本地 commit 已作废、远程实际 sha 是多少）**、**本次改动文件清单**、**三项质量门结果（全绿 / 哪些跳过及原因）**、**用过哪条推送通道、前面几条为什么失败**；同时说明工作区里还剩哪些不属于本次任务的改动未动。
 
 ---
 
@@ -1472,7 +1499,7 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 ## 24. 站长在线编辑 + 站内后台（2026-11-03 起，11-04 补 OAuth 与 /admin）
 
 站内改内容，不用回本地开编辑器。桌面和手机共用同一登录态与编辑弹层：
-- **桌面端**：资料卡里的「后台 / + 说说 / 退出」。2026-11-25 起主导航换成灵动岛，入口在灵动岛「个人信息面板」底部社交图标行最右一枚（`IslandAdminEntry.svelte`）；旧资料卡（`EditorNavButton.svelte`）仍在，两套并存
+- **桌面端**：资料卡里的「后台 / + 说说 / 退出」
 - **手机端**：底部 Dock 打开的菜单弹窗最底部显示低对比度「站长登录」；登录后切换为「内容管理 / 新建说说 / 退出登录」
 - **`/admin` 后台**：三栏界面管文章 / 说说 / 更新日志，正经写东西用的
 
@@ -1480,11 +1507,7 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 
 ```
 NavbarProfileCard.astro（「JOJOSTAR」悬停弹出的资料卡）
-└── EditorNavButton.svelte   # 旧资料卡内的入口；≤1023px 由 CSS 隐藏
-
-DynamicIsland.astro（桌面端主导航「灵动岛」，2026-11-25 起接手资料面板）
-└── IslandAdminEntry.svelte  # 个人信息面板社交图标行末尾的站长入口（2026-11-26 补，
-                             # 换灵动岛后漏搬，站长一度找不到进后台的地方）
+└── EditorNavButton.svelte   # 桌面卡内入口；≤1023px 由 CSS 隐藏
 
 MobileMenuSheet.astro（手机底部 Dock 打开的菜单弹窗）
 └── EditorMobileMenuEntry.svelte
@@ -1521,25 +1544,11 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
 | `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
 | `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部站长入口；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
-| `src/components/editor/IslandAdminEntry.svelte` | 灵动岛个人信息面板里的站长入口；与社交图标同形制（未登录 `LogIn` 用强调色、已登录 `LayoutGrid` 带绿点），挂 `data-di-tooltip-label` 复用灵动岛浮层 |
 | `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉）、AdminStatusBoard（我的状态：时间轴 + 上传 + 两日对比，选中 `privateBoard` 集合时替换「列表 + 编辑」两栏） |
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
 | `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
 | `src/styles/pages/admin.css` | 后台样式，只由 AdminApp import |
 | `cloudflare-worker/index.js` | 服务端全部逻辑：8 条路由（`/file` 按 GET/PUT/DELETE 分支）+ Cookie + AES-GCM 信封加密 + 路径护栏；`POST /api/github/batch` 用 Git Data API 把最多 30 条内容合成一个原子提交。**图片必须走 `PUT /api/github/blob`**：`/file` 走 `textToBase64`（UTF-8 重编码），二进制进去必然损坏，`/blob` 只收 base64 原串直接透传（上限 8MB） |
-
-### 登录失效（401）的处理约定（2026-11-26，站长报障后定）
-
-Cookie 里封的是 GitHub OAuth token，有效期 30 天。**token 会被 GitHub 单方面作废**（在 GitHub 设置里撤销授权、OAuth App 的 client secret 轮换等），而 Cookie 本身还没到期 —— 于是 `/api/auth/me` 照样返回 200（它只解信封、不打 GitHub），页面「假装已登录」；可凡是真正打 GitHub 的接口（`/file`、`/tree`、`/batch`）全部 401，理由是 `Bad credentials`。
-
-界面表现：进 `/admin` 顶部显示 `flowersoul999`、左侧集合和列表都能渲染，中间却是一片「登录已过期，重新登录一次」；点「重试」毫无反应。
-
-规矩（别再犯）：
-
-1. **任何请求 catch 到 `EditorApiError.status === 401`，必须调 `editor.expireSession()`**：它会请 Worker 清掉 HttpOnly Cookie，并把快照整体复位 + 带上「登录已过期，重新登录一次」文案，界面回落到 `/admin` 登录门，用户点「使用 GitHub 登录」就能重来。
-2. **只把文案塞进局部错误框（`listError` / `docError`）是错的**：外壳仍是已登录，`refreshList` 开头的 `if (!$editor.isEditor) return` 也不会让它自愈，点重试永远拿同一个 401 —— 就是「按钮坏了」的成因。
-3. `AdminApp.svelte` 的统一入口是 `handleApiError(error, apply)`，新加的请求一律走它，别直接 `editor.describeError(error)`。
-4. 公开页面的 `isEditor` 只看 `/api/auth/me`，所以 token 失效时导航栏仍显示「后台」图标 —— 这是**已知且刻意接受**的：点进 `/admin` 触发一次 401 就会自动清 Cookie 复位，不必为了这点在每页加载时多打一次 GitHub API。
 
 ### 为什么需要 Worker（关键认知）
 
