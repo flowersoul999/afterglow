@@ -79,11 +79,20 @@ export interface BatchWriteResult {
  */
 export class EditorApiError extends Error {
 	public readonly status: number;
+	/**
+	 * 出错的那个接口路径，如 `/api/private/tree`。
+	 *
+	 * 为什么要带上：404 有两种完全不同的成因 —— `/api/github/*` 与
+	 * `/api/private/*` 是 Cloudflare 上**两条独立的 Route**，缺哪条只有知道
+	 * 请求的是哪条才说得清。只凭 status 猜，提示就会指错方向。
+	 */
+	public readonly endpoint: string;
 
-	constructor(message: string, status: number) {
+	constructor(message: string, status: number, endpoint = "") {
 		super(message);
 		this.name = "EditorApiError";
 		this.status = status;
+		this.endpoint = endpoint;
 	}
 }
 

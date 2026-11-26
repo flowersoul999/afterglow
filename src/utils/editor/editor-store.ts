@@ -249,8 +249,16 @@ export class EditorStore {
 		if (error instanceof EditorApiError) {
 			if (error.status === 401) return "登录已过期，重新登录一次";
 			if (error.status === 403) return error.message || "没有权限执行这个操作";
-			if (error.status === 404)
-				return "内容接口不存在，请在 Cloudflare 重新部署最新版 Worker（需包含 /api/github/tree），并检查 /api/github/* 路由";
+			if (error.status === 404) {
+				// 404 的成因只有两种，但两条通道是**两条独立的 Cloudflare Route**，
+				// 提示必须指名道姓 —— 早先这里只提 /api/github/tree，于是「状态」
+				// 面板缺 /api/private/* 时也被指去查 github 路由，白折腾。
+				const endpoint = error.endpoint || "接口";
+				if (error.endpoint.startsWith("/api/private")) {
+					return `${endpoint} 返回 404：Cloudflare 少了 Route「jojocode.cn/api/private/*」，或 Worker 还没部署含私有通道的最新版`;
+				}
+				return `${endpoint} 返回 404：检查 Cloudflare 的 Route 是否三条齐全（/api/auth/*、/api/github/*、/api/private/*），并确认已部署最新版 cloudflare-worker/index.js`;
+			}
 			if (error.status === 409) return "文件刚被改过，刷新页面后再试";
 			if (error.status === 422)
 				return "提交被拒绝：文件可能已存在，或内容格式不对";

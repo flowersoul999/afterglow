@@ -56,9 +56,12 @@ export async function listPrivateDir(path: string): Promise<PrivateEntry[]> {
 	});
 
 	if (!response.ok) {
-		throw new EditorApiError(await readError(response), response.status);
+		throw new EditorApiError(
+			await readError(response),
+			response.status,
+			`${PRIVATE_BASE}/tree`,
+		);
 	}
-
 	const data = (await response.json()) as { entries?: PrivateEntry[] };
 	return data.entries ?? [];
 }
@@ -74,7 +77,11 @@ export async function readPrivateFile(
 	});
 
 	if (!response.ok) {
-		throw new EditorApiError(await readError(response), response.status);
+		throw new EditorApiError(
+			await readError(response),
+			response.status,
+			`${PRIVATE_BASE}/file`,
+		);
 	}
 
 	const data = (await response.json()) as { file?: PrivateFile | null };
@@ -96,7 +103,11 @@ export async function writePrivateFile(options: {
 	});
 
 	if (!response.ok) {
-		throw new EditorApiError(await readError(response), response.status);
+		throw new EditorApiError(
+			await readError(response),
+			response.status,
+			`${PRIVATE_BASE}/file`,
+		);
 	}
 
 	const data = (await response.json()) as { sha?: string };
@@ -123,7 +134,11 @@ export async function writePrivateBlob(options: {
 	});
 
 	if (!response.ok) {
-		throw new EditorApiError(await readError(response), response.status);
+		throw new EditorApiError(
+			await readError(response),
+			response.status,
+			`${PRIVATE_BASE}/blob`,
+		);
 	}
 
 	const data = (await response.json()) as { sha?: string };
@@ -144,6 +159,10 @@ export async function deletePrivateFile(options: {
 	});
 
 	if (!response.ok) {
-		throw new EditorApiError(await readError(response), response.status);
+		throw new EditorApiError(
+			await readError(response),
+			response.status,
+			`${PRIVATE_BASE}/file`,
+		);
 	}
 }

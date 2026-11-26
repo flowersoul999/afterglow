@@ -1660,7 +1660,8 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」
 | 点登录提示「还没配 GitHub OAuth」 | Worker 缺 `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` |
 | GitHub 报 `redirect_uri_mismatch` | OAuth App 的 Callback URL 必须是 `https://jojocode.cn/api/auth/callback`，一字不差 |
 | 回跳后仍是未登录 | Cookie 没写进去：必须 HTTPS 访问；用 workers.dev 测试域名登录但 callback 配的是正式域名也会这样 |
-| 登录成功但后台列表提示接口不存在 | Cloudflare Worker 还没部署含 `GET /api/github/tree` 的最新版；重新发布仓库 `cloudflare-worker/index.js`，并确认 `jojocode.cn/api/github/*` Route |
+| 后台列表提示 `/api/github/*` 返回 404 | Cloudflare Worker 还没部署含 `GET /api/github/tree` 的最新版；重新发布仓库 `cloudflare-worker/index.js`，并确认 `jojocode.cn/api/github/*` Route |
+| 「我的状态」提示 `/api/private/*` 返回 404 | **另一条 Route**：`jojocode.cn/api/private/*` 没加，或 Worker 没重新部署（旧版没有私有通道）。curl `https://jojocode.cn/api/private/tree` 若返回站点的 HTML 404 页（而非 JSON），就是请求根本没进 Worker |
 | 提示「不是站长」 | 登录的 GitHub 账号不是 `flowersoul999`（判定在服务端，前端改不了） |
 
 完整操作步骤见 `docs/deploy-github-pages.md` 第七节。
@@ -1705,7 +1706,9 @@ Contents 读写的 fine-grained PAT，放 Worker Secret，登录链路一个字�
 - **不注册 content collection。** 状态没有公开页面，`src/content.config.ts` 里没有 `status`，
   `.gitignore` 也不用加白名单 —— 它压根不经过 `src/content/`。
 
-**排障**：提示「私有仓库还没配 PRIVATE_TOKEN」= 第 3 步没做；面板报 404 = Route 少一条；
+**排障**：提示「私有仓库还没配 PRIVATE_TOKEN」= 第 3 步没做；面板报 404 = Route 少一条
+（2026-11-26 起文案会直接写出出错路径 `/api/private/*`，与内容通道 `/api/github/*` 分开说 ——
+两条通道在 Cloudflare 上是**两条独立 Route**，缺哪条只影响哪一块面板）；
 报 403「只有站长能访问私有内容」= 登录的 GitHub 账号不是站长；图片全是裂图 = PAT 少了
 Contents 权限，或者 `PRIVATE_TOKEN` 过期（fine-grained PAT 有有效期）。
 
