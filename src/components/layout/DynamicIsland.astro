@@ -1,5 +1,6 @@
 ---
 import Icon from "@components/common/Icon.astro";
+import IslandAdminEntry from "@components/editor/IslandAdminEntry.svelte";
 import ProfileCardSiteAvatar from "@components/layout/ProfileCardSiteAvatar.astro";
 import {
 	announcementConfig,
@@ -513,6 +514,9 @@ const initialPageKind =
 											</a>
 										);
 									})}
+									<!-- 站长入口：与社交图标同形制（未登录=登录，已登录=后台）。
+									     灵动岛面板替换掉旧资料卡后漏了这一枚，站长在页面上找不到进后台的地方。 -->
+									<IslandAdminEntry client:load />
 								</div>
 							</div>
 

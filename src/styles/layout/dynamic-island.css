@@ -602,6 +602,42 @@
 .di-profile__social:hover { opacity: 1; transform: translateY(-2px); }
 .di-profile__social svg { width: 17px; height: 17px; }
 
+/* 站长入口（IslandAdminEntry）：和社交图标同一行、同一尺寸。
+   未登录用一点强调色，免得混在社交图标里被忽略 —— 站长要能一眼找到它。 */
+.di-profile__admin {
+	position: relative;
+	display: inline-grid;
+	place-items: center;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: var(--di-text);
+	opacity: 0.75;
+	cursor: pointer;
+	transition: opacity 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.di-profile__admin svg { width: 17px; height: 17px; }
+.di-profile__admin:hover:not(:disabled),
+.di-profile__admin:focus-visible {
+	opacity: 1;
+	color: var(--di-accent);
+	transform: translateY(-2px);
+	outline: none;
+}
+.di-profile__admin.is-login { color: var(--di-accent); opacity: 0.9; }
+.di-profile__admin:disabled { opacity: 0.4; cursor: default; }
+/* 已登录：右上角一颗「在线」绿点，与旧资料卡的后台钮保持一致 */
+.di-profile__admin-dot {
+	position: absolute;
+	top: -2px;
+	right: -3px;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: oklch(0.65 0.17 150);
+	box-shadow: 0 0 0 1.5px var(--di-hover);
+}
+
 .di-profile__heat { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 0 0 auto; padding-bottom: 42px; }
 .di-profile__heat-head {
 	display: flex;
@@ -879,6 +915,8 @@
 }
 .dynamic-island[data-edge="left"] .di-profile__social svg,
 .dynamic-island[data-edge="right"] .di-profile__social svg { width: 18px; height: 18px; }
+.dynamic-island[data-edge="left"] .di-profile__admin svg,
+.dynamic-island[data-edge="right"] .di-profile__admin svg { width: 18px; height: 18px; }
 .dynamic-island[data-edge="left"] .di-profile__avatar-mask,
 .dynamic-island[data-edge="right"] .di-profile__avatar-mask { font-size: 13px; }
 
