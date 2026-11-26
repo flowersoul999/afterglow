@@ -2,7 +2,7 @@
 version: "v6.33.0"
 date: 2026-11-26
 time: "14:55"
-type: feat
+type: feature
 description: 后台改成「草稿箱」：提交只入队，改完一批再一次性提交
 ---
 
