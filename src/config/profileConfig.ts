@@ -29,24 +29,30 @@ export const profileConfig: ProfileConfig = {
 	// 如果想使用尚未包含相应的图标集，则需要安装它
 	// `pnpm add @iconify-json/<icon-set-name>`
 	// showName: true 时显示图标和名称，false 时只显示图标
+	// color: 品牌色，首页「订阅与联系」卡展开后用它给图标上色（--brand）。
+	// 缺省时 CSS 会退回主题强调色 --guide-accent，所有图标糊成同一个颜色。
+	// 取色参考参考站 my-blog/src/config/homeConfig.ts，避开近黑色 —— 那样在暗色主题下会糊进背景
 	links: [
 		{
 			name: "GitHub",
 			icon: "simple-icons:github",
 			url: "https://github.com/flowersoul999",
 			showName: false,
+			color: "#1F6FEB",
 		},
 		{
 			name: "Email",
 			icon: "material-symbols:mail-outline",
 			url: "mailto:3109581507@qq.com",
 			showName: false,
+			color: "#12B7F6",
 		},
 		{
 			name: "Bilibili",
 			icon: "simple-icons:bilibili",
 			url: "https://space.bilibili.com/1395949329?spm_id_from=333.1387.0.0",
 			showName: false,
+			color: "#FB7299",
 		},
 	],
 };

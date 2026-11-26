@@ -646,6 +646,8 @@ export type HomeConfig = {
 		url: string;
 		icon: string;
 		showName?: boolean;
+		/** 品牌色，首页「订阅与联系」卡展开后用它给图标上色 */
+		color?: string;
 	}[];
 };
 
