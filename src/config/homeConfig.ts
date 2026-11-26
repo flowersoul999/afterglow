@@ -63,7 +63,7 @@ export const homeConfig = {
 			// 首屏右下角的熔融字水印：上一行小字、下一行大字，都是自由文本
 			// （2026-11-26 由「B站：jojo」改为站内 slogan，需要挂链接时再补 href）
 			platform: "keep",
-			handle: "reading",
+			handle: "smiling",
 		},
 		sticker: {
 			image: "/assets/images/home/doll.avif",
