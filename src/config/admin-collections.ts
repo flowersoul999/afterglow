@@ -38,6 +38,24 @@ export interface AdminField {
 	wide?: boolean;
 }
 
+/**
+ * 正文末尾的图片区（说说这种「一段文字 + 末尾配图」的形态）。
+ *
+ * 有这个属性的集合，AdminEditor 会在正文下面多渲染一块图片网格；图片**不占
+ * frontmatter**，存的是正文末尾一行一个 `![](<refPrefix>xxx.webp)` —— 这是
+ * 2026-10 迁移后的既有约定（见 §5.19），MomentCard 和 Obsidian 都按它取图。
+ *
+ * 通用层只认「这个集合有没有正文图片区」，不认具体集合 id，加集合仍然只改本文件。
+ */
+export interface AdminBodyMedia {
+	/** 上传落点：相对仓库根、结尾带斜杠 */
+	uploadDir: string;
+	/** 正文里的引用前缀：相对 md 所在目录、结尾带斜杠 */
+	refPrefix: string;
+	/** 单条上限，超出的文件选择器会直接截断 */
+	max: number;
+}
+
 export interface AdminCollection {
 	/** 与 content.config.ts 的集合键对应，便于对照 */
 	id: string;
@@ -57,6 +75,8 @@ export interface AdminCollection {
 	categoryEditable?: boolean;
 	/** 路径模板：`{category}` / `{yyyy}` / `{mm}` / `{dd}` / `{slug}` */
 	pathTemplate: string;
+	/** 正文图片区：给了才有，见 AdminBodyMedia */
+	mediaInBody?: AdminBodyMedia;
 	/**
 	 * true = 这个集合不读 `src/content`，改由一个专属面板走私有仓库通道。
 	 *
@@ -129,6 +149,11 @@ const moments: AdminCollection = {
 	dateField: "published",
 	dateOnly: false,
 	pathTemplate: "{yyyy}/{mm}/{yyyy}-{mm}-{dd}",
+	mediaInBody: {
+		uploadDir: "src/content/动态/assets/diary/",
+		refPrefix: "assets/diary/",
+		max: 9,
+	},
 	fields: [
 		{
 			key: "published",

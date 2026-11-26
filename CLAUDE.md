@@ -19,6 +19,7 @@
 | `pnpm compress-images` | 压缩图片（`--dry-run` 预检）；另有 rename-images / import-wallpapers 图片脚本 |
 | `pnpm compress-albums` / `pnpm compress-albums:dry` | 递归转换本地相册图片为 WebP（质量 80；执行前先 dry-run） |
 | `pnpm test:album` | Node 内置测试：本地相册扫描、URL 编码与路径越界防护 |
+| `pnpm test:media` | Node 内置测试：说说正文媒体的拆分 / 拼装 / 拖动排序（`src/utils/moment-media.test.ts`） |
 | `pnpm cli` | 仓库工具 CLI（scripts/cli.js） |
 | `pnpm cli cover [--dry-run] [--limit=N] [--force] [--only=分类] [--provider=dashscope\|gemini\|mock]` | AI 批量生成文章封面（scripts/生成封面，黑板粉笔手绘风，详见第 2 节「文章封面生成」） |
 | `pnpm cli desc` | AI 批量补全文章摘要（scripts/生成摘要，需 `DASHSCOPE_API_KEY`） |
@@ -1568,13 +1569,13 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/moment-serializer.ts` | 说说 md ↔ 草稿（抽屉专用）；**未知 frontmatter 字段收进 `extra` 原样吐回** |
 | `src/utils/editor/album-serializer.ts` | 相册 json ↔ 草稿（照片弹窗 / 新建相册共用）；相册是 json 不是 md，所以走 `JSON.parse/stringify`，**未知键（cover / imgbedFolder / draft 及逐张未知字段）同样原样保留**。新建相关的三个纯函数：`sanitizeAlbumId`（ASCII 化 + 40 字封顶）、`newAlbumFolderId`（`album-<时间戳><随机>`）、`createAlbumDraft`（`localFolder` 恒等于 `id`）。有 13 条单测，见 `test:admin-batch` |
 | `src/utils/editor/album-ui.ts` | 相册弹窗的开合与目标（哪个相册、哪张照片、还是新建一本）；`AlbumDrawerMode = create \| edit \| new`，刻意不塞进 `editor-ui.ts`，两边字段几乎不重叠 |
-| `src/utils/editor/image-upload.ts` | 图片上传：canvas 缩到长边 1920 转 webp（gif/svg 直传），走 `PUT /api/github/blob`。说说落 `动态/assets/diary/`，相册落 `public/assets/images/albums/<localFolder>/` |
+| `src/utils/editor/image-upload.ts` | 图片上传：canvas 缩到长边 1920 转 webp（gif/svg 直传），走 `PUT /api/github/blob`。**抽屉与后台共用 `uploadBodyImage()`**，落点由调用方传（说说抽屉写死 `动态/assets/diary/`，后台从集合配置的 `mediaInBody` 读），相册落 `public/assets/images/albums/<localFolder>/` |
 | `src/utils/editor/content-serializer.ts` | **通用 frontmatter**：拆成有序 entry，没改过的原样写回（改一个字段只产生一行 diff）。支持内联数组 `[a, b]` 与块数组两种写法，`gap` 记录 `---` 与正文之间的空行 |
 | `src/utils/editor/content-repo.ts` | 集合列目录（递归 + 20s 缓存）、路径模板展开、撞名 `-2` 重试 |
 | `src/utils/editor/private-client.ts` | **私有仓库通道**（`/api/private/*`）：list/read/write/writeBlob/delete + `statusPhotoUrl`。只给「我的状态」用，读写的是独立私有仓库，不是博客主仓 |
 | `src/utils/editor/status-serializer.ts` | 状态 json ↔ 记录：`dayKey`（**本地时区**，不能用 `toISOString`）、`thumbOf`（缩略图按 `-thumb` 命名约定推导）、`parseStatus`/`serializeStatus`；未知键进 `extra` 原样保留 |
 | `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
-| `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
+| `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板 / 正文图片区 `mediaInBody`） |
 | `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部账号入口；三态（登录 / 访客身份 + 退出 / 站长三项）；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
 | `src/components/editor/IslandAdminEntry.svelte` | 灵动岛个人信息面板里的账号入口；与社交图标同形制（未登录 `LogIn` 用强调色、访客显示 GitHub 头像、站长 `LayoutGrid` 带绿点 + 新建 + 退出），挂 `data-di-tooltip-label` 复用灵动岛浮层 |
 | `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉）、AdminStatusBoard（我的状态：时间轴 + 上传 + 两日对比，选中 `privateBoard` 集合时替换「列表 + 编辑」两栏） |
@@ -1689,6 +1690,17 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁 + 
 3. **/admin 只能整页进入。** Swup 只替换容器内容，不会重新挂载 Astro 岛，SPA 导航进来会白屏。任何指向 `/admin` 的链接都要带 `data-no-swup`；后台内的链接同理。
 4. **批量提交必须原子更新一次分支。** 前端队列可以混合文章、说说和更新日志，但 Worker 必须创建多个 blob、一个 tree、一个 commit，最后只 PATCH 一次 ref；禁止退化成循环调用 Contents API，否则会产生半批成功和重复构建。同名路径在完整仓库树与本批次内统一追加 `-2`、`-3`，ref 冲突只自动重试一次。
 5. **视觉主题只在 `.admin` 作用域内覆盖令牌（2026-11-25 双主题）。** 后台是独立全屏页，不参与站点明暗切换；**默认「晴空晨曦」浅色主题**（站长嫌深空太黑看不清），顶栏月亮/太阳按钮切「深空星尘」，选择存 `localStorage.admin-theme`。配色集中在 `src/styles/pages/admin.css` 末尾：`.admin` 定义白天令牌、`.admin[data-admin-theme="night"]` 覆盖夜间令牌，两套共用同一批语义变量（`--admin-*`）。新增后台组件一律读这些变量，才能跟着主题和编辑器/状态板/队列抽屉一起变。不写进 `main.css`、不新增 `!important`、不硬编码黑白。canvas 星尘组件靠 `theme` prop 触发 `$effect` 重读 `--admin-star`，别在 `onMount` 里只读一次。
+
+### 后台正文图片区（说说，2026-11-26）
+
+说说的图片**不占 frontmatter**，存的是正文末尾一行一个 `![](assets/diary/xxx.webp)`（§5.19 的约定）。所以后台的「图片」不是表单字段，而是正文的一种形态：
+
+- **配置驱动，不认集合 id。** `AdminCollection.mediaInBody = { uploadDir, refPrefix, max }` 有值才渲染图片区（`admin-collections.ts`）。通用层只问「这个集合有没有正文图片区」，以后别的集合要配图也只改配置表，别在组件里写 `collection.id === "moments"`。
+- **`doc.body` 不再是双向绑定，是拼出来的。** 正文框绑 `bodyText`（拆掉图片行之后的纯文字），图片列表单独一份状态；点提交才 `syncBody()` → `joinBodyMedia(bodyText, urls)` 写回 `doc.body`。所以「提交」和「加入待提交」之前都必须先 `syncBody()`，漏一处就把图片写丢（队列存的是序列化后的文本）。
+- **上传压在提交时，且严格串行。** GitHub 同分支不能并发提交，第二张起必然 422；中途取消编辑也不会在仓库留没人引用的图。带未上传图片时**禁止进待提交队列**（文件没法序列化），挡住并提示直接提交。
+- **缩略图两套来源**：构建期就存在的图用 `import.meta.glob(..., { query: "?url", import: "default" })` 取真实地址；刚上传的图在这个映射里查不到，用本地 objectURL 顶着，刷新后显示「重新构建后可见」的占位卡 —— 不要用裂图假装加载失败。
+- 拆分 / 拼装 / 拖动排序的纯函数都在 `src/utils/moment-media.ts`（`splitMomentMedia` / `joinBodyMedia` / `moveMediaItem` / `isRepoMediaUrl`），有 8 条单测：`pnpm test:media`。**别在组件里各写一套正则。**
+- 拖动排序的语义是「占用目标位置」（`moveMediaItem` 直接 `splice(to, 0, moved)`），不是「插到目标之前」—— 后者永远挪不到最后一位。抽屉那份旧实现是「插到之前」，改它之前先想清楚。
 
 ### 编辑按钮的显隐
 

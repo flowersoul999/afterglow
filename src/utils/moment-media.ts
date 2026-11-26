@@ -150,3 +150,58 @@ export function toMomentPlainText(body: string | undefined | null): string {
 		.trim()
 		.toLowerCase();
 }
+
+/**
+ * `splitMomentMedia` 的逆操作：纯文字在前，媒体一行一个排在末尾，空行分隔。
+ *
+ * 说说编辑器的约定（抽屉和后台共用）：图片永远排在正文之后，正文里不再手写
+ * 图片语法；alt 恒为空 —— 非空 alt 会被 rehype-figure 包成 figure/figcaption，
+ * 卡片里会多出一行图注。
+ *
+ * 空字符串 / 空 url 直接跳过，调用方不必先过滤（上传失败留下的空位不会写成
+ * 一个 `![]()` 废行）。
+ */
+export function joinBodyMedia(
+	text: string | undefined | null,
+	media: readonly string[],
+): string {
+	const parts: string[] = [];
+	const trimmed = (text ?? "").trim();
+	if (trimmed) parts.push(trimmed);
+	for (const url of media) {
+		const value = url.trim();
+		if (value) parts.push(`![](${value})`);
+	}
+	return parts.join("\n\n");
+}
+
+/**
+ * 拖动排序：把第 `from` 项挪到第 `to` 个位置上，中间的项顺移一格。
+ *
+ * 语义是「占用目标位置」（拖到谁身上就排在谁原来的位置），不是「插到目标之前」
+ * —— 后者永远挪不到最后一位，因为最后一个格子没有「之后」可以落。
+ * 越界和原地不动都返回**副本**，调用方可以无脑赋值，不会和原数组共用引用。
+ */
+export function moveMediaItem<T>(
+	list: readonly T[],
+	from: number,
+	to: number,
+): T[] {
+	const next = [...list];
+	if (from === to || from < 0 || from >= next.length) return next;
+	if (to < 0 || to >= next.length) return next;
+	const [moved] = next.splice(from, 1);
+	if (moved === undefined) return [...list];
+	next.splice(to, 0, moved);
+	return next;
+}
+
+/**
+ * 是不是「仓库内相对路径」的配图（`assets/diary/x.webp` 这种）。
+ *
+ * 用来区分两种情况：仓库里已有但构建期还没收录（重新构建前没有可预览的 URL），
+ * 与真正的外链（直接交给浏览器）。`refPrefix` 由集合配置给。
+ */
+export function isRepoMediaUrl(url: string, refPrefix: string): boolean {
+	return refPrefix.length > 0 && url.startsWith(refPrefix);
+}

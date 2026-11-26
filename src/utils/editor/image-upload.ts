@@ -101,12 +101,40 @@ function toBase64(blob: Blob): Promise<string> {
 /**
  * 上传一张图片，返回正文里要写的相对路径。
  *
- * 抛错时由调用方（抽屉）统一显示在表单里 —— 一张图失败不该中断整条说说，
- * 所以调用方是逐张 catch 的。
+ * 抛错时由调用方（抽屉 / 后台）统一显示在表单里 —— 一张图失败不该中断整条
+ * 内容，所以调用方是逐张 catch 的。
  */
 export async function uploadMomentImage(
 	file: File,
 	branch: string,
+): Promise<string> {
+	return uploadBodyImage(file, branch, MOMENT_IMAGE_TARGET);
+}
+
+/** 正文图片区的上传目标，与 `src/config/admin-collections.ts` 的 mediaInBody 同形 */
+export interface BodyImageTarget {
+	/** 上传落点：相对仓库根、结尾带斜杠 */
+	dir: string;
+	/** 正文里引用的相对前缀：相对 md 所在目录、结尾带斜杠 */
+	refPrefix: string;
+}
+
+/** 说说图片的落点，2026-10 迁移后一直没变 */
+const MOMENT_IMAGE_TARGET: BodyImageTarget = {
+	dir: `${ASSET_DIR}diary/`,
+	refPrefix: PUBLIC_PREFIX,
+};
+
+/**
+ * 通用的「正文配图」上传：压缩成 webp 写进指定目录，返回正文里该写的相对路径。
+ *
+ * 抽屉和后台共用这一份 —— 两边的差别只有落点，压缩、大小限制、命名风格不该
+ * 各写一遍，否则迟早一边改成 1920 另一边还是原图。
+ */
+export async function uploadBodyImage(
+	file: File,
+	branch: string,
+	target: BodyImageTarget,
 ): Promise<string> {
 	if (!file.type.startsWith("image/")) {
 		throw new Error(`${file.name} 不是图片`);
@@ -117,15 +145,17 @@ export async function uploadMomentImage(
 
 	const { blob, ext } = await shrink(file);
 	const name = `${Date.now()}-${randomSuffix()}.${ext}`;
+	// 配置表里带不带结尾斜杠都行，这里统一成一段
+	const dir = `${target.dir.replace(/\/+$/u, "")}/`;
 
 	await writeBlob({
-		path: `${ASSET_DIR}diary/${name}`,
+		path: `${dir}${name}`,
 		base64: await toBase64(blob),
 		message: `chore(moments): 上传图片 ${name}`,
 		branch,
 	});
 
-	return `${PUBLIC_PREFIX}${name}`;
+	return `${target.refPrefix}${name}`;
 }
 
 /** 相册图片对外引用的前缀：`/assets/images/albums/<folder>/xxx.webp` */
