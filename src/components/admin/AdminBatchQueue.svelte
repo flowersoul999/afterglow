@@ -28,6 +28,10 @@ let {
 
 let closeButton = $state<HTMLButtonElement | null>(null);
 let previousFocus: HTMLElement | null = null;
+const createdCount = $derived(
+	items.filter((item) => item.mode === "create").length,
+);
+const updatedCount = $derived(items.length - createdCount);
 
 $effect(() => {
 	if (open) {
@@ -83,7 +87,9 @@ $effect(() => {
 
 			<div class="admin-batch__summary" aria-live="polite">
 				<Files size={15} aria-hidden="true" />
-				<span>{items.length} 条内容将合并为一个 Git 提交</span>
+				<span
+					>共 {items.length} 条（新建 {createdCount} / 更新 {updatedCount}）</span
+				>
 			</div>
 
 			<div class="admin-batch__list">
@@ -91,7 +97,7 @@ $effect(() => {
 					<div class="admin-batch__empty">
 						<Files size={22} aria-hidden="true" />
 						<p>队列还是空的</p>
-						<span>新建内容时点击“加入待提交”</span>
+						<span>编辑或新建内容时点「存入草稿箱」</span>
 					</div>
 				{:else}
 					{#each items as item, index (item.id)}
@@ -99,6 +105,9 @@ $effect(() => {
 							<div class="admin-batch__index">{index + 1}</div>
 							<div class="admin-batch__content">
 								<div class="admin-batch__item-head">
+									<span class="admin-batch__mode" data-mode={item.mode}>
+										{item.mode === "update" ? "更新" : "新建"}
+									</span>
 									<span class="admin-batch__type">{item.collectionLabel}</span>
 									<strong>{item.title || "未命名"}</strong>
 								</div>
@@ -136,6 +145,9 @@ $effect(() => {
 			{/if}
 
 			<footer class="admin-batch__foot">
+				<span class="admin-batch__foot-note"
+					>{items.length} 条内容将合并为一个 Git 提交</span
+				>
 				<button
 					type="button"
 					class="admin-btn"

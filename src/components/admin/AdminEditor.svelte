@@ -2,14 +2,14 @@
 /**
  * 后台右栏：单条内容的编辑器
  *
- * 表单值先落在本地 `form` 对象里，点「提交」时才写回 doc 并触发保存
+ * 表单值先落在本地 `form` 对象里，点「存入草稿箱」时才写回 doc 并交给父组件
  * 入队 —— 编辑过程中不打乱 doc 的 entry 顺序，也就不会因为输入一半就重排出
  * 奇怪的 diff。
  *
  * 正文同理，先落在 `bodyText`；集合配了 `mediaInBody` 时（说说），正文下面还有
  * 一块图片区，图片不占 frontmatter，存的是正文末尾一行一个 `![](assets/diary/x.webp)`。
  * 保存时才把「文字 + 图片」拼回 `doc.body`（拼装规则见 utils/moment-media.ts）。
- * 上传也推迟到提交时：中途取消编辑不会在仓库里留下没人引用的图片。
+ * 上传也推迟到存入草稿箱时：中途取消编辑不会在仓库里留下没人引用的图片。
  */
 
 import {
@@ -457,6 +457,9 @@ function askDelete(): void {
 					<span>{path}</span>
 				{/if}
 			</div>
+			<span class="admin-editor__draft-hint"
+				>不会立刻上线，去右上角「待提交」一次性提交</span
+			>
 		</div>
 
 		<div class="admin-editor__actions">
@@ -491,7 +494,7 @@ function askDelete(): void {
 					<Loader2 size={13} class="spin" aria-hidden="true" /> 上传图片…
 				{:else}
 					<Plus size={13} aria-hidden="true" />
-					加入待提交
+					存入草稿箱
 				{/if}
 			</button>
 		</div>
@@ -804,6 +807,6 @@ function askDelete(): void {
 		<span class="admin-editor__stat">{bodyLength} 字</span>
 		<span class="admin-editor__dot"></span>
 		<span class="admin-editor__stat">{doc.entries.length} 个字段</span>
-		<span class="admin-editor__hint">提交后 1~3 分钟上线</span>
+		<span class="admin-editor__hint">存入草稿箱，提交全部后 1~3 分钟上线</span>
 	</footer>
 </main>

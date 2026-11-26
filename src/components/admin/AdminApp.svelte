@@ -3,8 +3,11 @@
  * 站内后台（/admin）
  *
  * 三栏：集合 → 条目 → 编辑。所有数据都走 Cloudflare Worker 代理的 GitHub
- * Contents API，没有第二套存储 —— 保存就是给仓库提交一次 commit，所以
- * 「提交 ≠ 上线」这条得一直摆在界面上。
+ * Contents API，没有第二套存储 —— 「存入草稿箱」只把内容攒进本地队列，
+ * 「提交全部」才合成一次 commit，所以「提交 ≠ 上线」这条得一直摆在界面上。
+ *
+ * 边界：删除仍然立即提交（见 handleDelete），不进队列 —— 一次删多篇的需求
+ * 还没出现，先保持「点了就删」的直觉，别和草稿箱的语义混在一起。
  *
  * 这个组件只在 /admin 路由里挂载，不在 Swup 容器内，所以进页面时自己
  * bootstrap 一次登录态（正常页面是 EditorRoot 干的活）。
@@ -42,7 +45,6 @@ import {
 	listEntries,
 	loadEntry,
 	removeEntry,
-	saveEntry,
 } from "@/utils/editor/content-repo";
 import {
 	type ContentDoc,
@@ -154,12 +156,15 @@ function notify(text: string): void {
 
 function persistQueue(next: QueuedDraft[]): void {
 	queuedDrafts = next;
-	if (typeof sessionStorage === "undefined") return;
-	if (next.length === 0) {
-		sessionStorage.removeItem(BATCH_QUEUE_STORAGE_KEY);
-		return;
+	try {
+		if (next.length === 0) {
+			localStorage.removeItem(BATCH_QUEUE_STORAGE_KEY);
+			return;
+		}
+		localStorage.setItem(BATCH_QUEUE_STORAGE_KEY, JSON.stringify(next));
+	} catch {
+		// 隐私模式 / 配额满：内存里的队列还能用，只是刷新后会丢
 	}
-	sessionStorage.setItem(BATCH_QUEUE_STORAGE_KEY, JSON.stringify(next));
 }
 
 /**
@@ -212,6 +217,8 @@ async function openEntry(path: string): Promise<void> {
 	const requestSeq = ++entryRequestSeq;
 	selectedPath = path;
 	isNew = false;
+	// 从列表打开的条目和队列里的草稿不是同一条，别让旧 id 影响入队替换
+	editingQueueId = "";
 	docLoading = true;
 	docError = "";
 	doc = null;
@@ -310,54 +317,20 @@ function currentDraftMeta(): {
 	};
 }
 
-async function handleSave(): Promise<void> {
-	if (!doc || saving) return;
-	saving = true;
-	docError = "";
-
-	const meta = currentDraftMeta();
-	if (!meta) return;
-
-	const path = isNew ? meta.path : selectedPath;
-
-	try {
-		const saved = await saveEntry({
-			collection,
-			path,
-			doc,
-			sha,
-			isNew,
-			branch: editor.branch,
-			label: meta.title,
-		});
-		if (editingQueueId) {
-			removeQueuedDraft(editingQueueId);
-		}
-		notify("已提交，正在重新构建，1~3 分钟后生效");
-		await refreshList(true);
-		// 新建后重新打开刚提交的文件：必须拿到它真实的 sha，
-		// 否则接着改第二次会被 GitHub 当成「新建」而报 422
-		if (isNew) {
-			isNew = false;
-			selectedPath = "";
-			await openEntry(saved.path);
-		} else {
-			sha = saved.sha;
-		}
-	} catch (error) {
-		await handleApiError(error, (message) => {
-			docError = message;
-		});
-	} finally {
-		saving = false;
-	}
-}
-
-function handleQueue(): void {
-	if (!doc || !isNew) return;
+/**
+ * 把当前编辑中的内容存进草稿箱。
+ *
+ * 纯本地动作：不发请求、不刷新列表。「存草稿」的频率很高，每次都打一轮
+ * GitHub 既慢又容易撞冲突，真正的写入统一留给「提交全部」。
+ */
+function enqueueCurrentDraft(mode: "create" | "update"): void {
+	if (!doc) return;
 	docError = "";
 	const meta = currentDraftMeta();
 	if (!meta) return;
+
+	const path = mode === "update" ? selectedPath : meta.path;
+	if (!path) return;
 
 	try {
 		const next = upsertQueuedDraft(queuedDrafts, {
@@ -366,15 +339,29 @@ function handleQueue(): void {
 			collectionLabel: collection.label,
 			title: meta.title,
 			category: draftCategory,
-			path: meta.path,
+			path,
 			text: serializeContent(doc),
+			mode,
 		});
 		persistQueue(next);
-		notify(editingQueueId ? "待提交内容已更新" : "已加入待提交队列");
-		startCreate();
+		notify(`已存入草稿箱，共 ${next.length} 条，去右上角「待提交」一键提交`);
+		// 新建存完继续开一张空白草稿；更新留在原文上，方便接着改
+		if (mode === "create") startCreate();
 	} catch (error) {
-		docError = error instanceof Error ? error.message : "加入待提交队列失败";
+		docError = error instanceof Error ? error.message : "存入草稿箱失败";
 	}
+}
+
+/** 编辑已有条目：覆盖同样路径，不能再走「新建撞名加后缀」那条路 */
+function handleSave(): void {
+	if (saving) return;
+	enqueueCurrentDraft("update");
+}
+
+/** 新建条目：路径由标题和日期算出来 */
+function handleQueue(): void {
+	if (!isNew || saving) return;
+	enqueueCurrentDraft("create");
 }
 
 function editQueuedDraft(item: QueuedDraft): void {
@@ -388,8 +375,10 @@ function editQueuedDraft(item: QueuedDraft): void {
 	}
 	entryRequestSeq += 1;
 	mobileListMode = false;
-	isNew = true;
-	selectedPath = "";
+	// 更新类草稿要回到「编辑已有条目」的形态：路径固定成草稿里的 path，
+	// 再存一次才不会被当成新建而换到另一个文件名
+	isNew = item.mode === "create";
+	selectedPath = isNew ? "" : item.path;
 	sha = "";
 	docError = "";
 	draftCategory = item.category;
@@ -413,15 +402,26 @@ async function submitQueuedDrafts(): Promise<void> {
 	if (queuedDrafts.length === 0 || batchSubmitting) return;
 	batchSubmitting = true;
 	batchError = "";
+	const total = queuedDrafts.length;
+	const created = queuedDrafts.filter((item) => item.mode === "create").length;
+	const updated = total - created;
+	// 提交信息按真实内容生成：一眼能看出这批是新建多还是改得多
+	const detail = [
+		created > 0 ? `新建 ${created}` : "",
+		updated > 0 ? `更新 ${updated}` : "",
+	]
+		.filter(Boolean)
+		.join(" / ");
 	try {
 		await writeBatch({
 			branch: editor.branch,
-			message: `feat(content): 批量新增 ${queuedDrafts.length} 条内容`,
+			message: `chore(content): 批量提交 ${total} 条内容（${detail}）`,
 			items: queuedDrafts.map((item) => ({
 				path: item.path,
 				text: item.text,
 				collectionId: item.collectionId,
 				label: item.title,
+				mode: item.mode,
 			})),
 		});
 		for (const collectionId of new Set(
@@ -433,8 +433,9 @@ async function submitQueuedDrafts(): Promise<void> {
 		queueOpen = false;
 		closeEditor();
 		await refreshList(true);
-		notify("整批内容已提交，正在重新构建，1~3 分钟后生效");
+		notify(`已提交 ${total} 条，正在重新构建，1~3 分钟后生效`);
 	} catch (error) {
+		// 失败时保留队列：内容是站长攒了很久才攒出来的，不能因为一次网络错误清空
 		await handleApiError(error, (message) => {
 			batchError = message;
 		});
@@ -485,9 +486,24 @@ onMount(() => {
 	} catch {
 		// 读不到就用默认白天
 	}
-	queuedDrafts = parseQueuedDrafts(
-		sessionStorage.getItem(BATCH_QUEUE_STORAGE_KEY),
-	);
+
+	// 队列早期存在 sessionStorage；搬进 localStorage 后清掉旧键，避免关页即丢
+	let raw: string | null = null;
+	try {
+		raw = localStorage.getItem(BATCH_QUEUE_STORAGE_KEY);
+		if (!raw) {
+			const legacy = sessionStorage.getItem(BATCH_QUEUE_STORAGE_KEY);
+			if (legacy) {
+				raw = legacy;
+				localStorage.setItem(BATCH_QUEUE_STORAGE_KEY, legacy);
+			}
+		}
+		sessionStorage.removeItem(BATCH_QUEUE_STORAGE_KEY);
+	} catch {
+		// 存储不可用时队列只活在内存里
+	}
+	queuedDrafts = parseQueuedDrafts(raw);
+
 	void editor.bootstrap();
 	return () => {
 		if (toastTimer) clearTimeout(toastTimer);
@@ -674,8 +690,7 @@ $effect(() => {
 						error={docError}
 						saving={saving}
 						bind:category={draftCategory}
-						onSave={handleSave}
-						onQueue={handleQueue}
+						onSave={isNew ? handleQueue : handleSave}
 						onDelete={handleDelete}
 						onClose={closeEditor}
 						onMobileBack={() => (mobileListMode = true)}

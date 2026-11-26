@@ -1007,10 +1007,20 @@ function withPathSuffix(path, attempt) {
 	return path.replace(/(\.mdx?)$/i, `-${attempt}$1`);
 }
 
-/** 给仓库已有路径和本批次重名统一避让，保持输入顺序。 */
+/**
+ * 给仓库已有路径和本批次重名统一避让，保持输入顺序。
+ *
+ * `mode: "update"` 的条目例外：它的语义就是覆盖同路径文件，加后缀反而会
+ * 在仓库里多留下一份重复内容，所以原样返回（但仍占位，后面的新建条目不
+ * 会再抢这个路径）。
+ */
 export function resolveBatchPaths(items, existingPaths) {
 	const occupied = new Set(existingPaths);
 	return items.map((item) => {
+		if (item.mode === "update") {
+			occupied.add(item.path);
+			return item;
+		}
 		let attempt = 1;
 		let path = item.path;
 		while (occupied.has(path)) {
@@ -1237,10 +1247,12 @@ function validateBatchItems(items) {
 			return { error: `第 ${index + 1} 条内容缺少 Markdown` };
 		}
 		// 只认这两种，拼错/多传都退回 create；update 会跳过撞名后缀
+		const mode = item.mode === "update" ? "update" : "create";
 		totalBytes += new TextEncoder().encode(item.text).byteLength;
 		normalized.push({
 			path,
 			text: item.text,
+			mode,
 			collectionId:
 				typeof item.collectionId === "string" ? item.collectionId : "",
 			label: typeof item.label === "string" ? item.label : "",
@@ -1266,7 +1278,7 @@ async function writeBatch(request, token) {
 	const message =
 		typeof body.message === "string" && body.message
 			? body.message
-			: `feat(content): 批量新增 ${checked.items.length} 条内容`;
+			: `chore(content): 批量提交 ${checked.items.length} 条内容`;
 
 	try {
 		const result = await commitBatchFiles({

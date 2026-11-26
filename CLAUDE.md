@@ -798,8 +798,8 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 
 ### 5.27 更新日志类型颜色（2026-11-26）
 
-- **四类日志各一色**：`feature` 绿 `#1d9e75` / `improvement` 蓝 `#2f7fd4` / `fix` 红 `#e24b4a` / `removal` 灰蓝 `#64748b`；暗色统一提亮一档（`#34d399` / `#60a5fa` / `#f87171` / `#94a3b8`）。改色板只动 `src/styles/components/about-changelog.css` 里那组 `.changelog-card[data-type="…"]`。
-- ⚠️ **选择器必须用 `content.config.ts` 的真实枚举值**（`feature|improvement|fix|removal`）。这里踩过坑：2026-11-26 之前写的是 `feat / style / refactor / chore`（照 commit 类型的习惯写的），只有 `fix` 撞上，于是界面上只有「问题修复」变色、另外三类永远是默认灰，看起来像「没做颜色区分」。
+- **四类日志各一色**：`feature` 绿 `#1d9e75` / `improvement` 蓝 `#2f7fd4` / `fix` 红 `#e24b4a` / `removal` 灰蓝 `#64748b`；暗色统一提亮一档（`#34d399` / `#60a5fa` / `#f87171` / `#94a3b8`）。改色板只动 `src/styles/components/about-changelog.css:229` 那组 `.changelog-card[data-type="…"]`。
+- ⚠️ **选择器必须用 `content.config.ts` 的真实枚举值**（`feature|improvement|fix|removal`，第 273 行）。这里踩过坑：2026-11-26 之前写的是 `feat / style / refactor / chore`（照 commit 类型的习惯写的），只有 `fix` 撞上，所以界面上只有「问题修复」变色、另外三类永远是默认灰，看起来像「没做颜色区分」。
 - **卡片与详情弹窗共用 `--changelog-type-color` 一个变量**：卡片由 `data-type` 赋值、`::before` 色点与文字颜色都取它，弹窗 `data-type` 由 `openDialog` 从卡片 `dataset.type` 拷过来，所以两处永远同步，别再给弹窗另写一套字面色值。
 
 ---
@@ -1188,6 +1188,9 @@ return controller;
 | 在纯静态站（无 adapter）里做「密码登录」 | 没有服务端就没有可信的校验点，密码只能在前端比对，读源码即可绕过，等于没有密码 | 要么上服务端（Edge Function / Worker，令牌放服务端、前端只拿 HttpOnly Cookie），要么直接让用户填能真正决定权限的凭证（见 §24） |
 | 全局 `keydown` 拦截只对「首次按下」`preventDefault`，把 `e.repeat` 分支直接 `return` | 按住键不放时浏览器会持续派发 auto-repeat `keydown`，**每一次都是一次完整的默认动作**（Tab 移焦点、方向键滚动），于是轮盘/面板还开着，焦点继续在背后页面里跳（2026-11-25 Tab 轮盘事故：长按 Tab 焦点一路跳到导航按钮） | 用「键是否物理按下」的状态位（如 `TabRadialMenu.svelte` 的 `tabDown`）在 capture 阶段吞掉所有后续事件，并在 `window blur` / `astro:page-load` 重置（keyup 丢失会永久吞键）；`preventDefault` 必须排在所有 `return` 之前 |
 | 拿 Umami 上报脚本地址（`scriptUrl`）取 `origin` 去拼 `/api/share`、`/api/websites` | Umami Cloud 的读数接口在 `/analytics/{region}` 前缀下，根路径请求 404，首页 UV/PV 永远显示 `--`（2026-11-08 首修，`9b297bc` 首页移植时回归，11-25 二次修复） | 统一用 `siteConfig.analytics.umamiAnalytics.apiBase`（Cloud 自动推导 region 前缀）；桌面端 `HomeDataLayer.astro` 与移动端 `HomeMobile.astro` 必须同步改，勿只改一处 |
+| 在 Svelte/astro 的 `<style>` 里**手写** `-webkit-backdrop-filter` 与 `backdrop-filter` 成对声明 | 构建只保留 webkit 前缀那条，Chrome 里 `backdrop-filter` 计算值变成 `none`，毛玻璃退化成「半透明白膜」，背后页面内容清晰可见（2026-11-26 动态评论弹窗"面板透明"事故） | 组件 `<style>` 里只写**无前缀** `backdrop-filter`，让构建按目标补前缀；纯 `.css` 文件（如 `guestbook-chat.css`）由构建统一去前缀，不受影响 |
+| 在 `MomentCommentChat.svelte` 里用 `guestbook-chat__*` 类，却没在 `guestbook-chat.css` 里给同名规则 | 留言板的 `.guestbook-chat__header/__channel/__actions/__sync…` 若只存在于 `GuestbookChat.svelte` 的**组件作用域样式**，动态评论弹窗拿不到，头部会塌成竖排贴左、压住页面背景（2026-11-26 实测 `__header` 计算值 `display:block`） | 两个组件是**跨组件复用类名**的关系，不带同款 scoped 哈希：凡是 MomentCommentChat 新用到的 `guestbook-chat__*`，必须同时写进 `guestbook-chat.css`；改这两处要一起验收 |
+| 给第三方数据请求（Waline 评论、统计接口）不设超时 | 请求挂住时 `initialLoading` 永远为 `true`，弹窗一直停在骨架屏，用户只看到"转圈的空壳"（2026-11-26 动态评论事故） | 一律 `AbortController` + `setTimeout`（8~10s）双保险，超时落到可重试的错误态；已有数据时降级为 `syncError`，别把已加载的列表清掉 |
 
 ---
 
@@ -1574,7 +1577,7 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/content-repo.ts` | 集合列目录（递归 + 20s 缓存）、路径模板展开、撞名 `-2` 重试 |
 | `src/utils/editor/private-client.ts` | **私有仓库通道**（`/api/private/*`）：list/read/write/writeBlob/delete + `statusPhotoUrl`。只给「我的状态」用，读写的是独立私有仓库，不是博客主仓 |
 | `src/utils/editor/status-serializer.ts` | 状态 json ↔ 记录：`dayKey`（**本地时区**，不能用 `toISOString`）、`thumbOf`（缩略图按 `-thumb` 命名约定推导）、`parseStatus`/`serializeStatus`；未知键进 `extra` 原样保留 |
-| `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
+| `src/utils/editor/batch-queue.ts` | 后台与说说抽屉共用的草稿箱：混合集合草稿、30 条上限、`mode: create/update`、`localStorage` 持久化（启动时迁移旧的 `sessionStorage`）、损坏数据过滤与按 id/路径去重 |
 | `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板 / 正文图片区 `mediaInBody`） |
 | `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部账号入口；三态（登录 / 访客身份 + 退出 / 站长三项）；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
 | `src/components/editor/IslandAdminEntry.svelte` | 灵动岛个人信息面板里的账号入口；与社交图标同形制（未登录 `LogIn` 用强调色、访客显示 GitHub 头像、站长 `LayoutGrid` 带绿点 + 新建 + 退出），挂 `data-di-tooltip-label` 复用灵动岛浮层 |
@@ -1688,8 +1691,25 @@ editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁 + 
 1. **列表只读文件名，不预读 frontmatter。** 面经 108 篇逐篇读就是 108 次请求，慢且烧额度。文件名本身可读（面经带序号、说说带日期），真实标题打开时再显示。别为了「列表上多显示几个字段」去全量读一遍。
 2. **frontmatter 保序保留，不要改成「解析成对象再序列化」。** 那样字段会重排、注释会消失、不认识的字段会被吃掉，每次保存都制造一整片 diff。`content-serializer.ts` 的做法是拆成有序 entry、没改过的写 `original`。实测 26 个文件（文章 + 面经 + 说说）解析再序列化逐字节一致 —— 改这块之后要重跑这个校验。
 3. **/admin 只能整页进入。** Swup 只替换容器内容，不会重新挂载 Astro 岛，SPA 导航进来会白屏。任何指向 `/admin` 的链接都要带 `data-no-swup`；后台内的链接同理。
-4. **批量提交必须原子更新一次分支。** 前端队列可以混合文章、说说和更新日志，但 Worker 必须创建多个 blob、一个 tree、一个 commit，最后只 PATCH 一次 ref；禁止退化成循环调用 Contents API，否则会产生半批成功和重复构建。同名路径在完整仓库树与本批次内统一追加 `-2`、`-3`，ref 冲突只自动重试一次。
+4. **批量提交必须原子更新一次分支。** 前端队列可以混合文章、说说和更新日志，但 Worker 必须创建多个 blob、一个 tree、一个 commit，最后只 PATCH 一次 ref；禁止退化成循环调用 Contents API，否则会产生半批成功和重复构建。ref 冲突只自动重试一次。
+   - **`mode` 决定撞名怎么办（2026-11-26）**：每个 item 可带 `mode: "create" | "update"`，缺省 `create`。
+     `create` 在同名路径已存在时由 `resolveBatchPaths()` 追加 `-2`、`-3`（查的是完整仓库树 + 本批次内已占位）；
+     `update` **必须原样覆盖那一个文件，绝不加后缀** —— 草稿箱里改一篇文章走的就是 update，
+     加了后缀会在仓库里多出一份重复文件。校验层 `validateBatchItems()` 只认这两个值，其余归一到 `create`。
+   - 改这块要同步两边：`cloudflare-worker/index.js`（服务端语义）与 `src/utils/editor/github-client.ts` 的 `BatchWriteItem`；
+     旧的 Worker 收到 update 仍会加后缀，所以**前端与 Worker 必须同批上线**。
 5. **视觉主题只在 `.admin` 作用域内覆盖令牌（2026-11-25 双主题）。** 后台是独立全屏页，不参与站点明暗切换；**默认「晴空晨曦」浅色主题**（站长嫌深空太黑看不清），顶栏月亮/太阳按钮切「深空星尘」，选择存 `localStorage.admin-theme`。配色集中在 `src/styles/pages/admin.css` 末尾：`.admin` 定义白天令牌、`.admin[data-admin-theme="night"]` 覆盖夜间令牌，两套共用同一批语义变量（`--admin-*`）。新增后台组件一律读这些变量，才能跟着主题和编辑器/状态板/队列抽屉一起变。不写进 `main.css`、不新增 `!important`、不硬编码黑白。canvas 星尘组件靠 `theme` prop 触发 `$effect` 重读 `--admin-star`，别在 `onMount` 里只读一次。
+
+### 后台「草稿箱」= 待提交队列（2026-11-26 起）
+
+站长改稿常常一次动好几篇，"点一次提交 = 一个 commit"太慢，所以后台的「提交」语义改成了**只入队**：
+
+- 编辑器主按钮是「存入草稿箱」，不写仓库、不发请求，只把序列化后的 Markdown 连同 `collectionId / path / mode` 塞进队列（`src/utils/editor/batch-queue.ts`）。
+- 队列存在 `localStorage`（key `jojo_admin_batch_queue`，上限 30 条），关标签页不丢；启动时把旧版的 `sessionStorage` 数据搬一次过来再清掉。
+- 站内的说说抽屉（`MomentDrawer.svelte`）写的是**同一份队列**：抽屉里存进去的说说，会出现在后台右上角「待提交」里，可以一起提交。抽屉里唯一例外是**本地图片**——`File` 塞不进 localStorage，只能在点「存入草稿箱」时先上传（每张一次 blob 提交）；后台编辑器那边则是「带未上传图片时禁止入队」，两条路都通，别只测一条。
+- 去重规则：`id` 相同必定是同一条；**路径去重只对 `update` 生效**。`create` 不能按路径合并，否则同一天的两条说说（服务端加后缀前路径相同）会被吃掉一条。
+- 队列里点「提交全部」才真正写入：`writeBatch()` → Worker 造 blobs → 一个 tree → 一个 commit，commit message 形如 `chore(content): 批量提交 3 条内容（新建 1 / 更新 2）`。
+- **删除仍走即时提交**（需要 sha，且通常只删一条，没必要排队）；这条边界写在 `AdminApp.svelte` 顶部注释里。
 
 ### 后台正文图片区（说说，2026-11-26）
 

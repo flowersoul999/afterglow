@@ -657,6 +657,14 @@
 	font-size: 0.625rem;
 }
 
+.admin-editor__draft-hint {
+	display: block;
+	margin-top: 0.2rem;
+	color: var(--content-meta);
+	font-size: 0.6875rem;
+	line-height: 1.5;
+}
+
 .admin-editor__actions {
 	display: flex;
 	align-items: center;
