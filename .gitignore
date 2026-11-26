@@ -42,6 +42,14 @@ package/
 # AI 摘要补全脚本（包含 API 密钥，不上传 GitHub）
 scripts/fill-descriptions/index.ts
 
+# AI 会话临时产物（多会话并行时最容易被 `git add -A` 误提交，2026-11-26 兜底）
+_tmp_*
+.tmp_*
+.codex-*
+.wb-probe-*
+.toc-probe.mjs
+*.log
+
 # AI 工具与临时文件
 .agent
 .agents/*

@@ -1261,6 +1261,73 @@ scope: layout | config | i18n | styles | utils | components | content
 >
 > 想彻底消灭误报可加 `.gitattributes`（`* text=auto eol=lf`），但那会改所有平台的检出行为，**属项目级决定，先问站长**。
 
+### 18.2 任务完成即自动推送（新增 2026-11-26：多会话并行工作流）
+
+站长会**同时开多个会话做不同任务**，因此：**每个任务完成后默认自动提交并推送远程 `main`，不再逐次询问「要不要提交」**（已明确授权）。但「自动」不等于「粗暴」，下面三条是不可跳过的硬约束。
+
+#### 一、只推自己做的东西（工作区随时躺着别的会话的改动）
+
+- **只允许显式路径提交**：`git add -- <文件1> <文件2> …`；**禁止 `git add -A` / `git add .` / `git commit -a` / `git stash -u`**。本仓工作区常有 60+ 个 `_tmp_*`、`.codex-*.log`、`.wb-probe-*.mjs` 无人认领，一条 `-A` 就能把垃圾全推上线。
+- **判断「哪些是我的改动」只能比 `origin/main`，不能比 `HEAD`**：本机分支常落后远程十几个提交（2026-11-26 实测落后 11 个），此时裸 `git diff` 会把**别的会话早已推送的改动**一并显示成「未提交」，据此判断必然误判成混改。正确姿势：
+  ```bash
+  git fetch origin main                              # 反代 fetch 通常比官方稳定
+  git diff --stat origin/main -- <要提交的文件…>      # 真实归属
+  git diff -U0 origin/main -- <文件> | grep -E "^\+#{2,3} "   # 看改了哪些章节
+  ```
+- **不属于本次任务的改动原样保留**：不 stash、不 `checkout --`、不删除、不「顺手整理」。别人的会话还等着它。
+- **同一文件被多个会话混改**（一个文件里既有我的改动也有别人的，且无法按 hunk 拆分）→ **停下报告站长**，不擅自提交半成品。
+- 提交后自查 `git show --stat HEAD`，确认文件清单与预期完全一致；多出或少了一律回退重来。
+
+#### 二、质量门全绿才允许 push（即 §18.1 C 档，不得豁免）
+
+| 检查 | 命令 | 说明 |
+|---|---|---|
+| Lint/格式 | `pnpm exec biome ci ./src --reporter=github` | 与 CI 同一 reporter，几秒出结果，**改了 `src/` 必跑** |
+| 类型/诊断 | `pnpm check` | astro check，抓类型错误与集合键名错 |
+| 生产构建 | `pnpm build` | 涉及集合/配置/`content.config.ts`/内容目录/样式构建**必跑**；其余情况推送前也建议跑 |
+
+- **任一红灯 → 先修再推**。修不动就停下来报告问题，**绝不带着红灯推 `main`**（站长原话：「不要推送过去代码质量又有问题」）。
+- 构建报 `EPERM ... data-store.json` 是 dev server 抢占锁，杀掉残留 node 再跑，不是代码问题（§18.1）。
+- `biome` 报 "File content differs" 按 §18.1 的 CRLF 判别流程逐个确认，别一律当误报。
+
+#### 三、推送姿势（多分支并存，`push.default=current`）
+
+1. 在**当前工作分支**直接提交，**不要 `git switch main`**——切分支会打乱其它会话的工作区与 dev server。
+2. `git fetch origin main` 后看是否落后；**落后时不能用 `git rebase`**：工作区里有别的会话的改动，rebase 会直接报 `cannot rebase: You have unstaged changes`。改用 §18.2「工作区脏时的 plumbing 提交路径」（不动工作区、不切分支、不 stash）。
+3. 工作区**干净**时才走常规路径：`git rebase origin/main` → `git push origin HEAD:main`。
+4. 出现冲突 → **停下问站长**，不硬解、不 `--force`、不 `reset --hard`。
+5. 反代（ghfast.top）push 报 CAS 失败时，按 MEMORY.md「推送通道」走官方 remote + 小代理，别反复重试同一命令。
+6. 提交信息按 §18 格式；面向用户的功能/修复按 §21 写 changelog，**纯文档或流程调整走 `docs` scope、不占版本号**。
+7. 临时产物（`_tmp_*`、`.tmp_*`、`.codex-*`、`.wb-probe-*`、`*.log`）**永不入库**，已在 `.gitignore` 兜底；若日志里出现它们，说明忽略了规则，回头补 `.gitignore`。
+
+#### 四、工作区脏时的 plumbing 提交路径（本仓验证过的唯一安全解）
+
+工作区有别的会话的未提交改动时，`git add` 只加自己的文件仍然是安全的（索引操作不碰工作区），但 **rebase 会失败**。此时用 plumbing 直接从 `origin/main` 造提交，全程不碰工作区与分支指针：
+
+```bash
+# 1) 把自己的每个文件内容写成 blob（<tree-ish> 用 origin/main 的对应文件，新文件用 /dev/null 跳过）
+blob=$(git hash-object -w <文件路径>)
+
+# 2) 用临时索引以 origin/main 为基线，只替换自己这几个文件
+export GIT_INDEX_FILE=.git/.push-index.$$
+git read-tree origin/main
+git update-index --add --cacheinfo 100644,$blob,<仓库内路径>
+tree=$(git write-tree)
+commit=$(git commit-tree $tree -p origin/main -F .git/COMMIT_EDITMSG.$$)
+
+# 3) 推出（反代失败再切官方 remote）
+git push origin $commit:refs/heads/main
+unset GIT_INDEX_FILE; rm -f .git/.push-index.$$ .git/COMMIT_EDITMSG.$$
+```
+
+- 删除文件用 `git update-index --force-remove <路径>`；改多个文件就重复第 1、2 步。
+- 提交对象由 `commit-tree` 生成，**分支指针不动**（`HEAD` 仍是落后分支），这是预期行为，不要为了「看起来干净」去 reset。
+- 造完用 `git show --stat $commit` 核对文件清单，再 push。
+
+#### 五、推完必须汇报
+
+一条消息说清三件事：**commit hash**、**本次改动文件清单**、**三项质量门结果（全绿 / 哪些跳过及原因）**；同时说明工作区里还剩哪些不属于本次任务的改动未动。
+
 ---
 
 ## 19. PagesCMS 后台（2026-08 接入）
@@ -1405,7 +1472,7 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 ## 24. 站长在线编辑 + 站内后台（2026-11-03 起，11-04 补 OAuth 与 /admin）
 
 站内改内容，不用回本地开编辑器。桌面和手机共用同一登录态与编辑弹层：
-- **桌面端**：资料卡里的「后台 / + 说说 / 退出」
+- **桌面端**：资料卡里的「后台 / + 说说 / 退出」。2026-11-25 起主导航换成灵动岛，入口在灵动岛「个人信息面板」底部社交图标行最右一枚（`IslandAdminEntry.svelte`）；旧资料卡（`EditorNavButton.svelte`）仍在，两套并存
 - **手机端**：底部 Dock 打开的菜单弹窗最底部显示低对比度「站长登录」；登录后切换为「内容管理 / 新建说说 / 退出登录」
 - **`/admin` 后台**：三栏界面管文章 / 说说 / 更新日志，正经写东西用的
 
@@ -1413,7 +1480,11 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 
 ```
 NavbarProfileCard.astro（「JOJOSTAR」悬停弹出的资料卡）
-└── EditorNavButton.svelte   # 桌面卡内入口；≤1023px 由 CSS 隐藏
+└── EditorNavButton.svelte   # 旧资料卡内的入口；≤1023px 由 CSS 隐藏
+
+DynamicIsland.astro（桌面端主导航「灵动岛」，2026-11-25 起接手资料面板）
+└── IslandAdminEntry.svelte  # 个人信息面板社交图标行末尾的站长入口（2026-11-26 补，
+                             # 换灵动岛后漏搬，站长一度找不到进后台的地方）
 
 MobileMenuSheet.astro（手机底部 Dock 打开的菜单弹窗）
 └── EditorMobileMenuEntry.svelte
@@ -1450,11 +1521,25 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
 | `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
 | `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部站长入口；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
+| `src/components/editor/IslandAdminEntry.svelte` | 灵动岛个人信息面板里的站长入口；与社交图标同形制（未登录 `LogIn` 用强调色、已登录 `LayoutGrid` 带绿点），挂 `data-di-tooltip-label` 复用灵动岛浮层 |
 | `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉）、AdminStatusBoard（我的状态：时间轴 + 上传 + 两日对比，选中 `privateBoard` 集合时替换「列表 + 编辑」两栏） |
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
 | `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
 | `src/styles/pages/admin.css` | 后台样式，只由 AdminApp import |
 | `cloudflare-worker/index.js` | 服务端全部逻辑：8 条路由（`/file` 按 GET/PUT/DELETE 分支）+ Cookie + AES-GCM 信封加密 + 路径护栏；`POST /api/github/batch` 用 Git Data API 把最多 30 条内容合成一个原子提交。**图片必须走 `PUT /api/github/blob`**：`/file` 走 `textToBase64`（UTF-8 重编码），二进制进去必然损坏，`/blob` 只收 base64 原串直接透传（上限 8MB） |
+
+### 登录失效（401）的处理约定（2026-11-26，站长报障后定）
+
+Cookie 里封的是 GitHub OAuth token，有效期 30 天。**token 会被 GitHub 单方面作废**（在 GitHub 设置里撤销授权、OAuth App 的 client secret 轮换等），而 Cookie 本身还没到期 —— 于是 `/api/auth/me` 照样返回 200（它只解信封、不打 GitHub），页面「假装已登录」；可凡是真正打 GitHub 的接口（`/file`、`/tree`、`/batch`）全部 401，理由是 `Bad credentials`。
+
+界面表现：进 `/admin` 顶部显示 `flowersoul999`、左侧集合和列表都能渲染，中间却是一片「登录已过期，重新登录一次」；点「重试」毫无反应。
+
+规矩（别再犯）：
+
+1. **任何请求 catch 到 `EditorApiError.status === 401`，必须调 `editor.expireSession()`**：它会请 Worker 清掉 HttpOnly Cookie，并把快照整体复位 + 带上「登录已过期，重新登录一次」文案，界面回落到 `/admin` 登录门，用户点「使用 GitHub 登录」就能重来。
+2. **只把文案塞进局部错误框（`listError` / `docError`）是错的**：外壳仍是已登录，`refreshList` 开头的 `if (!$editor.isEditor) return` 也不会让它自愈，点重试永远拿同一个 401 —— 就是「按钮坏了」的成因。
+3. `AdminApp.svelte` 的统一入口是 `handleApiError(error, apply)`，新加的请求一律走它，别直接 `editor.describeError(error)`。
+4. 公开页面的 `isEditor` 只看 `/api/auth/me`，所以 token 失效时导航栏仍显示「后台」图标 —— 这是**已知且刻意接受**的：点进 `/admin` 触发一次 401 就会自动清 Cookie 复位，不必为了这点在每页加载时多打一次 GitHub API。
 
 ### 为什么需要 Worker（关键认知）
 
