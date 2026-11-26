@@ -1,4 +1,5 @@
 ---
+import HomeWelcomeToast from "@components/features/HomeWelcomeToast.astro";
 import HeroDialogue from "@components/layout/HeroDialogue.astro";
 import HomeBlinds from "@components/layout/HomeBlinds.astro";
 import HomeDataLayer from "@components/layout/HomeDataLayer.astro";
@@ -33,4 +34,7 @@ export const getStaticPaths = (async ({ paginate }) => {
 		<HomeBlinds />
 		<HomeMobile />
 	</div>
+	{/* 首页欢迎弹窗：挂在 .home-page 之外 —— 首页 hero 的位移动画会建立
+	   transform 上下文，fixed 元素若在里面会改以该容器为包含块而错位 */}
+	<HomeWelcomeToast />
 </MainGridLayout>

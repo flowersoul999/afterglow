@@ -62,7 +62,7 @@ src/
 │   ├── common/          # 跨域共享基础组件 (17)
 │   ├── controls/        # 交互控件：搜索、归档三视图树（ArchivePanel/ArchiveTree）、主题、Dock (8)
 │   ├── editor/          # 站长在线编辑（2026-11-03，11-04 改 GitHub OAuth，11-07 补手机菜单入口）：EditorNavButton 桌面资料卡入口 / EditorMobileMenuEntry 手机导航菜单末项 / EditorLoginModal OAuth 登录 / MomentDrawer 说说抽屉 / EditorRoot 常驻外壳（唯一 import editor.css 的地方） (5)
-│   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器)
+│   ├── features/        # 独立功能模块 (26, 含 music-visualizer/、ArticleTtsPlayer.svelte 文章朗读播放器、MusicPlayerWidget.astro 左下角唱片播放器、HomeWelcomeToast.astro 首页欢迎弹窗)
 │   ├── layout/          # 布局组件：Navbar, DynamicIsland(参考站源码 + 本站设置适配), ProfileCardSiteAvatar, Footer(DoodleCrewFooter.svelte), SideBar, HomeHero(参考站版), HeroMosaic, HeroDialogue, HomeBlinds, HomeMobile... + doodle-crew-footer/ (33)
 │   ├── misc/            # License, RelatedPosts, SharePoster (3)
 │   ├── moments/         # 动态卡片与评论弹窗
@@ -784,11 +784,22 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **「开心」默认跳转兜底已换**：`/books/` → `/movies-games/` → **`/life/places/`**（原为 `/changelog/`；更新日志搬走后不能再指向不在这栏里的页面）。
 - 页脚 `src/config/footerConfig.ts:58` 仍保留更新日志入口，与导航分组无关，不要跟着删。
 
+### 5.26 首页欢迎弹窗（2026-11-26 新增）
+
+- **组成**：`src/components/features/HomeWelcomeToast.astro`（弹窗本体）+ `src/config/visitorLocationConfig.ts`（接口与时长），只在 `src/pages/[...page].astro` 挂载，其余页面不渲染 —— 定位是「首页见面礼」，不是全局 toast。
+- **地域来源**：浏览器直连 `https://v2.xxapi.cn/api/ip`（国内 IP 库，到区县，已开 CORS）。本站是静态托管、没有服务端，**请求由访客浏览器发出，本站不接收也不存储 IP**。接口返回 `data.address` 形如「中国湖北省襄阳市谷城县」。
+- ⚠️ **必须挂在 `.home-page` 之外**（与它同级、同在 `#content-wrapper` 内）：首页 hero 的位移动画会让祖先带上 transform，`position: fixed` 元素会改以该容器为包含块，弹窗就不是固定在视口右下角了。这与 `styles/transitions/swup.css` 里「首页转场退化成纯 opacity」是同一个坑的两种表现。
+- **Swup 兼容靠自定义元素**：用 `<home-welcome-toast>` + `customElements.define`（`customElements.get` 守卫）。定义全局只执行一次，Swup 换页插入的新节点会自动 upgrade 并触发 `connectedCallback`，所以**不需要** `window.__xxx` 守卫，也**不要**改成 `document.addEventListener("swup:content:replaced")` 那一套 —— 实测「列表页 → 点 logo 回首页」能正常弹出。
+- **参数全走 data-\***：`data-site-title / location-url / timeout / delay / visible / session-key`。脚本**不 import** `siteConfig` 或配置对象，避免把整个配置打进客户端包；改行为只改 frontmatter 的传值。
+- **行为约定**：`sessionStorage` 键 `jojostar_welcome_seen_v1`，同一次会话只弹一次（先写标记再延时，防止来回切首页重复弹）；延迟 900ms 出现、7 秒自动收起、右上角可关；请求 3.5 秒超时，失败/被拦截一律退回「很高兴在这里遇见你。」。
+- **样式只用令牌**（`--float-panel-bg` / `--border` / `--deep-text` / `--content-meta` / `--primary` / `--z-toast`），不写死颜色，所以亮色两套（classic / warm）与暗色自动跟随；窄屏抬到 `calc(5rem + safe-area)` 避开底部栏，并适配 `prefers-reduced-motion`。
+- **文案不进制 i18n**：时段问候与句式都带运行时插值（时辰、站名、区县地址），`i18n()` 没有插值能力，放组件顶部常量（`GREETING_STEPS` / `FALLBACK_MESSAGE`）更直接。**这不是漏翻**，别再去 `zh_CN.ts` 补键。
+
 ---
 
 ## 6. 配置系统
 
-27 个配置文件，通过 `src/config/index.ts` barrel export（29 个具名导出）。
+28 个配置文件，通过 `src/config/index.ts` barrel export（30 个具名导出）。
 
 ### 核心配置
 
@@ -810,7 +821,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 
 ### 其他配置
 
-`adConfig`, `announcementConfig`, `circleConfig`, `coverImageConfig`, `expressiveCodeConfig`, `fontConfig`, `footerConfig`, `friendsConfig`, `guestbookConfig`, `licenseConfig`, `momentConfig`(动态评论配置), `pioConfig`(Live2D/Spine), `relationshipConfig`, `sakuraConfig`, `skillsConfig`, `sponsorConfig`, `ttsConfig`(文章朗读)
+`adConfig`, `announcementConfig`, `circleConfig`, `coverImageConfig`, `expressiveCodeConfig`, `fontConfig`, `footerConfig`, `friendsConfig`, `guestbookConfig`, `licenseConfig`, `momentConfig`(动态评论配置), `pioConfig`(Live2D/Spine), `relationshipConfig`, `sakuraConfig`, `skillsConfig`, `sponsorConfig`, `ttsConfig`(文章朗读), `visitorLocationConfig`(首页欢迎弹窗的归属地接口与时长，见 §5.26)
 
 > **代码块语言别名（在 `astro.config.mjs`，不在 src/config）**：Shiki 没有 `mysql` 语法（只有 `sql`），所以 `expressiveCode({ shiki: { langAlias: { mysql: "sql" } } })` 把 ` ```mysql ` 映射到 SQL 高亮。没有这条映射时，构建会刷 `astro-expressive-code` 的 "language could not be found" 警告并把代码块降级成纯文本。新增其它别名（如 `vue3` → `vue`）同样加在这里。
 
