@@ -1517,8 +1517,9 @@ git check-ignore -v "学习笔记/某主题/x.md"               # 无输出 = �
 
 站内改内容，不用回本地开编辑器。桌面和手机共用同一登录态与编辑弹层：
 - **桌面端**：资料卡里的「后台 / + 说说 / 退出」。2026-11-25 起主导航换成灵动岛，入口在灵动岛「个人信息面板」底部社交图标行最右一枚（`IslandAdminEntry.svelte`）；旧资料卡（`EditorNavButton.svelte`）仍在，两套并存
-- **手机端**：底部 Dock 打开的菜单弹窗最底部显示低对比度「站长登录」；登录后切换为「内容管理 / 新建说说 / 退出登录」
+- **手机端**：底部 Dock 打开的菜单弹窗最底部显示低对比度「GitHub 登录」；登录后切换为「内容管理 / 新建说说 / 退出登录」
 - **`/admin` 后台**：三栏界面管文章 / 说说 / 更新日志，正经写东西用的
+- ⚠️ **2026-11-26 起登录对所有人开放**（原先非站长在 callback 直接被拒），三个入口都有三态，详见本节「登录对所有人开放」
 
 ### 架构
 
@@ -1527,18 +1528,28 @@ NavbarProfileCard.astro（「JOJOSTAR」悬停弹出的资料卡）
 └── EditorNavButton.svelte   # 旧资料卡内的入口；≤1023px 由 CSS 隐藏
 
 DynamicIsland.astro（桌面端主导航「灵动岛」，2026-11-25 起接手资料面板）
-└── IslandAdminEntry.svelte  # 个人信息面板社交图标行末尾的站长入口（2026-11-26 补，
+└── IslandAdminEntry.svelte  # 个人信息面板社交图标行末尾的账号入口（2026-11-26 补，
                              # 换灵动岛后漏搬，站长一度找不到进后台的地方）
 
 MobileMenuSheet.astro（手机底部 Dock 打开的菜单弹窗）
 └── EditorMobileMenuEntry.svelte
-    # 菜单末项：未登录=低对比度「站长登录」
-    # 已登录=「内容管理 / 新建说说 / 退出登录」
+    # 菜单末项：未登录=低对比度「GitHub 登录」
+    # 已登录=站长「内容管理 / 新建说说 / 退出登录」；访客只有「身份 + 退出」
+
+上列三个入口统一的三种形态（`$editor.isEditor` / `$editor.loggedIn` 判定）：
+  未登录            LogIn 图标（强调色）→ 打开 GitHub 登录弹窗
+  已登录 · 普通访客  只有头像（桌面）/「头像 + 昵称 + 退出」（手机），**没有任何编辑入口**
+  已登录 · 站长      后台 / 新建说说 / 退出
 
 EditorRoot.svelte（⚠️ 挂 MainGridLayout.astro、#navbar-wrapper **外面** → 换页不重建）
 ├── EditorLoginModal.svelte  # 复用 .privacy-modal 骨架（dialog = top layer，不受 transform 影响）
 ├── MomentDrawer.svelte      # 新建/编辑/删除说说
 └── editor.toast             # 提交提示
+
+/guestbook（留言板）
+└── GuestbookChat.svelte → GuestbookChatComposer.svelte
+    # 登录走站内 GitHub（editorUi.openLogin），不是 Waline /oauth/github；
+    # 登录后把昵称 + 主页灌进留言资料，留言自动带身份
 
 /admin（独立全屏路由，不套 MainGridLayout，也不参与 Swup）
 └── AdminApp.svelte → AdminList.svelte + AdminEditor.svelte + AdminBatchQueue.svelte
@@ -1564,8 +1575,8 @@ cloudflare-worker/index.js   # 单文件 Worker（唯一有服务端逻辑的地
 | `src/utils/editor/status-serializer.ts` | 状态 json ↔ 记录：`dayKey`（**本地时区**，不能用 `toISOString`）、`thumbOf`（缩略图按 `-thumb` 命名约定推导）、`parseStatus`/`serializeStatus`；未知键进 `extra` 原样保留 |
 | `src/utils/editor/batch-queue.ts` | `/admin` 待提交队列：混合集合草稿、30 条上限、`sessionStorage` 恢复与损坏数据过滤 |
 | `src/config/admin-collections.ts` | 后台的集合配置表：加一个集合只改这里（目录 / 字段 / 路径模板） |
-| `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部站长入口；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
-| `src/components/editor/IslandAdminEntry.svelte` | 灵动岛个人信息面板里的站长入口；与社交图标同形制（未登录 `LogIn` 用强调色、已登录 `LayoutGrid` 带绿点），挂 `data-di-tooltip-label` 复用灵动岛浮层 |
+| `src/components/editor/EditorMobileMenuEntry.svelte` | 手机菜单弹窗底部账号入口；三态（登录 / 访客身份 + 退出 / 站长三项）；打开登录/说说弹层前先发 `mobile-menu-sheet:close` 收起菜单 |
+| `src/components/editor/IslandAdminEntry.svelte` | 灵动岛个人信息面板里的账号入口；与社交图标同形制（未登录 `LogIn` 用强调色、访客显示 GitHub 头像、站长 `LayoutGrid` 带绿点 + 新建 + 退出），挂 `data-di-tooltip-label` 复用灵动岛浮层 |
 | `src/components/admin/` | AdminApp（三栏骨架 + 状态）、AdminList（列表）、AdminEditor（表单 + Markdown + 预览）、AdminBatchQueue（混合内容待提交抽屉）、AdminStatusBoard（我的状态：时间轴 + 上传 + 两日对比，选中 `privateBoard` 集合时替换「列表 + 编辑」两栏） |
 | `src/pages/admin.astro` | 后台路由；静态 shell 里**不含任何内容**，放一个空的 `#swup-container` 只为满足 Swup 初始化 |
 | `src/styles/components/editor.css` | 桌面资料卡入口、手机菜单入口、抽屉与登录弹窗样式，**只由 EditorRoot import 一次** |
@@ -1584,6 +1595,35 @@ Cookie 里封的是 GitHub OAuth token，有效期 30 天。**token 会被 GitHu
 2. **只把文案塞进局部错误框（`listError` / `docError`）是错的**：外壳仍是已登录，`refreshList` 开头的 `if (!$editor.isEditor) return` 也不会让它自愈，点重试永远拿同一个 401 —— 就是「按钮坏了」的成因。
 3. `AdminApp.svelte` 的统一入口是 `handleApiError(error, apply)`，新加的请求一律走它，别直接 `editor.describeError(error)`。
 4. 公开页面的 `isEditor` 只看 `/api/auth/me`，所以 token 失效时导航栏仍显示「后台」图标 —— 这是**已知且刻意接受**的：点进 `/admin` 触发一次 401 就会自动清 Cookie 复位，不必为了这点在每页加载时多打一次 GitHub API。
+
+### 登录对所有人开放（2026-11-26 起）
+
+站长原话：「改成所有人都可以登录，用 github 登录，然后别人登录后只会在留言板保存登录信息，我登录的话自动识别是站长，会有站长该有的功能」。落地方式：
+
+**服务端（`cloudflare-worker/index.js`）**
+
+- `callback()` **不再**拒非站长：任何 GitHub 账号都能登录，session 里多一个 `isOwner: isOwner(user.login, env)`；`/api/auth/me` 也返回 `isOwner`（旧 Cookie 没这字段时用 `login` 现算兜底）。
+- **所有写仓库的通道必须用 `requireOwner(request, env)`**，不许再用 `readSession`：`/api/github/file`(PUT/DELETE)、`/blob`、`/batch`、`/tree` 四处已切过去。无 session → 401「未登录或登录已过期」；非站长 → 403「内容管理只有站长能操作」。**这条是安全边界：漏一处，任何登录访客都能改博客仓库。** 新增写接口时照抄 `requireOwner`。
+- `isOwner()` 判据仍是 `OWNER_LOGIN`（默认 `flowersoul999`），只认 GitHub 账号名，前端说什么都不算。
+
+**前端（两个概念别混）**
+
+| 字段 | 含义 | 用途 |
+|------|------|------|
+| `$editor.loggedIn` | 已用 GitHub 登录（任何人都可能） | 显示头像/身份、留言板取昵称 |
+| `$editor.isEditor` | **有编辑权 = 是站长** | 所有编辑按钮显隐、`<html class="is-editor">` |
+
+`applyIdentity()` 里 `isEditor: identity.isOwner`、`loggedIn: true`；`emptySnapshot()` 两者都 `false`。`<html>` 上的 `is-editor` 挂的是**编辑权**，不是登录态 —— 访客登录后页面里不能冒出任何编辑按钮。
+
+**留言板（`GuestbookChat.svelte`）**
+
+- 登录按钮走 `editorUi.openLogin(...)`（站内 Worker），**不再调 Waline `login()`** —— Waline 的 `/oauth/github` 需要服务端配 `GITHUB_ID/SECRET`，线上没配就是 403。
+- `siteIdentity`（`$derived` 自 `$editor`）派生 `{ name, avatar, link }`；`$effect` 在登录后把**空着的** `nick` / `link` 灌进 `guestbook-chat-profile`（写 localStorage），已在 `syncedIdentityLogin` 记过的账号不重复灌，避免覆盖访客手填内容。
+- 提交时优先级：Waline 登录态 → 留言资料（含预填）→ `siteIdentity`；`validateComposer` 在有 `siteIdentity` 时不再要求手填昵称。
+- 「退出登录」= 清 Waline 登录态 + `forgetGithubProfile()`（只清仍是 `https://github.com/<login>` 的自动填值）+ `editor.logout()`，三件事一起做，别只退一半。
+- **已知限制**：评论列表里的头像/「站长」徽章来自 Waline 服务端（`avatar` 由 `mail` 推 gravatar、`type: administrator` 要 Waline 登录态），所以访客留言的头像仍是字母占位。要真头像/可删自己的评论，得去 Waline 项目配 `GITHUB_ID`/`GITHUB_SECRET`/`JWT_TOKEN` 打开 Waline 自带的 OAuth —— 那是另一条链路，别在本仓库里硬凑。
+
+**OAuth scope 现状**：仍是单一 App + `public_repo`（站长要写仓库）。普通访客因此也会授权到 `public_repo`，但后端写操作只放行站长，别人的仓库他本来也没权限。若将来要收紧，做法是 `read:user` 登录 + 站长进后台时再引导一次写权限授权（未实现）。
 
 ### 为什么需要 Worker（关键认知）
 
@@ -1616,10 +1656,12 @@ Cookie 里封的是 GitHub OAuth token，有效期 30 天。**token 会被 GitHu
 GET /api/auth/callback?code=…&state=…
   ├─ 比对 state（Cookie 里那份 vs URL 里那份），不一致就拒
   ├─ POST github.com/login/oauth/access_token —— client_secret 只在这一行出现
-  ├─ GET api.github.com/user → login 必须等于 flowersoul999
-  └─ 封 { token, login, name, avatar } → Set-Cookie: jojo_editor（HttpOnly, 30 天）
+  ├─ GET api.github.com/user → 拿 login/name/avatar，**不拒非站长**
+  └─ 封 { token, login, name, avatar, isOwner } → Set-Cookie: jojo_editor（HttpOnly, 30 天）
         ↓ 302 回站，带 ?auth=ok
-editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁」，拿不到 token
+editor-store.bootstrap() → GET /api/auth/me → 前端只拿到「我是谁 + isOwner」，拿不到 token
+        ↓
+写仓库的接口（/api/github/file|blob|batch|tree）再走一遍 requireOwner → 非站长 403
 ```
 
 ### 四条硬约束

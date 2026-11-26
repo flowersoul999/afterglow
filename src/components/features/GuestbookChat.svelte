@@ -3,7 +3,6 @@ import {
 	addComment,
 	deleteComment,
 	getComment,
-	login as loginWithWaline,
 	updateComment,
 } from "@waline/api";
 import {
@@ -30,6 +29,8 @@ import type {
 	GuestbookChatMessage as GuestbookMessage,
 	GuestbookProfile,
 } from "@/types/guestbook-chat";
+import { editor } from "@/utils/editor/editor-store";
+import { editorUi } from "@/utils/editor/editor-ui";
 import {
 	appendGuestbookImage,
 	buildGuestbookEditedMessageBody,
@@ -105,6 +106,24 @@ let dataController: AbortController | null = null;
 let syncQueued = false;
 let initialMediaCleanup: (() => void) | null = null;
 
+/**
+ * 站内的 GitHub 登录态（不是 Waline 的登录态）。
+ *
+ * 2026-11-26 起登录对所有人开放：访客用 GitHub 登录后，唯一的用途就是
+ * 「留言时带上自己的名字和主页」，不需要 Waline 那套 OAuth。所以这里
+ * 把 editor store 里的身份翻成留言板能直接用的三个字段。
+ */
+const siteIdentity = $derived.by(() => {
+	const identity = $editor.loggedIn ? $editor.identity : null;
+	if (!identity) return null;
+	return {
+		name: identity.name || identity.login,
+		avatar: identity.avatar,
+		link: identity.login ? `https://github.com/${identity.login}` : "",
+		isOwner: identity.isOwner,
+	};
+});
+
 const isSending = $derived(
 	messages.some((message) => message.localState === "sending"),
 );
@@ -136,6 +155,46 @@ const chatMembers = $derived.by(() => {
 });
 const stationMembers = $derived(chatMembers.filter((member) => member.isAdmin));
 const guestMembers = $derived(chatMembers.filter((member) => !member.isAdmin));
+
+/**
+ * 已经把哪个 GitHub 账号的资料灌进留言资料了。
+ * 用它做「只同步一次」的闸门，否则用户改完昵称会被下一次渲染又冲掉。
+ */
+let syncedIdentityLogin = $state("");
+
+// GitHub 登录后，把名字和主页写进留言资料 —— 这就是「登录后留言板自动带上
+// 身份」的全部实现：不碰 Waline 的 OAuth，也不在本地存任何 token。
+// 只填**空着的**字段，访客自己填过的内容一律不动。
+$effect(() => {
+	const identity = $editor.loggedIn ? $editor.identity : null;
+	const login = identity?.login ?? "";
+	if (!login || login === syncedIdentityLogin) return;
+	syncedIdentityLogin = login;
+
+	const next: GuestbookProfile = {
+		nick: profile.nick.trim() || identity?.name || login,
+		mail: profile.mail,
+		link: profile.link.trim() || `https://github.com/${login}`,
+	};
+	if (next.nick === profile.nick && next.link === profile.link) return;
+	profile = next;
+	writeStoredValue(localStorage, PROFILE_STORAGE_KEY, next);
+});
+
+/**
+ * 退出登录时把「刚才自动填进去的」那几项抹掉。
+ * 判据是主页还停在 `https://github.com/<login>` —— 说明用户没改过，
+ * 是他的就一起清；改过就留着，那是他手写的内容。
+ */
+function forgetGithubProfile(): void {
+	const login = syncedIdentityLogin;
+	if (!login) return;
+	syncedIdentityLogin = "";
+	if (profile.link.trim() !== `https://github.com/${login}`) return;
+	const next: GuestbookProfile = { nick: "", mail: profile.mail, link: "" };
+	profile = next;
+	writeStoredValue(localStorage, PROFILE_STORAGE_KEY, next);
+}
 
 function handleChatKeydown(event: KeyboardEvent) {
 	if (event.key !== "Escape") return;
@@ -770,7 +829,8 @@ function validateMessageBody(content: string): string {
 
 function validateComposer(content: string): string {
 	if (loginMode === "force" && !authUser) return i18n(I18nKey.gbLoginRequired);
-	if (!authUser && profile.nick.trim().length < 2) {
+	// 已用 GitHub 登录的话身份一定齐全，不该再逼人填昵称
+	if (!authUser && !siteIdentity && profile.nick.trim().length < 2) {
 		return profile.nick.trim()
 			? i18n(I18nKey.gbNicknameMinLength).replace("{min}", "2")
 			: loginMode === "disable"
@@ -809,11 +869,16 @@ async function sendMessage(
 	const selectedTarget = replyTarget;
 	const target = selectedTarget?.objectId ? selectedTarget : null;
 	const tempId = `local-${Date.now()}`;
+	// 昵称/主页的优先级：Waline 登录态 > 留言资料（含 GitHub 预填）> 站内 GitHub 身份
+	const sendNick =
+		authUser?.display_name || profile.nick.trim() || siteIdentity?.name || "";
+	const sendLink =
+		authUser?.url || profile.link.trim() || siteIdentity?.link || "";
 	const optimistic: GuestbookMessage = {
 		id: tempId,
-		nick: authUser?.display_name || profile.nick || i18n(I18nKey.gbVisitor),
-		avatar: authUser?.avatar || "",
-		link: authUser?.url || profile.link.trim() || undefined,
+		nick: sendNick || i18n(I18nKey.gbVisitor),
+		avatar: authUser?.avatar || siteIdentity?.avatar || "",
+		link: sendLink || undefined,
 		body: content,
 		createdAt: Date.now(),
 		isAdmin: false,
@@ -839,10 +904,10 @@ async function sendMessage(
 			lang,
 			token: authUser?.token,
 			comment: {
-				nick: authUser?.display_name || profile.nick.trim(),
+				nick: sendNick,
 				// 必须下发空串而不是 undefined：服务端 gravatar 模板对 null 跑 trim 会 500
 				mail: authUser?.email || profile.mail.trim() || "",
-				link: authUser?.url || profile.link.trim() || undefined,
+				link: sendLink || undefined,
 				comment: content,
 				ua: navigator.userAgent,
 				url: CHANNEL_PATH,
@@ -998,30 +1063,16 @@ async function confirmDeleteMessage() {
 	}
 }
 
-async function handleLogin() {
+/**
+ * 留言板的登录走**站内**的 GitHub 授权（Cloudflare Worker 那套），不是 Waline
+ * 的 `/oauth/github` —— 后者要求 Waline 服务端配 GITHUB_ID/SECRET，没配就是
+ * 403（线上现状）。走站内登录还有两个好处：访客不用记两个账号体系，站长
+ * 登录后同一次授权就同时拿到内容管理权限。
+ */
+function handleLogin(): void {
 	if (loggingIn) return;
-	if (!serverURL) {
-		composerError = i18n(I18nKey.gbServerNotConfiguredLogin);
-		return;
-	}
-	loggingIn = true;
 	composerError = "";
-
-	try {
-		const user = await loginWithWaline({ serverURL, lang });
-		if (!isAuthUser(user))
-			throw new Error(i18n(I18nKey.gbLoginInvalidResponse));
-		authUser = user;
-		persistAuthentication(user);
-		await loadInitial();
-	} catch (error) {
-		composerError =
-			error instanceof Error && error.message
-				? error.message
-				: i18n(I18nKey.gbLoginFailed);
-	} finally {
-		loggingIn = false;
-	}
+	editorUi.openLogin("用 GitHub 登录后，留言会自动带上你的头像和昵称");
 }
 
 async function initializeGuestbook(returnedToken: string | null) {
@@ -1052,6 +1103,9 @@ async function initializeGuestbook(returnedToken: string | null) {
 
 function handleLogout() {
 	clearAuthentication();
+	forgetGithubProfile();
+	// 站内 GitHub 登录态也一起退掉：留言板上的「退出登录」不该只退一半
+	void editor.logout();
 	void loadInitial();
 }
 
@@ -1070,6 +1124,8 @@ function handleDraftChange(nextDraft: string) {
 let initialLoadQueued = false;
 
 onMount(() => {
+	// 留言板可能挂在没有导航栏的独立布局里，自己探一次登录态（bootstrap 有在途标记，不会重复请求）
+	void editor.bootstrap();
 	const storedProfile = readStoredValue<unknown>(
 		localStorage,
 		PROFILE_STORAGE_KEY,
@@ -1305,6 +1361,7 @@ onMount(() => {
 				<GuestbookChatComposer
 					{profile}
 					{authUser}
+					{siteIdentity}
 					{draft}
 					{replyTarget}
 					{composerError}
@@ -1315,7 +1372,7 @@ onMount(() => {
 					onProfileChange={handleProfileChange}
 					onDraftChange={handleDraftChange}
 					onReplyCancel={() => (replyTarget = null)}
-					onLogin={() => void handleLogin()}
+					onLogin={handleLogin}
 					onLogout={handleLogout}
 				onSend={(content, attachment) =>
 					sendMessage(undefined, attachment, content)}

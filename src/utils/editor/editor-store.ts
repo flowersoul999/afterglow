@@ -33,8 +33,14 @@ export interface EditorSnapshot {
 	status: EditorStatus;
 	error: string;
 	toast: EditorToast | null;
-	/** 登录成功，页面内编辑按钮靠它显隐 */
+	/**
+	 * 是否有**编辑权**（= 站长）。页面里的编辑按钮靠它显隐。
+	 * 2026-11-26 起登录对所有人开放，所以这个不等于「已登录」，
+	 * 普通访客登录后 isLoggedIn=true 而 isEditor=false。
+	 */
 	isEditor: boolean;
+	/** 是否已登录（任何人都能登录，只为在留言板留个 GitHub 身份） */
+	loggedIn: boolean;
 	branch: string;
 	/** 登录服务是否可用；false 说明边缘函数没部署或环境变量没配 */
 	available: boolean;
@@ -48,7 +54,6 @@ type Listener = (snapshot: EditorSnapshot) => void;
  */
 const REASON_TEXT: Record<string, string> = {
 	denied: "你在 GitHub 那边取消了授权",
-	not_owner: "这个 GitHub 账号不是站长，登录被拒绝了",
 	state_missing: "登录链接不完整，重新点一次登录",
 	state_invalid: "登录链接已过期，重新点一次登录",
 	exchange_failed: "GitHub 没有换到访问令牌，稍后重试",
@@ -64,6 +69,7 @@ function emptySnapshot(): EditorSnapshot {
 		error: "",
 		toast: null,
 		isEditor: false,
+		loggedIn: false,
 		branch: "main",
 		available: true,
 	};
@@ -109,6 +115,11 @@ export class EditorStore {
 		return this.snapshot.isEditor;
 	}
 
+	/** 已登录（任何人都可能登录，留言板靠它取 GitHub 身份） */
+	get isLoggedIn(): boolean {
+		return this.snapshot.loggedIn;
+	}
+
 	get branch(): string {
 		return this.snapshot.branch;
 	}
@@ -136,7 +147,11 @@ export class EditorStore {
 				this.applyIdentity(identity);
 				if (this.justAuthed) {
 					this.justAuthed = false;
-					this.notify("GitHub 登录成功，菜单里有「内容管理」入口");
+					this.notify(
+						identity.isOwner
+							? "GitHub 登录成功，菜单里有「内容管理」入口"
+							: `已用 GitHub 身份登录：${identity.name || identity.login}`,
+					);
 				}
 			} catch (error) {
 				// 401 = 没登录，是常态，不该在界面上报错
@@ -145,6 +160,7 @@ export class EditorStore {
 					identity: null,
 					status: "idle",
 					isEditor: false,
+					loggedIn: false,
 					available: !offline,
 				});
 			}
@@ -181,12 +197,15 @@ export class EditorStore {
 	}
 
 	private applyIdentity(identity: EditorIdentity): void {
-		syncDocumentFlag(true);
+		// is-editor 挂着的是「编辑权」而不是「登录态」：普通访客登录后
+		// 页面里不该冒出任何编辑按钮（CSS 靠这个类控制）
+		syncDocumentFlag(identity.isOwner);
 		this.patch({
 			identity,
 			status: "authed",
 			error: "",
-			isEditor: true,
+			isEditor: identity.isOwner,
+			loggedIn: true,
 			available: true,
 			branch: identity.defaultBranch,
 		});

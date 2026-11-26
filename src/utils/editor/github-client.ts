@@ -28,6 +28,11 @@ export interface EditorIdentity {
 	name: string;
 	avatar: string;
 	defaultBranch: string;
+	/**
+	 * 是不是站长。2026-11-26 起登录对所有人开放，这个字段决定「有没有编辑权」：
+	 * 普通访客登录只为在留言板留个 GitHub 身份，拿不到任何仓库权限。
+	 */
+	isOwner: boolean;
 }
 
 export interface RepoFile {
@@ -59,6 +64,12 @@ export interface BatchWriteItem {
 	text: string;
 	collectionId: string;
 	label: string;
+	/**
+	 * create = 新建文件，撞名时服务端加 `-2` 后缀避让；
+	 * update = 覆盖同路径文件，绝不能加后缀（否则会多出一份重复文件）。
+	 * 缺省按 create，保持与旧版 Worker 的行为一致。
+	 */
+	mode?: "create" | "update";
 }
 
 export interface BatchWriteResultItem extends Omit<BatchWriteItem, "text"> {
@@ -124,6 +135,7 @@ export async function fetchSession(): Promise<EditorIdentity> {
 		name?: string;
 		avatar?: string;
 		branch?: string;
+		isOwner?: boolean;
 	};
 
 	return {
@@ -131,6 +143,8 @@ export async function fetchSession(): Promise<EditorIdentity> {
 		name: data.name ?? data.login ?? REPO_OWNER,
 		avatar: data.avatar ?? "",
 		defaultBranch: data.branch ?? "main",
+		// 老 Worker 不返回这个字段时按「不是站长」处理，宁可少给权限
+		isOwner: data.isOwner === true,
 	};
 }
 
@@ -269,7 +283,7 @@ export async function writeBlob(options: {
 	return data.sha ?? "";
 }
 
-/** 把多条新内容合成一个 Git 提交。 */
+/** 把多条内容（新建或更新）合成一个 Git 提交。 */
 export async function writeBatch(options: {
 	items: BatchWriteItem[];
 	message: string;

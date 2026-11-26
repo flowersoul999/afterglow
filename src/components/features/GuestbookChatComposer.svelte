@@ -36,6 +36,12 @@ import {
 interface Props {
 	profile: GuestbookProfile;
 	authUser: GuestbookAuthUser | null;
+	/**
+	 * 站内 GitHub 登录身份（不是 Waline 登录态）。有值时说明访客是用 GitHub
+	 * 登录进来的，昵称/主页已经由外层灌进 `profile`，这里只负责把头像和
+	 * 「已登录」的样子显示出来。
+	 */
+	siteIdentity?: { name: string; avatar: string; link: string } | null;
 	draft: string;
 	replyTarget: GuestbookChatMessage | null;
 	composerError: string;
@@ -59,6 +65,7 @@ interface Props {
 let {
 	profile,
 	authUser,
+	siteIdentity = null,
 	draft,
 	replyTarget,
 	composerError,
@@ -148,9 +155,16 @@ const hasGuestProfile = $derived(profile.nick.trim().length >= 2);
 const identityLabel = $derived(
 	authUser
 		? authName
-		: hasGuestProfile
-			? profile.nick
-			: i18n(I18nKey.gbNotLoggedIn),
+		: siteIdentity
+			? siteIdentity.name
+			: hasGuestProfile
+				? profile.nick
+				: i18n(I18nKey.gbNotLoggedIn),
+);
+const identityTitle = $derived(
+	siteIdentity && !authUser
+		? `${i18n(I18nKey.gbLoggedIn)} · ${siteIdentity.name}`
+		: i18n(I18nKey.gbGuestProfile),
 );
 const textareaPlaceholder = $derived(
 	loginMode === "force" && !authUser
@@ -780,12 +794,20 @@ $effect(() => () => {
 		class="guestbook-composer__identity"
 		type="button"
 		onclick={() => void openGuestProfile()}
-		title={i18n(I18nKey.gbGuestProfile)}
+		title={identityTitle}
 	>
 		{#if authUser?.type === "administrator"}
 			<span class="guestbook-composer__identity-role">
 				{i18n(I18nKey.gbAdminRole)}
 			</span>
+		{:else if siteIdentity?.avatar}
+			<img
+				class="guestbook-composer__identity-avatar"
+				src={siteIdentity.avatar}
+				alt=""
+				loading="lazy"
+				decoding="async"
+			/>
 		{/if}
 		<span class="guestbook-composer__identity-name">{identityLabel}</span>
 	</button>
@@ -1070,6 +1092,12 @@ $effect(() => () => {
 					· {authName}
 				</p>
 			{:else if loginMode !== "force"}
+				{#if siteIdentity}
+					<!-- 站内 GitHub 登录：资料已自动填好，这里只提示一句，不拦人 -->
+					<p class="guestbook-profile-modal__signed">
+						{i18n(I18nKey.gbLoggedIn)} · {siteIdentity.name}（GitHub）
+					</p>
+				{/if}
 				<label>
 					<span>{i18n(I18nKey.gbNickname)}</span>
 					<input

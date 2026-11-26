@@ -602,8 +602,9 @@
 .di-profile__social:hover { opacity: 1; transform: translateY(-2px); }
 .di-profile__social svg { width: 17px; height: 17px; }
 
-/* 站长入口（IslandAdminEntry）：和社交图标同一行、同一尺寸。
-   未登录用一点强调色，免得混在社交图标里被忽略 —— 站长要能一眼找到它。 */
+/* 账号入口（IslandAdminEntry）：和社交图标同一行、同一尺寸。
+   2026-11-26 起登录对所有人开放，未登录用一点强调色，让人一眼能找到。
+   三种形态共用同一个基类：未登录 = 图标钮，访客已登录 = 头像钮，站长 = 三个图标钮。 */
 .di-profile__admin {
 	position: relative;
 	display: inline-grid;
@@ -636,6 +637,29 @@
 	border-radius: 50%;
 	background: oklch(0.65 0.17 150);
 	box-shadow: 0 0 0 1.5px var(--di-hover);
+}
+/* 普通访客已登录：整钮换成头像，尺寸仍卡在 17px，不破坏这一行的基线。
+   没有头像是常态（GitHub 邮件隐私、图片加载失败），用首字母兜底。 */
+.di-profile__admin.is-me { width: 17px; height: 17px; border-radius: 50%; overflow: hidden; opacity: 0.9; }
+.di-profile__admin-avatar {
+	display: block;
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	object-fit: cover;
+}
+.di-profile__admin-initial {
+	display: grid;
+	place-items: center;
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	background: color-mix(in oklab, var(--di-accent) 22%, transparent);
+	color: var(--di-accent);
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 1;
+	text-transform: uppercase;
 }
 
 .di-profile__heat { position: relative; display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 0 0 auto; padding-bottom: 42px; }

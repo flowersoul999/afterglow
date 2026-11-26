@@ -28,11 +28,22 @@ test("手机站长入口位于导航菜单底部，并从手机资料卡隐藏",
 	const mobileDock = readFileSync(mobileDockPath, "utf8");
 	const editorCss = readFileSync(editorCssPath, "utf8");
 
-	assert.match(component, />站长登录</u);
+	assert.match(component, />GitHub 登录</u);
 	assert.match(component, /href="\/admin"/u);
 	assert.match(component, /openMomentCreate/u);
 	assert.match(component, /editor\.logout/u);
 	assert.match(component, /mobile-menu-sheet:close/u);
+
+	// 2026-11-26 起登录对所有人开放：入口必须有「访客已登录」的第三态，
+	// 而且那一态不能出现任何编辑入口
+	assert.match(component, /\$editor\.loggedIn/u, "访客登录态要有独立分支");
+	const guestBranch = component.split("$editor.loggedIn")[1] ?? "";
+	assert.match(guestBranch, /editor-mobile-menu__me/u);
+	assert.doesNotMatch(
+		guestBranch.split("editor-mobile-menu__actions")[0] ?? "",
+		/href="\/admin"/u,
+		"访客态不该出现后台链接",
+	);
 
 	assert.match(
 		mobileMenu,

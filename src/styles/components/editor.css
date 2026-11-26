@@ -54,6 +54,43 @@
 	cursor: default;
 }
 
+/* 普通访客已登录：头像 + 昵称，点一下退出。
+   昵称限宽省略 —— 资料卡左栏只有 18.5rem，GitHub 长 ID 会把整行顶开。 */
+.editor-nav__chip--me {
+	gap: 0.3rem;
+	padding: 0 0.4375rem 0 0.1875rem;
+}
+
+.editor-nav__avatar {
+	flex: 0 0 auto;
+	width: 1.125rem;
+	height: 1.125rem;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.editor-nav__initial {
+	display: inline-grid;
+	flex: 0 0 auto;
+	place-items: center;
+	width: 1.125rem;
+	height: 1.125rem;
+	border-radius: 50%;
+	background: var(--btn-plain-bg-hover);
+	color: var(--primary);
+	font-size: 0.625rem;
+	font-weight: 700;
+	line-height: 1;
+	text-transform: uppercase;
+}
+
+.editor-nav__me-name {
+	max-width: 5.5rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 /* 已登录态：只有图标的圆钮（后台 / 新建说说 / 退出），比带字的胶囊省一半宽度 */
 .editor-nav__icon {
 	position: relative;
@@ -133,6 +170,44 @@
 
 .editor-mobile-menu__login {
 	opacity: 0.62;
+}
+
+/* 访客已登录：纯展示行，刻意不做 hover —— 它不是按钮，别让人以为能点。 */
+.editor-mobile-menu__me {
+	display: flex;
+	align-items: center;
+	gap: 0.625rem;
+	min-height: 2.75rem;
+	padding: 0 0.625rem;
+	color: var(--content-meta);
+}
+
+.editor-mobile-menu__avatar {
+	flex: 0 0 auto;
+	width: 1.5rem;
+	height: 1.5rem;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+.editor-mobile-menu__initial {
+	display: inline-grid;
+	flex: 0 0 auto;
+	place-items: center;
+	width: 1.5rem;
+	height: 1.5rem;
+	border-radius: 50%;
+	background: var(--btn-plain-bg-hover);
+	color: var(--primary);
+	font-size: 0.75rem;
+	font-weight: 700;
+	line-height: 1;
+	text-transform: uppercase;
+}
+
+/* 只有一枚按钮时别死守两列，否则右边空半格看着像少了东西 */
+.editor-mobile-menu__actions--single {
+	grid-template-columns: 1fr;
 }
 
 .editor-mobile-menu__login:hover:not(:disabled),

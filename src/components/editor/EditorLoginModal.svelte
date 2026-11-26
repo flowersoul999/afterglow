@@ -1,13 +1,16 @@
 <script lang="ts">
 /**
- * 站长登录弹窗
+ * GitHub 登录弹窗（所有人都能登）
  *
  * 复用站内既有的 `.privacy-modal` 骨架（dialog + overlay + panel），
  * 只补自己的内层样式，避免再造一套弹窗壳。
  *
  * 登录走 GitHub OAuth：点按钮 → 整页跳到 GitHub 授权页 → 回跳本页。
- * 这里**不收任何凭据**，客户端也拿不到 token —— 换 token 和校验「是不是站长」
- * 都在 Cloudflare Worker 里做，token 存进 HttpOnly Cookie。
+ * 这里**不收任何凭据**，客户端也拿不到 token —— 换 token 都在 Cloudflare
+ * Worker 里做，token 存进 HttpOnly Cookie。
+ *
+ * 2026-11-26 起对所有人开放：普通访客登录只为在留言板留个 GitHub 身份；
+ * 「是不是站长」由 Worker 比对 GitHub 账号名后写进 session，前端只读结果。
  */
 import { Github, ShieldCheck, X } from "lucide-svelte";
 import { editor } from "@/utils/editor/editor-store";
@@ -67,7 +70,7 @@ async function startLogin(): Promise<void> {
 
 	<div class="privacy-panel editor-login__panel">
 		<div class="privacy-header">
-			<h2 id="editor-login-title" class="privacy-title">站长登录</h2>
+			<h2 id="editor-login-title" class="privacy-title">GitHub 登录</h2>
 			<button class="privacy-close" type="button" onclick={close} aria-label="关闭">
 				<X size={20} aria-hidden="true" />
 			</button>
@@ -79,7 +82,8 @@ async function startLogin(): Promise<void> {
 			</div>
 
 			<p class="editor-login__desc">
-				{$editorUi.loginHint || "用站长的 GitHub 账号登录后，页面里每个模块都会出现编辑按钮。"}
+				{$editorUi.loginHint ||
+					"用 GitHub 登录后，留言会自动带上你的头像和昵称；如果你是站长，菜单里还会多出「内容管理」。"}
 			</p>
 
 			<button
@@ -100,17 +104,19 @@ async function startLogin(): Promise<void> {
 				<li>
 					<ShieldCheck size={12} aria-hidden="true" />
 					<span>
-						只申请 <code>public_repo</code> 权限：仅能读写这个博客的公开仓库，碰不到你的其它项目
+						站点只读你的公开资料（昵称、头像）用于显示；申请 <code
+							>public_repo</code
+						> 是为了站长能提交文章改动，写操作在后端只放行站长账号
 					</span>
 				</li>
 				<li>
 					<ShieldCheck size={12} aria-hidden="true" />
-					<span>访问令牌保存在 HttpOnly Cookie 里，页面上的脚本读不到它</span>
+					<span>碰不到你的私有仓库和邮箱；令牌存在 HttpOnly Cookie 里，页面脚本读不到</span>
 				</li>
 			</ul>
 
 			<p class="editor-login__fineprint">
-				不是站长也没关系，登录会在服务端被直接拒绝，不会留下任何东西。
+				登录完全自愿：不登录也能正常留言，只是要自己填一遍昵称。用不着了就在导航栏退出，随时可撤。
 			</p>
 		</div>
 	</div>

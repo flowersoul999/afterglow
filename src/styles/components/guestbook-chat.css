@@ -1297,6 +1297,15 @@ html:has(.guestbook-page) {
 	white-space: nowrap;
 }
 
+/* GitHub 已登录：名字前面挂一枚头像，比任何文字都更快认出来 */
+.guestbook-composer__identity-avatar {
+	flex: 0 0 auto;
+	width: 1.125rem;
+	height: 1.125rem;
+	border-radius: var(--radius-full);
+	object-fit: cover;
+}
+
 .guestbook-composer__send {
 	display: grid;
 	place-items: center;
