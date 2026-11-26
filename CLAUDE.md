@@ -587,7 +587,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **改了什么**：原先「开心」下拉里挂着 7 个技能图入口（计算机基础 / 前端技能图 / 后端技能图 / Agent 开发 / 音乐（修行录）/ 英语（修行录）/ 理财（修行录）），菜单过长。现合并成**唯一一项「技能」**，落在 `/skills/`（前端技能图），图标 `material-symbols:account-tree-rounded`。
 - **只删导航入口，不删路由**：`/cs/` `/skills/` `/backend/` `/agent/` `/music/` `/english/` `/finance/` 七条路由、七套 `src/data/*Skills.ts`、`src/components/skills/*`、`page-type.ts` 的 `SKILL_GRAPH_PATHS` 与 `skills` 页型（满宽无侧栏）**全部原样保留**。页间跳转靠每页顶部的 `SkillGraphSwitch` 切换条，它才是七张图的真正总入口 —— 别再把它当装饰删掉。
 - **两份硬编码要同步改**：桌面走 `src/config/navBarConfig.ts` 的 `recordChildren`，「开心」分组；移动端抽屉 `src/components/layout/MobileMenuSheet.astro` 的 `groups` 是另写的一份（**不从 navBarConfig 读**）。以后增删「开心」下拉项，两处必须一起改，否则手机端和桌面端会不一致。
-- **「开心」默认跳转未变**：仍是 `/books/` → `/movies-games/` → `/changelog/` 兜底。
+- **「开心」默认跳转**：仍是 `/books/` → `/movies-games/` 兜底；最后一档 2026-11-26 起改为 `/life/places/`（更新日志已移到「关于」，见 5.25）。
 
 ### 5.19 动态图片写在正文（2026-10-21）
 
@@ -676,7 +676,7 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 
 - **/schedules/ 日历、/bills/ 账单、/apps/ 应用展示、/music/ 音乐页面**的路由文件与导航入口（导航栏 + 移动菜单的「我的」分组）已删除。
 - ⚠️ **`/music/` 这个路由 2026-10-29 被重新占用了**：现在是「音乐（修行录）」技能图（`src/pages/music.astro`），和当年那个音乐播放页毫无关系。别再按「音乐页已下线」去理解这个路径，也别因为它跳过来就把这个页面删了。
-- 「开心」分组（原「记录」，2026-10-29 改名）的默认跳转：/books/ → /movies-games/ → /changelog/（兜底**不再**用 /music/，原因同上）。
+- 「开心」分组（原「记录」，2026-10-29 改名）的默认跳转：/books/ → /movies-games/ → /life/places/（兜底**不用** /music/，原因同上；2026-11-26 前兜底是 /changelog/，更新日志移到「关于」后改掉了）。
 - ⚠️ **不要顺手删这几个集合与内容**：bills(117) / schedules(7) / apps(1) 的 schema 与 md 都还在（页面先下线、数据保留），SiteStats 仍在用 bills 统计。想彻底清掉要站长确认。
 - ⚠️ **音乐功能与音乐页面无关**：右下角悬浮坞的音乐按钮/抽屉 + musicConfig + bangumi 的 music 条目是另一条链路，删页面时不要动它们。
 
@@ -776,6 +776,13 @@ home-data-layer,post-hero,about-changelog,guestbook-chat}.css`
 - **配色**：遮罩 `rgb(0 0 0 / 0.5)` + `backdrop-filter: blur(2px)`（旧站是 0.30 无模糊；本站页面多铺背景图 / 画布，0.30 压不住）。压在遮罩上的文字一律用组件内局部变量 `--trm-ghost*`（浅色），**不能套 `--deep-text`** —— 它在暗色主题下会变白，压到黑遮罩上等于消失。选中项用 `--navbar-highlight-bg` / `--navbar-highlight-text`（与导航栏当前项同一套反色语言），当前页只加一道 `--deep-text` 描边。
 - ⚠️ **暗色下按钮底要单独提亮**：`--page-bg` 暗色只有 `oklch(0.08)`，和压暗后的背景几乎同色，`:global(:root.dark) .trm__tile` 把它提到 `--btn-card-bg-active`（暗色 0.20）才分得出来。
 - 层级 `z-index: 1100`（高于 `--z-toast` 的 1080）。
+
+### 5.25 「更新日志」从「开心」移到「关于」下（2026-11-26）
+
+- **现状**：「关于」下拉 = 关于 / 友链 / 赞助 / 更新日志（`src/config/navBarConfig.ts:159`，按 `siteConfig.pages.changelog` 开关追加）；「开心」下拉不再含更新日志，只剩书架 / 影视与游戏 / 足迹 / 技能。
+- **两份硬编码依旧要一起改**：桌面 `navBarConfig.ts` 的 `recordChildren` 与「关于」`children`；移动端 `src/components/layout/MobileMenuSheet.astro` 的 `groups`（手写静态列表，**不从 navBarConfig 读**，本次同步改了「开心」组与「关于」组两处）。
+- **「开心」默认跳转兜底已换**：`/books/` → `/movies-games/` → **`/life/places/`**（原为 `/changelog/`；更新日志搬走后不能再指向不在这栏里的页面）。
+- 页脚 `src/config/footerConfig.ts:58` 仍保留更新日志入口，与导航分组无关，不要跟着删。
 
 ---
 

@@ -101,9 +101,8 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		recordChildren.push(LinkPreset.MoviesGames);
 	}
 	// 音乐已移入「我的」分组，此处不再重复
-	if (siteConfig.pages.changelog) {
-		recordChildren.push(LinkPreset.Changelog);
-	}
+	// 「更新日志」2026-11-26 移出本栏，改挂到「关于」下拉下（站长要求：
+	// 更新日志更像站点信息而不是「开心」的个人记录，放在关于里更顺手）。
 	// 足迹
 	recordChildren.push({
 		name: "足迹",
@@ -129,8 +128,9 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			: siteConfig.pages.moviesGames
 				? "/movies-games/"
 				: // 兜底刻意不用 /music/（音乐技能图所在路由）：跳过去会让「开心」这一栏
-					// 莫名其妙。更新日志是所有站点都开着的。
-					"/changelog/";
+					// 莫名其妙。2026-11-26 起更新日志已移到「关于」，这里改用永远在列表里的
+					// 「足迹」（/life/places/）兜底。
+					"/life/places/";
 
 		links.push({
 			// 2026-10-29 站长定的名字：开心（AI 搭档的名字，也是这一栏的气质）
@@ -155,6 +155,9 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 
 			// 赞助
 			...(siteConfig.pages.sponsor ? [LinkPreset.Sponsor] : []),
+
+			// 更新日志（2026-11-26 从「开心」下拉移到这里）
+			...(siteConfig.pages.changelog ? [LinkPreset.Changelog] : []),
 		],
 	});
 

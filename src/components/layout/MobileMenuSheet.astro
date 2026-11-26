@@ -97,11 +97,7 @@ const groups = [
 				label: "足迹",
 				url: "/life/places/",
 			},
-			{
-				icon: "material-symbols:history",
-				label: "更新日志",
-				url: "/changelog/",
-			},
+			// 更新日志 2026-11-26 移到「关于」组（与桌面导航同步）
 			// 技能（2026-11-02 收敛）：原先 7 张技能图各占一行，与桌面导航同步合并成
 			// 唯一一个「技能」入口，直达 /skills/；其余 6 张图靠该页顶部的切换条跳转。
 			{
@@ -117,6 +113,12 @@ const groups = [
 		children: [
 			{ icon: "material-symbols:person", label: "关于", url: "/about/" },
 			{ icon: "material-symbols:group", label: "友链", url: "/friends/" },
+			// 更新日志（2026-11-26 从「开心」组移到这里）
+			{
+				icon: "material-symbols:history",
+				label: "更新日志",
+				url: "/changelog/",
+			},
 		],
 	},
 ];
