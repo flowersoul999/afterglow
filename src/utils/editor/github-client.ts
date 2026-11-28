@@ -143,8 +143,16 @@ export async function fetchSession(): Promise<EditorIdentity> {
 		name: data.name ?? data.login ?? REPO_OWNER,
 		avatar: data.avatar ?? "",
 		defaultBranch: data.branch ?? "main",
-		// 老 Worker 不返回这个字段时按「不是站长」处理，宁可少给权限
-		isOwner: data.isOwner === true,
+		/**
+		 * 老版本 Worker 不返回 `isOwner`，那时登录本身就是站长专属的，所以
+		 * 「有会话 + 账号名等于仓库主」就是站长。少了这条兜底，Worker 还没
+		 * 重新部署的窗口里站长会突然看不到后台入口（2026-11-26 踩过）。
+		 * 这只是界面显隐，真正的写权限由 Worker 的 requireOwner 把关。
+		 */
+		isOwner:
+			typeof data.isOwner === "boolean"
+				? data.isOwner
+				: data.login === REPO_OWNER,
 	};
 }
 
